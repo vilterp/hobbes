@@ -1,4 +1,4 @@
-import interpreter
+import objectgraph
 
 class SyntaxTree:
   
@@ -45,7 +45,7 @@ class Node:
   
   def evaluate(self):
     if self.value.type == 'variable':
-      return interpreter.get_var(self.value.string)
+      return objectgraph.get_var(self.value.string)
     elif self.value.string in ['+','-','*','/']:
       return eval("self.left.evaluate() %s self.right.evaluate()" % self.value)
     else:
