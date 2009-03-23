@@ -37,7 +37,7 @@ class HbNumber(HbObject):
   
   def absolute_value(self):
     if self.value < 0:
-      return HobbesNumber(self.value * -1)
+      return HbNumber(self.value * -1)
     else:
-      return HobbesNumber(self.value) # self.clone()?
+      return HbNumber(self.value) # self.clone()?
   
