@@ -1,0 +1,5 @@
+HOBBES
+
+Hobbes is an interpreted dynamic language. Everything's an object like Ruby and Smalltalk, but minimalist and sensible like Python.
+
+This is my first language, so I'm implementing it in Python cuz it's easy. Maybe once I figure out what I'm doing I'll port it to java so it's reasonably fast, maybe not.
