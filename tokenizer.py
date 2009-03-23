@@ -2,9 +2,9 @@ import re
 
 token_patterns = {
   'assignment': '=',
-  'variable': r'([a-zA-Z_]+)', # TODO: numbers at end
+  'variable': r'^([a-zA-Z_][a-zA-Z0-9_]{,})', # TODO: numbers at end
   
-  'number': r'(\d+)', # TODO: decimals
+  'number': r'(\d{,}\.{,1}\d{,})', # TODO: decimals
   'string': r'\"([a-zA-Z0-9]+)\"', # TODO: more characters
   
   'openparen': r'\(',
@@ -22,7 +22,7 @@ def tokenize(expression):
   for token in expression.split(' '):
     for name, pattern in token_patterns.iteritems():
       match = re.search(pattern,token)
-      if match:
+      if match and match.span() != (0,0):
         t = Token(name,match.group())
         if len(match.groups()):
           t.value = match.group(1)
