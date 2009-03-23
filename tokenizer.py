@@ -2,9 +2,9 @@ import re
 
 token_patterns = {
   'assignment': '=',
-  'variable': r'^([a-zA-Z_][a-zA-Z0-9_]{,})', # TODO: numbers at end
+  'variable': r'^([a-zA-Z_][a-zA-Z0-9_]{,})',
   
-  'number': r'(\d{,}\.{,1}\d{,})', # TODO: decimals
+  'number': r'(\d{,}\.{,1}\d{,})',
   'string': r'\"([a-zA-Z0-9]+)\"', # TODO: more characters
   
   'openparen': r'\(',

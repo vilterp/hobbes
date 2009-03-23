@@ -1,3 +1,3 @@
 import parser, tokenizer
 
-print parser.parse(tokenizer.tokenize('a = 5'))
+print tokenizer.tokenize('2 + 5')
