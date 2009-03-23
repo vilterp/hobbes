@@ -34,7 +34,8 @@ class HbObject:
     pass
   
   def methods(self):
-    from HbArray import HbArray # FIXME: I wish I could just import it at the top
+    from HbArray import HbArray
+    # FIXME: I would just import HbArray at the top, but that makes it go around in circles
     return HbArray(self.methods.keys())
     pass
   
