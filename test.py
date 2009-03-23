@@ -1,3 +1,6 @@
-import parser, tokenizer
+import objectgraph
 
-print tokenizer.tokenize('2 + 5')
+objectgraph.boot()
+
+print objectgraph.objects
+print objectgraph.variables
