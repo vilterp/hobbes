@@ -5,6 +5,8 @@ class HbNumber(HbObject):
   
   def __init__(self, value):
     HbObject.__init__(self)
+    self.name = 'Number'
+    self.superclass = 'Object'
     self.value = value
     self.methods.update({
       'is?': self.test_is,
@@ -39,5 +41,11 @@ class HbNumber(HbObject):
     if self.value < 0:
       return HbNumber(self.value * -1)
     else:
-      return HbNumber(self.value) # self.clone()?
+      return self.clone()
+  
+  def to_bool(self):
+    if self.value is 0:
+      return false()
+    else:
+      return true()
   

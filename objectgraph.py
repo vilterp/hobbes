@@ -44,7 +44,7 @@ def garbage_collect(object_id=None):
 
 def boot():
   
-  from lang import HbTrue, HbFalse, HbNil
+  from lang import HbObject, HbTrue, HbFalse, HbNil
   
   set_var('true', HbTrue())
   set_var('false', HbFalse())

@@ -1,5 +1,5 @@
 import objectgraph
-from objectgraph import true, false, nil
+from objectgraph import true, false, nil, get_var
 
 class HbObject:
   
@@ -16,7 +16,9 @@ class HbObject:
       'methods': self.methods,
       'clone': self.clone,
       '==': self.is_same_object,
-      'emtpy?': self.empty,
+      'nil?': self.is_nil,
+      'to_bool': self.to_boolean,
+      'to_string': self.to_string,
     }
   
   def send(methodname, args):
@@ -30,7 +32,7 @@ class HbObject:
   def get_class(self):
     pass
   
-  def is_a(self):
+  def is_a(self, klass):
     pass
   
   def methods(self):
@@ -47,13 +49,13 @@ class HbObject:
   
   def is_same_object(self, other):
     if self.id is other.id:
-      return objectgraph.true
+      return true()
     else:
-      return objectgraph.false
+      return false()
   
-  def empty(self):
-    if len(self.data.keys()) is 0:
-      return objectgraph.true
-    else:
-      return objectgraph.false
+  def is_nil(self):
+    return false()
+  
+  def to_bool(self):
+    return true()
   
