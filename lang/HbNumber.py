@@ -3,10 +3,11 @@ from objectgraph import true, false, nil
 
 class HbNumber(HbObject):
   
+  classname = 'Number'
+  superclass = 'Object'
+  
   def __init__(self, value):
     HbObject.__init__(self)
-    self.name = 'Number'
-    self.superclass = 'Object'
     self.value = value
     self.methods.update({
       'is?': self.test_is,
@@ -15,6 +16,9 @@ class HbNumber(HbObject):
       '<': self.test_less_than,
       'abs': self.absolute_value
     })
+  
+  def __repr__(self):
+    return '<lang.HbNumber id=%d value=%f>' % (self.id, self.value)
   
   def test_is(self, other):
     if self.value == other.value: # FIXME: will '==' work for floats?
@@ -43,9 +47,14 @@ class HbNumber(HbObject):
     else:
       return self.clone()
   
+  # override
   def to_bool(self):
     if self.value is 0:
       return false()
     else:
       return true()
+  
+  # override
+  def to_string(self):
+    return HbString(str(self.value))
   

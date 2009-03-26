@@ -43,12 +43,18 @@ def garbage_collect(object_id=None):
       garbage_collect(object_id)
 
 def boot():
-  
-  from lang import HbObject, HbTrue, HbFalse, HbNil
-  
+  # initialize singletons
+  from lang import HbTrue, HbFalse, HbNil
   set_var('true', HbTrue())
   set_var('false', HbFalse())
   set_var('nil', HbNil())
+  # initialize class objects
+  import lang
+  for classname in dir(lang):
+    if classname.startswith('Hb') and classname not in ['HbTrue','HbFalse','HbNil']:
+      name = classname[2:] # Hb[Number]
+      klass = getattr(lang, classname)
+      set_var(name,lang.HbClass(name,klass.superclass))
 
 def true():
   return get_var('true')

@@ -1,5 +1,7 @@
 import parser, tokenizer, objectgraph
 
+objectgraph.boot()
+
 def interpret(line):
   if line.strip().startswith('#'): # comment
     return
