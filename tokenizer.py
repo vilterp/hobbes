@@ -1,3 +1,5 @@
+# inspired by http://tommycarlier.blogspot.com/2007/04/writing-parser-adl-tokenizer.html
+
 # FIXME: too much code
 # FIXME: hangs on unclosed string, regexp
 # FIXME: store line number, file, char span in token
@@ -96,6 +98,8 @@ class Tokenizer:
         return Token('symbol',self.get_buffer())
       else: # just <
         return Token('symbol',self.get_buffer())
+    elif char == ',':
+      return Token('symbol',self.get_buffer())
     elif char in '+-/*':
       if self.peek() == '=': # +=, /=, etc
         self.read()
