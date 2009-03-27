@@ -1,8 +1,7 @@
 # inspired by http://tommycarlier.blogspot.com/2007/04/writing-parser-adl-tokenizer.html
 
 # FIXME: too much code
-# FIXME: hangs on unclosed string, regexp
-# FIXME: store line number, file, char span in token
+# FIXME: store line number, file, char span in token for exceptions
 
 def tokenize(expression):
   return Tokenizer(expression).tokenize()
@@ -18,26 +17,23 @@ class Tokenizer:
     tokens = []
     while self.pos < len(self.exp):
       char = self.peek()
-      if char == "\t":
-        tokens.append(Token('tab'))
-      elif char == ' ':
-        if self.peek(1) == ' ': # two spaces
-          return tokens.append(Token('tab'))
-        else: # just one space
-          self.pos += 1
-          continue
-      elif char == '#': # comment
+      if char == '#': # comment
         break
+      elif char == ' ':
+        self.advance()
       elif str.isdigit(char):
         tokens.append(self.get_number())
       elif char == '"' or char == "'":
         self.advance()
         tokens.append(self.get_string(char))
         self.advance()
-      elif char == '/': # FIXME: how to distinguish between division & regexp?
-        self.advance()
-        tokens.append(self.get_regexp())
-        self.advance()
+      elif char == '/':
+        if len(tokens) > 0 and tokens[-1].type in ['word','number']: # division
+          tokens.append(self.get_symbol())
+        else: # regex literal
+          self.advance()
+          tokens.append(self.get_regexp())
+          self.advance()
       elif str.isalpha(char):
         tokens.append(self.get_word())
       else:
@@ -61,7 +57,7 @@ class Tokenizer:
   
   def get_word(self):
     self.read()
-    while str.isalnum(self.peek()):
+    while str.isalnum(self.peek()) or self.peek() in '?!':
       self.read()
     return Token('word',self.get_buffer())
   
@@ -125,7 +121,7 @@ class Tokenizer:
     try:
       return self.exp[self.pos+ahead]
     except IndexError:
-      return ''
+      raise UnexpectedEOL
   
   def advance(self):
     self.pos += 1
@@ -149,5 +145,8 @@ class Token:
     self.value = value
   
   def __repr__(self):
-    return "<Token %s (%s)>" % (self.value, self.type)
+    return "<Token %s (%s)>" % (self.value or '', self.type)
   
+
+class UnexpectedEOL(Exception):
+  pass
