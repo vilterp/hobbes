@@ -15,9 +15,10 @@ class HbObject:
     self.methods = {
       'responds_to': self.responds_to,
       'send': self.send,
+      'object_id': self.get_object_id,
       'class': self.get_class,
       'is_a?': self.is_a,
-      'methods': self.methods,
+      'methods': self.get_methods,
       'clone': self.clone,
       '==': self.test_same_object,
       'nil?': self.is_nil,
@@ -35,7 +36,7 @@ class HbObject:
     else:
       return false()
   
-  def send(self, methodname, args):
+  def send(self, methodname, *args):
     if methodname in self.methods:
       return self.methods[methodname](*args)
     elif methodname in self.data:
@@ -43,18 +44,22 @@ class HbObject:
     else:
       raise NameError('no method called %s.' % methodname) # TODO: call method_missing
   
+  def get_object_id(self):
+    from HbNumber import HbNumber
+    return HbNumber(self.id)
+  
   def get_class(self):
     return get_var(self.classname)
   
   def is_a(self, klass):
-    if self.get_class() is klass:
+    if klass is get_var('Object'):
       return true()
-    elif self.classname == 'Object':
-      return false()
+    elif self.get_class() is klass:
+      return true()
     else:
-      return self.get_class().get_superclass().is_a(klass)
+      return false()
   
-  def methods(self):
+  def get_methods(self):
     from HbArray import HbArray
     # FIXME: I would just import HbArray at the top, but that makes it go around in circles
     return HbArray(self.methods.keys())
