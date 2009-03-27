@@ -14,11 +14,27 @@ class HbNumber(HbObject):
       '<=>': self.compare_to,
       '>': self.test_greater_than,
       '<': self.test_less_than,
-      'abs': self.absolute_value
+      'abs': self.absolute_value,
+      '+': self.plus,
+      '-': self.minus,
+      '*': self.times,
+      '/': self.divide,
+      '++': self.increment,
     })
   
   def __repr__(self):
     return '<lang.HbNumber id=%d value=%f>' % (self.id, self.value)
+  
+  # override
+  def to_bool(self):
+    if self.value is 0:
+      return false()
+    else:
+      return true()
+  
+  # override
+  def to_string(self):
+    return HbString(str(self.value))
   
   def test_is(self, other):
     if self.value == other.value: # FIXME: will '==' work for floats?
@@ -47,14 +63,19 @@ class HbNumber(HbObject):
     else:
       return self.clone()
   
-  # override
-  def to_bool(self):
-    if self.value is 0:
-      return false()
-    else:
-      return true()
+  def plus(self, other):
+    return HbNumber(self.value + other.value)
   
-  # override
-  def to_string(self):
-    return HbString(str(self.value))
+  def minus(self):
+    return HbNumber(self.value - other.value)
+  
+  def times(self):
+    return HbNumber(self.value * other.value)
+  
+  def divide(self):
+    return HbNumber(self.value / other.value)
+  
+  def increment(self):
+    self.value += 1
+    return self
   
