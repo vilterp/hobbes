@@ -41,7 +41,7 @@ class Tokenizer:
     return tokens
   
   def get_number(self):
-    while str.isdigit(self.peek()):
+    while self.has_next() and str.isdigit(self.peek()):
       self.read()
     return Token('number',self.get_buffer())
   
@@ -57,7 +57,7 @@ class Tokenizer:
   
   def get_word(self):
     self.read()
-    while str.isalnum(self.peek()) or self.peek() in '?!':
+    while self.has_next() and (str.isalnum(self.peek()) or self.peek() in '?!'):
       self.read()
     return Token('word',self.get_buffer())
   
@@ -116,6 +116,9 @@ class Tokenizer:
       return Token('symbol',self.get_buffer())
     else:
       raise SyntaxError
+  
+  def has_next(self):
+    return self.pos < len(self.exp)
   
   def peek(self, ahead=0):
     try:
