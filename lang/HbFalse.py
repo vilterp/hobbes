@@ -11,4 +11,6 @@ class HbFalse(HbObject):
       
     })
   
+  def to_bool(self):
+    return self
   

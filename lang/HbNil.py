@@ -1,5 +1,5 @@
 from HbObject import HbObject
-from objectgraph import true
+from objectgraph import true, false
 
 class HbNil(HbObject):
   
@@ -11,4 +11,7 @@ class HbNil(HbObject):
   
   def is_nil(self):
     return true()
+  
+  def to_bool(self):
+    return false()
   

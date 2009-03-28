@@ -28,7 +28,7 @@ class HbObject:
   
   def __repr__(self):
     """for debugging the interpreter"""
-    return '<lang.Hb%s id=%d>' % (self.classname, self.id)
+    return '<Hb%s id=%d>' % (self.classname, self.id)
   
   def responds_to(self, methodname):
     if methodname in self.methods:
@@ -63,7 +63,6 @@ class HbObject:
     from HbArray import HbArray
     # FIXME: I would just import HbArray at the top, but that makes it go around in circles
     return HbArray(self.methods.keys())
-    pass
   
   def clone(self):
     o = HbObject()

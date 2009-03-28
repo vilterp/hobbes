@@ -23,7 +23,7 @@ class HbNumber(HbObject):
     })
   
   def __repr__(self):
-    return '<lang.HbNumber id=%d value=%f>' % (self.id, self.value)
+    return '<HbNumber id=%d value=%f>' % (self.id, self.value)
   
   # override
   def to_bool(self):
@@ -66,13 +66,13 @@ class HbNumber(HbObject):
   def plus(self, other):
     return HbNumber(self.value + other.value)
   
-  def minus(self):
+  def minus(self, other):
     return HbNumber(self.value - other.value)
   
-  def times(self):
+  def times(self, other):
     return HbNumber(self.value * other.value)
   
-  def divide(self):
+  def divide(self, other):
     return HbNumber(self.value / other.value)
   
   def increment(self):
