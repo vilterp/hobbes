@@ -1,0 +1,2 @@
+class UnexpectedEOL(Exception):
+  pass

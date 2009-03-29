@@ -1,7 +1,9 @@
 # inspired by http://tommycarlier.blogspot.com/2007/04/writing-parser-adl-tokenizer.html
 
 # FIXME: too much code
-# FIXME: store line number, file, char span in token for exceptions
+# FIXME: store line number, file, char span in token for errors
+
+from errors import UnexpectedEOL
 
 def tokenize(expression):
   return Tokenizer(expression).tokenize()
@@ -150,6 +152,3 @@ class Token:
   def __repr__(self):
     return "<Token %s (%s)>" % (self.value or '', self.type)
   
-
-class UnexpectedEOL(Exception):
-  pass

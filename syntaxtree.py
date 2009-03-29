@@ -1,26 +1,5 @@
 import objectgraph
 
-class SyntaxTree:
-  
-  def __init__(self, root=None):
-    self.root = root
-  
-  def __repr__(self):
-    if self.empty():
-      return '<SyntaxTree (empty)>'
-    else:
-      return '<SyntaxTree %s>' % str(self.root)
-  
-  def empty(self):
-    return self.root is None
-  
-  def evaluate(self):
-    if self.empty():
-      return None
-    else:
-      return self.root.evaluate()
-  
-
 class Node:
   
   def __init__(self, value, left=None, right=None):
