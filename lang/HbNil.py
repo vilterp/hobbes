@@ -15,3 +15,7 @@ class HbNil(HbObject):
   def to_bool(self):
     return false()
   
+  def to_string(self):
+    from HbString import HbString
+    return HbString('nil')
+  

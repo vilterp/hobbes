@@ -14,3 +14,7 @@ class HbTrue(HbObject):
   def to_bool(self):
     return self
   
+  def to_string(self):
+    from HbString import HbString
+    return HbString('true')
+  
