@@ -5,7 +5,7 @@ def interpret(line):
     return
   else:
     tree = parser.parse(tokenizer.tokenize(line))
-    if tree.root.value.string == '=':
-      objectgraph.set_var(tree.root.left.value.value,tree.root.right.evaluate())
+    if tree.value.value == '=':
+      objectgraph.set_var(tree.left.value.value,tree.right.evaluate())
     else:
       return tree.evaluate()
