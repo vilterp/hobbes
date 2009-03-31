@@ -1,3 +1,0 @@
-# expression ::= number, operator, number ;
-operator ::= ? \+-/\* ? ;
-# number ::= ? \d ? ;
