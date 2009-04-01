@@ -9,15 +9,54 @@ class BaseParser:
     self.grammarfile = grammarfile
     self.pos = 0
     self.anythingmatched = False
-    self.rules_list = [tuple(rule.split(' ::= ')) for rule in
-                       open(grammarfile).read().split(' ;\n')
+    self.rules_list = [(rule.split(' ::= ')[0],
+                       self._parse_rule(rule.split(' ::= ')[1]))
+                       for rule in open(grammarfile).read().split(' ;\n')
                        if rule and not rule.startswith('#')]
-    self.rules_dict = {}
-    try:
-      for name, rule in self.rules_list:
-        self.rules_dict[name] = rule
-    except ValueError:
-      raise EBNFError('Probably forgot a semicolon.')
+    self.rules_dict = dict(self.rules_list)    
+  
+  def _parse_rule(self, rule):
+    pos = 0
+    tokens = []
+    while pos < len(rule):
+      remainder = rule[pos:]
+      if remainder == ' ;' or remainder == ' ;\n':
+        break
+      if remainder.startswith(' , '):
+        pos += 3
+        continue
+      re_match = re.match(r'\? (.*) \?',remainder)
+      if re_match:
+        tokens.append(('(%s)' % re_match.group(1),'regexp'))
+        pos += re_match.span()[1]
+        continue
+      literal_match = re.match(r'"(.*)"',remainder)
+      if literal_match:
+        tokens.append((literal_match.group(1),'literal'))
+        pos += literal_match.span()[1]
+        continue
+      repeat_match = re.match(r'{ (.*) }',remainder)
+      if repeat_match:
+        tokens.append((self._parse_rule(repeat_match.group(1)),'repeat'))
+        pos += repeat_match.span()[1]
+        continue
+      optional_match = re.match(r'\( (.*) \)',remainder)
+      if optional_match:
+        tokens.append((self._parse_rule(optional_match.group(1)),'optional'))
+        pos += optional_match.span()[1]
+        continue
+      or_match = re.match(r'\[ (.*) \]',remainder)
+      if or_match:
+        segment = or_match.group(1)
+        options = [self._parse_rule(rule_seg) for rule_seg in segment.split(' | ')]
+        tokens.append((options,'options'))
+        pos += or_match.span()[1]
+        continue
+      # else: another rule
+      r = remainder.split(' , ')[0]
+      tokens.append((r,'rule'))
+      pos += len(r)
+    return tokens
   
   def parse(self, code):
     """try to match code against each rule in the grammar,
@@ -33,75 +72,55 @@ class BaseParser:
       raise EBNFError('No grammar rule matched "%s"' % code)
     del self.code
   
-  def _match_rule(self, rule_name, rule):
-    """match_segment for each segment in rule, appending the resultant
-       Token to self.stack. If a segment fails to match, it means
-       that this rule has failed, and the MatchError thrown by _match_segment
-       will bubble up to parse, which will try the next rule.
-    """
-    stack = []
-    for rule_segment in rule.split(' , '):
-      result = self._match_segment(rule_name, rule_segment)
-      if result:
-        if isinstance(result,list):
-          for token in result:
-            stack.append(token)
-        else:
-          stack.append(result)
-    return getattr(self,rule_name,self.default)(*stack)
+  def _match_rule(self, name, rule):
+    # call func in here
+    results = self._match_segments(rule)
+    getattr(self,name,self.default)(*results)
   
-  def _match_segment(self, rule_name, rule_segment):
-    """try to match rule_segment against the remainder
-       of the text to be parsed. If it works, return a token (type=rule_name);
-       otherwise throw a MatchError.
-    """
-    self._strip_whitespace()
-    remainder = self.code[self.pos:] # part of code remaining to be parsed
-    # repeat rule
-    if re.match(r'\{ .* \}', rule_segment):
-      match = re.match(r'\{ (.*) \}',remainder).group(1)
+  def _match_segments(self, segments):
+    results = []
+    for segment in segments:
+      results.append(self._match_segment(segment))
+    return results
+  
+  def _match_segment(self, rule):
+    print rule
+    pattern = rule[0]
+    ruletype = rule[1]
+    remainder = self.code[self.pos:]
+    if ruletype == 'literal':
+      if remainder.startswith(pattern):
+        return pattern # ?
+      else:
+        raise MatchError
+    elif ruletype == 'regexp':
+      match = re.match(pattern,remainder)
+      if match:
+        return match.group(1)
+      else:
+        raise MatchError
+    elif ruletype == 'repeat':
+      results = []
       while 1:
         try:
-          self.match_rule(rule_name, match)
+          results.append(self._match_segment(pattern))
         except MatchError:
           break
-    # or rule ("a | b | c")
-    options = rule_segment.split(' | ')
-    if len(options) > 1:
-      for option in options:
+      return results
+    elif ruletype == 'optional':
+      try:
+        return self._match_segment(pattern)
+      except MatchError:
+        pass
+    elif ruletype == 'options':
+      for option in pattern:
         try:
-          return self._match_segment(rule_name, option)
+          return self._match_segment(option)
         except MatchError:
           pass
-      raise MatchError
-    # literal rule
-    literal_match = re.match(r'^"(.*)"$',rule_segment)
-    if literal_match:
-      match = re.match('(%s)' % re.escape(literal_match.group(1)),remainder)
-      if match:
-        self.pos += match.span()[1]
-        return Token(rule_name,match.group(1))
-      else:
         raise MatchError
-    # regex rule
-    regex_match = re.match(r'\? (.*) \?',rule_segment)
-    if regex_match:
-      match = re.match('(%s)' % regex_match.group(1),remainder)
-      if match:
-        self.pos += match.span()[1]
-        return Token(rule_name,match.group(1))
-      else:
-        raise MatchError
-    # name of another rule
-    self._match_rule(rule_segment,self.rules_dict[rule_segment])
-  
-  def _strip_whitespace(self):
-    whitespace = re.match(r'\s*',self.code[self.pos:])
-    if whitespace:
-      self.pos += whitespace.span()[1]
-  
-  def default(self, *args):
-    pass
+    elif ruletype == 'rule':
+      return self._match_segments(pattern) # ?
   
 
 class Token:

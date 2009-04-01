@@ -17,7 +17,7 @@ class Parser(BaseParser):
   
   def parse(self, line):
     BaseParser.parse(self,line)
-    return self.stack[0]
+    return self.stack
   
   def expression(self):
     self.push_tree()
