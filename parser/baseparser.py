@@ -8,7 +8,6 @@ class BaseParser:
     """loads rules from grammarfile. parse() will parse with these rules."""
     self.grammarfile = grammarfile
     self.pos = 0
-    self.anythingmatched = False
     self.rule_names = []
     self.rules = {}
     # read rules from grammar, allowing for comments and
@@ -38,20 +37,8 @@ class BaseParser:
     tokens = []
     while pos < len(rule):
       remainder = rule[pos:]
-      if remainder == ' ;' or remainder == ' ;\n':
-        break
       if remainder.startswith(' , '):
         pos += 3
-        continue
-      re_match = re.match(r'\? (.*) \?',remainder)
-      if re_match:
-        tokens.append(('(%s)' % re_match.group(1),'regexp'))
-        pos += re_match.span()[1]
-        continue
-      literal_match = re.match(r'"(.*)"',remainder)
-      if literal_match:
-        tokens.append((literal_match.group(1),'literal'))
-        pos += literal_match.span()[1]
         continue
       repeat_match = re.match(r'{ (.*) }',remainder)
       if repeat_match:
@@ -69,6 +56,17 @@ class BaseParser:
         options = [self._parse_rule(rule_seg) for rule_seg in segment.split(' | ')]
         tokens.append((options,'options'))
         pos += or_match.span()[1]
+        continue
+      re_match = re.match(r'\? (.*) \?',remainder)
+      if re_match:
+        tokens.append(('(%s)' % re_match.group(1),'regexp'))
+        pos += re_match.span()[1]
+        continue
+      literal_match = re.match(r'"(.+)"',remainder)
+      if literal_match:
+        print literal_match.span()
+        tokens.append((literal_match.group(1),'literal'))
+        pos += literal_match.span()[1]
         continue
       # else: another rule
       r = remainder.split(' , ')[0]
