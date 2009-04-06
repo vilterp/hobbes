@@ -1,3 +1,5 @@
-# expression ::= number , ( operator , number ) ;
-# operator ::= [ "+" | "-" | "*" | "/" ] ;
-number ::= ? \d ? ;
+expression = number , ( operator , number ) ;
+operator = [ "+" | "-" | "*" | "/" ] ;
+# FIXME: number regexp doesn't catch ".x" ;
+number = ? \d(\.\d*)? ? ;
+manyblas = { "bla" , ( " " ) } , ( "bloop" ) ;

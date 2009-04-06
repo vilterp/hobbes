@@ -9,13 +9,31 @@ class BaseParser:
     self.grammarfile = grammarfile
     self.pos = 0
     self.anythingmatched = False
-    self.rules_list = [(rule.split(' ::= ')[0],
-                       self._parse_rule(rule.split(' ::= ')[1]))
-                       for rule in open(grammarfile).read().split(' ;\n')
-                       if rule and not rule.startswith('#')]
-    self.rules_dict = dict(self.rules_list)    
+    self.rule_names = []
+    self.rules = {}
+    # read rules from grammar, allowing for comments and
+    # multiline rules terminated by ;'s
+    if not open(grammarfile).read().endswith('\n'):
+      raise EBNFError('grammar file must end with newline.')
+    rules = []
+    currentrule = ""
+    for line in open(grammarfile):
+      if line.startswith('#'):
+        continue
+      elif line.endswith(' ;\n'):
+        currentrule += line[:-3]
+        rules.append(currentrule)
+        currentrule = ""
+      else:
+        currentrule += line[:-1]
+    # parse & store each
+    for rule in rules:
+      name, pattern = rule.split(' = ')
+      self.rule_names.append(name)
+      self.rules[name] = self._parse_rule(pattern)
   
   def _parse_rule(self, rule):
+    """identify type of each rule segment"""
     pos = 0
     tokens = []
     while pos < len(rule):
@@ -63,74 +81,78 @@ class BaseParser:
        as listed in the grammar file, breaking on the first one that works.
     """
     self.code = code
-    for name, rule in self.rules_list:
+    for rule_name in self.rule_names:
       try:
-        return self._match_rule(name, rule)
+        self._match_rule(rule_name)
+        del self.code
+        return
       except MatchError:
         pass
-    if not self.anythingmatched:
-      raise EBNFError('No grammar rule matched "%s"' % code)
-    del self.code
+    raise EBNFError('No grammar rule matched "%s"' % code)
   
-  def _match_rule(self, name, rule):
-    # call func in here
-    results = self._match_segments(rule)
-    getattr(self,name,self.default)(*results)
+  def _match_rule(self, rule_name):
+    try:
+      results = self._match_segments(self.rules[rule_name])
+      # print 'calling', rule_name, 'with', results
+      getattr(self,rule_name,self.default)(*results)
+      # print self.stack
+    except KeyError:
+      raise EBNFError('No rule called "%s"' % rule_name)
   
   def _match_segments(self, segments):
     results = []
     for segment in segments:
-      results.append(self._match_segment(segment))
+      result = self._match_segment(segment)
+      if result:
+        if isinstance(result,list):
+          results.extend(result)
+        else:
+          results.append(result)
     return results
   
-  def _match_segment(self, rule):
-    print rule
-    pattern = rule[0]
-    ruletype = rule[1]
+  def _match_segment(self, segment):
+    pattern = segment[0]
+    ruletype = segment[1]
     remainder = self.code[self.pos:]
     if ruletype == 'literal':
       if remainder.startswith(pattern):
-        return pattern # ?
+        self.pos += len(pattern)
+        return pattern
       else:
         raise MatchError
     elif ruletype == 'regexp':
       match = re.match(pattern,remainder)
       if match:
-        return match.group(1)
+        group = match.group(1)
+        self.pos += len(group)
+        return group
       else:
         raise MatchError
     elif ruletype == 'repeat':
       results = []
       while 1:
         try:
-          results.append(self._match_segment(pattern))
+          results.extend(self._match_segments(pattern))
         except MatchError:
           break
       return results
     elif ruletype == 'optional':
       try:
-        return self._match_segment(pattern)
+        return self._match_segments(pattern)
       except MatchError:
         pass
     elif ruletype == 'options':
       for option in pattern:
         try:
-          return self._match_segment(option)
+          return self._match_segments(option)
         except MatchError:
           pass
         raise MatchError
     elif ruletype == 'rule':
-      return self._match_segments(pattern) # ?
+      self._match_rule(pattern)
   
-
-class Token:
-  
-  def __init__(self, token_type, value):
-    self.type = token_type
-    self.value = value
-  
-  def __repr__(self):
-    return '<Token %s (%s)>' % (self.value, self.type)
+  def default(self, *args):
+    pass
   
 
 class MatchError(Exception):
