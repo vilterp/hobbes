@@ -31,6 +31,20 @@ class BaseParser:
       self.rule_names.append(name)
       self.rules[name] = self._parse_rule(pattern)
   
+  def parse(self, code):
+    """try to match code against each rule in the grammar,
+       as listed in the grammar file, breaking on the first one that works.
+    """
+    self.code = code
+    for rule_name in self.rule_names:
+      try:
+        self._match_rule(rule_name)
+        del self.code
+        return
+      except MatchError:
+        pass
+    raise EBNFError('No grammar rule matched "%s"' % code)
+  
   def _parse_rule(self, rule):
     """identify type of each rule segment"""
     pos = 0
@@ -64,7 +78,6 @@ class BaseParser:
         continue
       literal_match = re.match(r'"(.+)"',remainder)
       if literal_match:
-        print literal_match.span()
         tokens.append((literal_match.group(1),'literal'))
         pos += literal_match.span()[1]
         continue
@@ -74,26 +87,16 @@ class BaseParser:
       pos += len(r)
     return tokens
   
-  def parse(self, code):
-    """try to match code against each rule in the grammar,
-       as listed in the grammar file, breaking on the first one that works.
-    """
-    self.code = code
-    for rule_name in self.rule_names:
-      try:
-        self._match_rule(rule_name)
-        del self.code
-        return
-      except MatchError:
-        pass
-    raise EBNFError('No grammar rule matched "%s"' % code)
-  
   def _match_rule(self, rule_name):
+    print 'trying', rule_name
     try:
       results = self._match_segments(self.rules[rule_name])
-      # print 'calling', rule_name, 'with', results
-      getattr(self,rule_name,self.default)(*results)
-      # print self.stack
+      print 'calling', rule_name, 'with', results
+      try:
+        getattr(self,rule_name)(*results)
+      except AttributeError:
+        self.default(rule_name,*results)
+      print self.stack
     except KeyError:
       raise EBNFError('No rule called "%s"' % rule_name)
   
@@ -144,7 +147,7 @@ class BaseParser:
         try:
           return self._match_segments(option)
         except MatchError:
-          pass
+          continue
         raise MatchError
     elif ruletype == 'rule':
       self._match_rule(pattern)

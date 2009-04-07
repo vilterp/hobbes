@@ -1,0 +1,11 @@
+current
+
+- two literal tokens in one EBNF rule don't work
+  - parser problem
+
+forseeable
+
+- quotation mark literal...
+- string rule
+- regex rule
+- error reporting – tracing it all the way back to source spans

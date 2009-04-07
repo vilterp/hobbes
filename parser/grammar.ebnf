@@ -1,6 +1,7 @@
-# expression = number , ( operator , number ) ;
-# operator = [ "+" | "-" | "*" | "/" ] ;
+assignment_statement = variable , assignment_op, expression ;
+expression = number , ( operator , number ) ;
+operator = [ "+" | "-" | "*" | "/" ] ;
 # FIXME: number regexp doesn't catch ".x" ;
-# number = ? \d(\.\d*)? ? ;
-manyblas = { "bla" , ( space ) } , ( "bloop" ) ;
-space = " "
+number = ? \d(\.\d*)? ? ;
+variable = ? [a-zA-Z] ? , { ? [a-zA-Z0-9] ? } ;
+assignment_op = "=" ;

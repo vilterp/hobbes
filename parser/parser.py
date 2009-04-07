@@ -19,6 +19,12 @@ class Parser(BaseParser):
     BaseParser.parse(self,line)
     return self.stack
   
+  def assignment_op(self):
+    exp = self.stack.pop()
+    self.stack.pop()
+    var = self.stack.pop()
+    self.stack.append(Node('=',var,exp))
+  
   def expression(self):
     if len(self.stack) is 3:
       self.push_tree()
@@ -26,15 +32,13 @@ class Parser(BaseParser):
       token = self.stack.pop()
       self.stack.append(float(token.value))
   
-  def operator(self, value):
-    self.stack.append(Token(value,'operator'))
-  
   def number(self, value):
     self.stack.append(Token(float(value),'number'))
   
-  def default(self, *args):
+  def default(self, rule_name, *args):
     for arg in args:
-      self.stack.append(arg)
+      if arg != ' ':
+        self.stack.append(Token(arg,rule_name))
   
   def push_tree(self):
     right = self.stack.pop()
