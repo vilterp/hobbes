@@ -12,11 +12,14 @@ public class Parser {
 	private static final String GRAMMARFILE = "src" + File.separator + "grammar.ebnf";
 	
 	// these will be used to see what type of rule segment each segment is
+	// FIXME: literal pattern matches from first quote to last in rule, so you can only have one literal in a rule
 	private static final Pattern LITERAL_PATTERN = Pattern.compile("\"(.*)\"");
 	private static final Pattern REGEX_PATTERN = Pattern.compile("\\? (.*) \\?");
 	private static final Pattern REPEAT_PATTERN = Pattern.compile("\\{ (.*) \\}");
 	private static final Pattern OPTIONS_PATTERN = Pattern.compile("\\[ (.*) \\]");
 	private static final Pattern OPTIONAL_PATTERN = Pattern.compile("\\( (.*) \\)");
+	private static final Pattern OTHER_RULE_PATTERN = Pattern.compile("([a-zA-Z_])");
+	
 	
 	private String code;
 	private int pos;
@@ -93,14 +96,41 @@ public class Parser {
 				continue;
 			}
 			MatchResult regexMatch = matchRuleType(REGEX_PATTERN,remainder);
-			if(regexMatch != null) { // it's a literal rule segment, eg '"foo"'
+			if(regexMatch != null) { // it's a regex rule segment, eg "? [a-z] ?"
 				result.addSegment(new RegexSegment(Pattern.compile("("+regexMatch.group(1)+")")));
 				posInRule += regexMatch.end();
 				continue;
 			}
 			MatchResult repeatMatch = matchRuleType(REPEAT_PATTERN,remainder);
+			if(repeatMatch != null) { // it's a repeated segment, eg '{ "bar" }'
+				result.addSegment(new RepeatSegment(parseRule(repeatMatch.group(1))));
+				posInRule += repeatMatch.end();
+				continue;
+			}
 			MatchResult optionsMatch = matchRuleType(OPTIONS_PATTERN,remainder);
+			if(optionsMatch != null) { // it's an options rule segment, eg '[ "this" | "or this" ]'
+				OptionsSegment segment = new OptionsSegment();
+				// FIXME: won't split correctly if the rule in option has a "|" in it
+				for(String option: optionsMatch.group(1).split(" \\| "))
+					segment.addOption(parseRule(option));
+				result.addSegment(segment);
+				posInRule += optionsMatch.end();
+				continue;
+			}
 			MatchResult optionalMatch = matchRuleType(OPTIONAL_PATTERN,remainder);
+			if(optionalMatch != null) { // it's an optional rule segment, eg '( "Im optional" )'
+				result.addSegment(new OptionalSegment(parseRule(optionalMatch.group(1))));
+				posInRule += optionalMatch.end();
+				continue;
+			}
+			MatchResult otherRuleMatch = matchRuleType(OTHER_RULE_PATTERN,remainder);
+			if(otherRuleMatch != null) { // it's an optional rule segment, eg '( "Im optional" )'
+				String ruleName = otherRuleMatch.group(1);
+				result.addSegment(new OtherRuleSegment(ruleName,rules.get(ruleName))); // FIXME: what if it's not there yet?
+				posInRule += otherRuleMatch.end();
+				continue;
+			}
+			throw new GrammarError("can't tell what kind of rule \""+remainder+"\" is.");
 		}
 		return result;
 	}

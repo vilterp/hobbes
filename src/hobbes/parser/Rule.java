@@ -12,11 +12,15 @@ public class Rule implements Iterable<RuleSegment> {
 	}
 	
 	public String toString() {
-		return "Rule" + segments.toString() + "]";
+		return "Rule" + segments.toString();
 	}
 	
 	public void addSegment(RuleSegment segment) {
 		segments.add(segment);
+	}
+	
+	public ArrayList<RuleSegment> getSegments() {
+		return segments;
 	}
 
 	public Iterator<RuleSegment> iterator() {

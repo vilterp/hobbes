@@ -13,10 +13,5 @@ public class RegexSegment implements RuleSegment {
 	public String toString() {
 		return "RegexSegment["+pattern.toString()+"]";
 	}
-	
-	public boolean matches() {
-		// TODO Auto-generated method stub
-		return false;
-	}
 
 }

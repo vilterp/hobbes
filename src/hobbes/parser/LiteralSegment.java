@@ -12,9 +12,4 @@ public class LiteralSegment implements RuleSegment {
 		return "LiteralSegment[\""+value+"\"]";
 	}
 	
-	public boolean matches() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-	
 }
