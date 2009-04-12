@@ -12,4 +12,8 @@ public class LiteralSegment implements RuleSegment {
 		return "LiteralSegment[\""+value+"\"]";
 	}
 	
+	public String getValue() {
+		return value;
+	}
+	
 }

@@ -1,7 +1,5 @@
 *.pyc
 test.py
-.classpath
-.project
 .manager
 .settings
 bin/*
