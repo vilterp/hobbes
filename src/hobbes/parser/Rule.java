@@ -7,12 +7,12 @@ public class Rule implements Iterable<RuleSegment> {
 	
 	private ArrayList<RuleSegment> segments;
 	
-	public Rule(ArrayList<RuleSegment> segs) {
-		segments = segs;
-	}
-	
 	public Rule() {
 		segments = new ArrayList<RuleSegment>();
+	}
+	
+	public String toString() {
+		return "Rule" + segments.toString() + "]";
 	}
 	
 	public void addSegment(RuleSegment segment) {

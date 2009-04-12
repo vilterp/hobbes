@@ -26,12 +26,16 @@ public class Parser {
 	
 	public static void main(String[] args) {
 		Parser p = new Parser();
-		System.out.println(p.readRules());
+		p.loadRules();
+		System.out.println(p.rules);
+		System.out.println(p.ruleNames);
 	}
 	
 	public Parser() {
 		pos = 0;
 		waiting = false;
+		ruleNames = new ArrayList<String>();
+		rules = new HashMap<String,Rule>();
 	}
 	
 	public SyntaxNode parse(String line) {
@@ -41,7 +45,7 @@ public class Parser {
 	
 	private void loadRules() {
 		for(String rule: readRules()) {
-			String[] nameAndRule = rule.split(" = ",1);
+			String[] nameAndRule = rule.split(" = ",0);
 			ruleNames.add(nameAndRule[0]);
 			rules.put(nameAndRule[0], parseRule(nameAndRule[1]));
 		}
@@ -73,16 +77,40 @@ public class Parser {
 	}
 	
 	private Rule parseRule(String rule) {
-		int pos = 0;
-		while(pos < rule.length()) {
-			String remainder = rule.substring(pos);
-			// ...
+		Rule result = new Rule();
+		int posInRule = 0;
+		while(posInRule < rule.length()) {
+			String remainder = rule.substring(posInRule);
+			if(remainder.startsWith(" , ")) {
+				posInRule += 3;
+				continue;
+			}
+			// check for literal rule
+			MatchResult literalMatch = matchRuleType(LITERAL_PATTERN,remainder);
+			if(literalMatch != null) { // it's a literal rule segment, eg '"foo"'
+				result.addSegment(new LiteralSegment(literalMatch.group(1)));
+				posInRule += literalMatch.end();
+				continue;
+			}
+			MatchResult regexMatch = matchRuleType(REGEX_PATTERN,remainder);
+			if(regexMatch != null) { // it's a literal rule segment, eg '"foo"'
+				result.addSegment(new RegexSegment(Pattern.compile("("+regexMatch.group(1)+")")));
+				posInRule += regexMatch.end();
+				continue;
+			}
+			MatchResult repeatMatch = matchRuleType(REPEAT_PATTERN,remainder);
+			MatchResult optionsMatch = matchRuleType(OPTIONS_PATTERN,remainder);
+			MatchResult optionalMatch = matchRuleType(OPTIONAL_PATTERN,remainder);
 		}
-		return null;
+		return result;
 	}
 	
 	private MatchResult matchRuleType(Pattern rulePattern, String rule) {
-		return rulePattern.matcher(rule).toMatchResult();
+		Matcher matcher = rulePattern.matcher(rule);
+		if(matcher.lookingAt())
+			return matcher.toMatchResult();
+		else
+			return null;
 	}
 	
 }
