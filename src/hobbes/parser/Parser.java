@@ -124,9 +124,9 @@ public class Parser {
 				continue;
 			}
 			MatchResult otherRuleMatch = matchRuleType(OTHER_RULE_PATTERN,remainder);
-			if(otherRuleMatch != null) { // it's an optional rule segment, eg '( "Im optional" )'
+			if(otherRuleMatch != null) { // it's the name of another rule
 				String ruleName = otherRuleMatch.group(1);
-				result.addSegment(new OtherRuleSegment(ruleName,rules.get(ruleName))); // FIXME: what if it's not there yet?
+				result.addSegment(new OtherRuleSegment(ruleName,rules.get(ruleName))); // FIXME: what if it's not there yet – later in grammar?
 				posInRule += otherRuleMatch.end();
 				continue;
 			}
