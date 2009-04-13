@@ -10,7 +10,7 @@ public class Parser extends BaseParser {
 	
 	public static void main(String[] args) throws MatchError {
 		Parser p = new Parser();
-		p.parse("2");
+		p.parse("goodbye");
 		System.out.println(p.stack);
 	}
 	
@@ -19,6 +19,10 @@ public class Parser extends BaseParser {
 	}
 	
 	public void number(String value) {
+		stack.push(new NumberNode(value));
+	}
+	
+	public void helloGoodbye(String value) {
 		stack.push(new NumberNode(value));
 	}
 	

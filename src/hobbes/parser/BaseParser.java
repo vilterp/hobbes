@@ -64,6 +64,8 @@ public abstract class BaseParser {
 		ArrayList<String> results = matchSegments(rule.getSegments());
 		try {
 			getMethod(ruleName).invoke(this, results.toArray());
+		} catch (NullPointerException e) {
+			System.out.println("No method for rule \""+ruleName+"\"");
 		} catch (IllegalArgumentException e) {
 			e.printStackTrace();
 		} catch (IllegalAccessException e) {
@@ -82,9 +84,10 @@ public abstract class BaseParser {
 	}
 	
 	private String matchSegment(RuleSegment segment) throws MatchError {
-		if(segment instanceof LiteralSegment) {
+		if(segment instanceof LiteralSegment)
 			return matchLiteralSegment((LiteralSegment)segment);
-		}
+		else if(segment instanceof RegexSegment)
+			return matchRegexSegment((RegexSegment)segment);
 		throw new MatchError();
 	}
 	
@@ -95,6 +98,14 @@ public abstract class BaseParser {
 		} else {
 			throw new MatchError();
 		}
+	}
+	
+	private String matchRegexSegment(RegexSegment segment) throws MatchError {
+		MatchResult result = segment.matchAgainst(getRemainder());
+		if(result != null)
+			return result.group(1);
+		else
+			throw new MatchError();
 	}
 	
 	private String getRemainder() {
