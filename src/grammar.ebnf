@@ -1,0 +1,6 @@
+hello = "hello" ;
+number = ? \d ? ;
+manyblas = { "bla" } ;
+options = [ "this" | "that" | "the other thing" ] ;
+optional = "necessary" , ( ? optional ? ) ;
+otherrules = hello , number ;
