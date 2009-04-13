@@ -1,5 +1,6 @@
 package hobbes.parser;
 
+import hobbes.parser.rules.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.lang.reflect.InvocationTargetException;
