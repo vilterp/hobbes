@@ -1,1 +1,1 @@
-helloGoodbye = ? (hello|goodbye) ? ;
+helloGoodbye = "hello" , ( ? goodbye ? ) ;

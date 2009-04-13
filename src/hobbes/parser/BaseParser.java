@@ -65,7 +65,7 @@ public abstract class BaseParser {
 		try {
 			getMethod(ruleName).invoke(this, results.toArray());
 		} catch (NullPointerException e) {
-			System.out.println("No method for rule \""+ruleName+"\"");
+			throw new GrammarError("No method for rule \""+ruleName+"\"");
 		} catch (IllegalArgumentException e) {
 			e.printStackTrace();
 		} catch (IllegalAccessException e) {
@@ -78,16 +78,21 @@ public abstract class BaseParser {
 	private ArrayList<String> matchSegments(ArrayList<RuleSegment> segments) throws MatchError {
 		ArrayList<String> results = new ArrayList<String>();
 		for(RuleSegment segment: segments) {
-			results.add(matchSegment(segment));
+			ArrayList<String> segmentResults = matchSegment(segment);
+			if(segmentResults != null)
+				for(String result: segmentResults)
+					results.add(result);
 		}
 		return results;
 	}
 	
-	private String matchSegment(RuleSegment segment) throws MatchError {
+	private ArrayList<String> matchSegment(RuleSegment segment) throws MatchError {
 		if(segment instanceof LiteralSegment)
-			return matchLiteralSegment((LiteralSegment)segment);
+			return wrapInArrayList(matchLiteralSegment((LiteralSegment)segment));
 		else if(segment instanceof RegexSegment)
-			return matchRegexSegment((RegexSegment)segment);
+			return wrapInArrayList(matchRegexSegment((RegexSegment)segment));
+		else if(segment instanceof OptionalSegment)
+			return matchOptionalSegment((OptionalSegment)segment);
 		throw new MatchError();
 	}
 	
@@ -108,8 +113,23 @@ public abstract class BaseParser {
 			throw new MatchError();
 	}
 	
+	private ArrayList<String> matchOptionalSegment(OptionalSegment segment) {
+		// FIXME: will result to calls of same method with diff. # arguments
+		try {
+			return matchSegments(segment.getRule().getSegments());
+		} catch(MatchError e) {
+			return null;
+		}
+	}
+	
 	private String getRemainder() {
 		return code.substring(pos);
+	}
+	
+	private ArrayList<String> wrapInArrayList(String str) {
+		ArrayList<String> result = new ArrayList<String>();
+		result.add(str);
+		return result;
 	}
 
 	private void loadMethods() {
@@ -207,7 +227,8 @@ public abstract class BaseParser {
 				posInRule += otherRuleMatch.end();
 				continue;
 			}
-			throw new GrammarError("In rule \""+rule+"\": can't tell what kind of rule \""+remainder+"\" is.");
+			throw new GrammarError("In rule \""+rule+"\": can't tell what kind of rule" +
+																"\""+remainder+"\" is.");
 		}
 		return result;
 	}

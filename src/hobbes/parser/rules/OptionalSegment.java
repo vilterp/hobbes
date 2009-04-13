@@ -8,6 +8,10 @@ public class OptionalSegment implements RuleSegment {
 		optional = r;
 	}
 	
+	public Rule getRule() {
+		return optional;
+	}
+	
 	public String toString() {
 		return "OptionalSegment"+optional.getSegments().toString();
 	}
