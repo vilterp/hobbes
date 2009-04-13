@@ -2,6 +2,7 @@ package hobbes.parser;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -13,7 +14,7 @@ public abstract class BaseParser {
 	private static final String GRAMMARFILE = "src" + File.separator + "grammar.ebnf";
 	
 	// these will be used to see what type of rule segment each segment is
-	// FIXME: literal pattern matches from first quote to last in rule, so you can only have one literal in a rule
+	// FIXME: can only have one literal segment in a rule
 	private static final Pattern LITERAL_PATTERN = Pattern.compile("\"(.*)\"");
 	private static final Pattern REGEX_PATTERN = Pattern.compile("\\? (.*) \\?");
 	private static final Pattern REPEAT_PATTERN = Pattern.compile("\\{ (.*) \\}");
@@ -21,16 +22,16 @@ public abstract class BaseParser {
 	private static final Pattern OPTIONAL_PATTERN = Pattern.compile("\\( (.*) \\)");
 	private static final Pattern OTHER_RULE_PATTERN = Pattern.compile("([a-zA-Z_])");
 	
-	
 	private String code;
 	private int pos;
 	private boolean waiting;
 	private ArrayList<String> ruleNames;
 	private HashMap<String,Rule> rules; // rule name => rule
-	private HashMap<String,Method> methods;
+	private HashMap<String,Method> methods; // method name => method
 	
 	public BaseParser() {
 		pos = 0;
+		code = "";
 		waiting = false;
 		ruleNames = new ArrayList<String>();
 		rules = new HashMap<String,Rule>();
@@ -39,14 +40,69 @@ public abstract class BaseParser {
 		loadMethods();
 	}
 	
-	public SyntaxNode parse(String line) {
-		
-		return null;
+	public boolean isWaiting() {
+		return waiting;
 	}
 	
-	public void loadMethods() {
+	public void parse(String line) throws MatchError {
+		code += line;
+		for(String ruleName: ruleNames) {
+			try {
+				matchRule(ruleName);
+				code = "";
+				return;
+			} catch(MatchError e) {
+				continue;
+			}
+		}
+		throw new MatchError("Couldn't find a rule to match \""+line+"\".");
+	}
+	
+	private void matchRule(String ruleName) throws MatchError {
+		Rule rule = getRule(ruleName);
+		ArrayList<String> results = matchSegments(rule.getSegments());
+		try {
+			getMethod(ruleName).invoke(this, results.toArray());
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			e.printStackTrace();
+		} catch (InvocationTargetException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private ArrayList<String> matchSegments(ArrayList<RuleSegment> segments) throws MatchError {
+		ArrayList<String> results = new ArrayList<String>();
+		for(RuleSegment segment: segments) {
+			results.add(matchSegment(segment));
+		}
+		return results;
+	}
+	
+	private String matchSegment(RuleSegment segment) throws MatchError {
+		if(segment instanceof LiteralSegment) {
+			return matchLiteralSegment((LiteralSegment)segment);
+		}
+		throw new MatchError();
+	}
+	
+	private String matchLiteralSegment(LiteralSegment segment) throws MatchError {
+		if(getRemainder().startsWith(segment.getValue())) {
+			pos += segment.getValue().length();
+			return segment.getValue();
+		} else {
+			throw new MatchError();
+		}
+	}
+	
+	private String getRemainder() {
+		return code.substring(pos);
+	}
+
+	private void loadMethods() {
 		for(Method method: getClass().getDeclaredMethods())
-			methods.put(method.getName(), method);
+			methods.put(method.getName(),method);
 	}
 	
 	private void loadRules() {
@@ -91,27 +147,30 @@ public abstract class BaseParser {
 				posInRule += 3;
 				continue;
 			}
-			// check for literal rule
+			// literal rule, eg '"foo"'
 			MatchResult literalMatch = matchRuleType(LITERAL_PATTERN,remainder);
 			if(literalMatch != null) { // it's a literal rule segment, eg '"foo"'
 				result.addSegment(new LiteralSegment(literalMatch.group(1)));
 				posInRule += literalMatch.end();
 				continue;
 			}
+			// regex rule segment, eg "? [a-z] ?"
 			MatchResult regexMatch = matchRuleType(REGEX_PATTERN,remainder);
-			if(regexMatch != null) { // it's a regex rule segment, eg "? [a-z] ?"
+			if(regexMatch != null) {
 				result.addSegment(new RegexSegment(Pattern.compile("("+regexMatch.group(1)+")")));
 				posInRule += regexMatch.end();
 				continue;
 			}
+			// repeated segment, eg '{ "bar" }'
 			MatchResult repeatMatch = matchRuleType(REPEAT_PATTERN,remainder);
-			if(repeatMatch != null) { // it's a repeated segment, eg '{ "bar" }'
+			if(repeatMatch != null) {
 				result.addSegment(new RepeatSegment(parseRule(repeatMatch.group(1))));
 				posInRule += repeatMatch.end();
 				continue;
 			}
+			// options rule segment, eg '[ "this" | "or this" ]'
 			MatchResult optionsMatch = matchRuleType(OPTIONS_PATTERN,remainder);
-			if(optionsMatch != null) { // it's an options rule segment, eg '[ "this" | "or this" ]'
+			if(optionsMatch != null) {
 				OptionsSegment segment = new OptionsSegment();
 				// FIXME: won't split correctly if the rule in option has a "|" in it
 				for(String option: optionsMatch.group(1).split(" \\| "))
@@ -120,22 +179,33 @@ public abstract class BaseParser {
 				posInRule += optionsMatch.end();
 				continue;
 			}
+			// optional rule segment, eg '( "Im optional" )'
 			MatchResult optionalMatch = matchRuleType(OPTIONAL_PATTERN,remainder);
-			if(optionalMatch != null) { // it's an optional rule segment, eg '( "Im optional" )'
+			if(optionalMatch != null) {
 				result.addSegment(new OptionalSegment(parseRule(optionalMatch.group(1))));
 				posInRule += optionalMatch.end();
 				continue;
 			}
+			// name of another rule
 			MatchResult otherRuleMatch = matchRuleType(OTHER_RULE_PATTERN,remainder);
-			if(otherRuleMatch != null) { // it's an optional rule segment, eg '( "Im optional" )'
+			if(otherRuleMatch != null) {
 				String ruleName = otherRuleMatch.group(1);
-				result.addSegment(new OtherRuleSegment(ruleName,rules.get(ruleName))); // FIXME: what if it's not there yet?
+				// FIXME: what if the rule isn't in rules yet cuz it's later in grammar?
+				result.addSegment(new OtherRuleSegment(ruleName,rules.get(ruleName)));
 				posInRule += otherRuleMatch.end();
 				continue;
 			}
-			throw new GrammarError("can't tell what kind of rule \""+remainder+"\" is.");
+			throw new GrammarError("In rule \""+rule+"\": can't tell what kind of rule \""+remainder+"\" is.");
 		}
 		return result;
+	}
+	
+	private Rule getRule(String ruleName) {
+		return rules.get(ruleName);
+	}
+	
+	private Method getMethod(String methodName) {
+		return methods.get(methodName);
 	}
 	
 	private MatchResult matchRuleType(Pattern rulePattern, String rule) {

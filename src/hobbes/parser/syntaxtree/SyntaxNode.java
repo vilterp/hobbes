@@ -1,4 +1,4 @@
-package hobbes.parser;
+package hobbes.parser.syntaxtree;
 
 import hobbes.lang.HbObject;
 
