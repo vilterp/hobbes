@@ -44,6 +44,7 @@ public abstract class AbstractParser {
 		stack = new Stack<SyntaxNode>();
 		loadRules();
 		loadMethods();
+		System.out.println(methods);
 	}
 	
 	public boolean isWaiting() {
@@ -70,6 +71,7 @@ public abstract class AbstractParser {
 		Rule rule = getRule(ruleName);
 		ArrayList<String> results = matchSegments(rule.getSegments());
 		try {
+			System.out.println(results);
 			getMethod(ruleName).invoke(this, results.toArray());
 		} catch (NullPointerException e) {
 			throw new GrammarError("No method for rule \""+ruleName+"\"");
@@ -93,6 +95,9 @@ public abstract class AbstractParser {
 				continue;
 			} else if(segment instanceof OptionsSegment) {
 				results.addAll(matchSegment((OptionsSegment)segment));
+				continue;
+			} else if(segment instanceof RepeatSegment) {
+				results.addAll(matchSegment((RepeatSegment)segment));
 				continue;
 			} else if(segment instanceof OtherRuleSegment) {
 				matchRule(((OtherRuleSegment)segment).getRuleName());
@@ -130,6 +135,16 @@ public abstract class AbstractParser {
 			}
 		}
 		throw new MatchError();
+	}
+	
+	private ArrayList<String> matchSegment(RepeatSegment segment) {
+		ArrayList<String> results = new ArrayList<String>();
+		try {
+			while(true) {
+				results.addAll(matchSegments(segment.getRepeated().getSegments()));
+			}
+		} catch(MatchError e) {}
+		return results;
 	}
 	
 	private String getRemainder() {

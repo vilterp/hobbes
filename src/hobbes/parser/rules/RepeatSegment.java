@@ -10,6 +10,10 @@ public class RepeatSegment implements RuleSegment {
 		repeated = r;
 	}
 	
+	public Rule getRepeated() {
+		return repeated;
+	}
+	
 	public String toString() {
 		return "RepeatSegment"+repeated.getSegments().toString();
 	}
