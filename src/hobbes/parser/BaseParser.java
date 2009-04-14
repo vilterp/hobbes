@@ -78,34 +78,26 @@ public abstract class BaseParser {
 	private ArrayList<String> matchSegments(ArrayList<RuleSegment> segments) throws MatchError {
 		ArrayList<String> results = new ArrayList<String>();
 		for(RuleSegment segment: segments) {
-			ArrayList<String> segmentResults = matchSegment(segment);
-			if(segmentResults != null)
-				for(String result: segmentResults)
-					results.add(result);
+			if(segment instanceof LiteralSegment)
+				matchSegment((LiteralSegment)segment);
+			else if(segment instanceof RegexSegment)
+				results.add(matchSegment((RegexSegment)segment));
+			else if(segment instanceof OptionsSegment)
+				results.addAll(matchSegment((OptionsSegment)segment));
+			throw new MatchError();
 		}
 		return results;
 	}
 	
-	private ArrayList<String> matchSegment(RuleSegment segment) throws MatchError {
-		if(segment instanceof LiteralSegment)
-			return wrapInArrayList(matchLiteralSegment((LiteralSegment)segment));
-		else if(segment instanceof RegexSegment)
-			return wrapInArrayList(matchRegexSegment((RegexSegment)segment));
-		else if(segment instanceof OptionalSegment)
-			return matchOptionalSegment((OptionalSegment)segment);
-		throw new MatchError();
-	}
-	
-	private String matchLiteralSegment(LiteralSegment segment) throws MatchError {
+	private void matchSegment(LiteralSegment segment) throws MatchError {
 		if(getRemainder().startsWith(segment.getValue())) {
 			pos += segment.getValue().length();
-			return segment.getValue();
 		} else {
 			throw new MatchError();
 		}
 	}
 	
-	private String matchRegexSegment(RegexSegment segment) throws MatchError {
+	private String matchSegment(RegexSegment segment) throws MatchError {
 		MatchResult result = segment.matchAgainst(getRemainder());
 		if(result != null)
 			return result.group(1);
@@ -113,23 +105,19 @@ public abstract class BaseParser {
 			throw new MatchError();
 	}
 	
-	private ArrayList<String> matchOptionalSegment(OptionalSegment segment) {
-		// FIXME: will result to calls of same method with diff. # arguments
-		try {
-			return matchSegments(segment.getRule().getSegments());
-		} catch(MatchError e) {
-			return null;
+	private ArrayList<String> matchSegment(OptionsSegment segment) throws MatchError {
+		for(Rule option: segment.getOptions()) {
+			try {
+				return matchSegments(option.getSegments());
+			} catch(MatchError e) {
+				continue;
+			}
 		}
+		throw new MatchError();
 	}
 	
 	private String getRemainder() {
 		return code.substring(pos);
-	}
-	
-	private ArrayList<String> wrapInArrayList(String str) {
-		ArrayList<String> result = new ArrayList<String>();
-		result.add(str);
-		return result;
 	}
 
 	private void loadMethods() {

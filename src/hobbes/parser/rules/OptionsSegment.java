@@ -25,5 +25,9 @@ public class OptionsSegment implements RuleSegment {
 		}
 		return ans + "]";
 	}
+
+	public ArrayList<Rule> getOptions() {
+		return options;
+	}
 	
 }

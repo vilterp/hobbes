@@ -1,1 +1,3 @@
-helloGoodbye = "hello" , ( ? goodbye ? ) ;
+expression = number , operator , number ;
+number = ? \d ? ;
+operator = [ "+" | "-" | "*" | "/" ] ;

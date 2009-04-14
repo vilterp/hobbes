@@ -6,30 +6,32 @@ import java.util.Stack;
 
 public class Parser extends BaseParser {
 	
-	private Stack<SyntaxNode> stack;
+	private Stack<GenericNode> stack;
 	
 	public static void main(String[] args) throws MatchError {
 		Parser p = new Parser();
 		System.out.println(p);
-		p.parse("hello");
+		p.parse("2+2");
 		System.out.println(p.stack);
 	}
 	
 	public Parser() {
-		stack = new Stack<SyntaxNode>();
+		stack = new Stack<GenericNode>();
 	}
 	
 	public void number(String value) {
-		stack.push(new NumberNode(value));
+		stack.push(new GenericNode(value,null,null));
 	}
 	
-	public void helloGoodbye(String value) {
-		stack.push(new NumberNode(value));
+	public void operator(String value) {
+		stack.push(new GenericNode(value,null,null));
 	}
 	
-	public void helloGoodbye(String value, String otherValue) {
-		stack.push(new NumberNode(value));
-		stack.push(new NumberNode(otherValue));
+	public void expression() {
+		GenericNode right = stack.pop();
+		String operator = stack.pop().getValue();
+		GenericNode left = stack.pop();
+		stack.push(new GenericNode(operator,left,right));
 	}
 	
 }
