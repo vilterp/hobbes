@@ -21,7 +21,7 @@ public abstract class BaseParser {
 	private static final Pattern REPEAT_PATTERN = Pattern.compile("\\{ (.*) \\}");
 	private static final Pattern OPTIONS_PATTERN = Pattern.compile("\\[ (.*) \\]");
 	private static final Pattern OPTIONAL_PATTERN = Pattern.compile("\\( (.*) \\)");
-	private static final Pattern OTHER_RULE_PATTERN = Pattern.compile("([a-zA-Z_])");
+	private static final Pattern OTHER_RULE_PATTERN = Pattern.compile("([a-zA-Z_]+)");
 	
 	private String code;
 	private int pos;
@@ -39,6 +39,7 @@ public abstract class BaseParser {
 		methods = new HashMap<String,Method>();
 		loadRules();
 		loadMethods();
+		System.out.println(rules);
 	}
 	
 	public boolean isWaiting() {
@@ -210,8 +211,7 @@ public abstract class BaseParser {
 			MatchResult otherRuleMatch = matchRuleType(OTHER_RULE_PATTERN,remainder);
 			if(otherRuleMatch != null) {
 				String ruleName = otherRuleMatch.group(1);
-				// FIXME: what if the rule isn't in rules yet cuz it's later in grammar?
-				result.addSegment(new OtherRuleSegment(ruleName,rules.get(ruleName)));
+				result.addSegment(new OtherRuleSegment(ruleName));
 				posInRule += otherRuleMatch.end();
 				continue;
 			}

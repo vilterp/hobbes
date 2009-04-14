@@ -3,11 +3,13 @@ package hobbes.parser.rules;
 public class OtherRuleSegment implements RuleSegment {
 	
 	private String name;
-	private Rule rule;
 	
-	public OtherRuleSegment(String n, Rule r) {
+	public OtherRuleSegment(String n) {
 		name = n;
-		rule = r;
+	}
+	
+	public String getRuleName() {
+		return name;
 	}
 	
 	public String toString() {
