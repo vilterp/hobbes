@@ -21,7 +21,14 @@ public class GenericNode implements SyntaxNode {
 	}
 	
 	public String toString() {
-		return value + "(" + left.toString() + ", " + right.toString() + ")";
+		String ans = value + "(";
+		if(left != null && right != null)
+			ans += left + ", " + right;
+		else if(left != null)
+			ans += left;
+		else if(right != null)
+			ans += right;
+		return ans + ")";
 	}
 	
 	public GenericNode getLeft() {

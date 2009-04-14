@@ -1,6 +1,8 @@
 package hobbes.parser;
 
 import hobbes.parser.rules.*;
+import hobbes.parser.syntaxtree.SyntaxNode;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.lang.reflect.InvocationTargetException;
@@ -8,6 +10,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
+import java.util.Stack;
 import java.util.regex.*;
 
 public abstract class BaseParser {
@@ -29,6 +32,7 @@ public abstract class BaseParser {
 	private ArrayList<String> ruleNames;
 	private HashMap<String,Rule> rules; // rule name => rule
 	private HashMap<String,Method> methods; // method name => method
+	protected Stack<SyntaxNode> stack;
 	
 	public BaseParser() {
 		pos = 0;
@@ -37,9 +41,9 @@ public abstract class BaseParser {
 		ruleNames = new ArrayList<String>();
 		rules = new HashMap<String,Rule>();
 		methods = new HashMap<String,Method>();
+		stack = new Stack<SyntaxNode>();
 		loadRules();
 		loadMethods();
-		System.out.println(rules);
 	}
 	
 	public boolean isWaiting() {
@@ -49,11 +53,13 @@ public abstract class BaseParser {
 	public void parse(String line) throws MatchError {
 		code += line;
 		for(String ruleName: ruleNames) {
+			Stack<SyntaxNode> frozenStack = (Stack<SyntaxNode>) stack.clone();
 			try {
 				matchRule(ruleName);
 				code = "";
 				return;
 			} catch(MatchError e) {
+				stack = frozenStack;
 				continue;
 			}
 		}
@@ -79,20 +85,28 @@ public abstract class BaseParser {
 	private ArrayList<String> matchSegments(ArrayList<RuleSegment> segments) throws MatchError {
 		ArrayList<String> results = new ArrayList<String>();
 		for(RuleSegment segment: segments) {
-			if(segment instanceof LiteralSegment)
+			if(segment instanceof LiteralSegment) {
 				matchSegment((LiteralSegment)segment);
-			else if(segment instanceof RegexSegment)
+				continue;
+			} else if(segment instanceof RegexSegment) {
 				results.add(matchSegment((RegexSegment)segment));
-			else if(segment instanceof OptionsSegment)
+				continue;
+			} else if(segment instanceof OptionsSegment) {
 				results.addAll(matchSegment((OptionsSegment)segment));
+				continue;
+			} else if(segment instanceof OtherRuleSegment) {
+				matchRule(((OtherRuleSegment)segment).getRuleName());
+				continue;
+			}
 			throw new MatchError();
 		}
 		return results;
 	}
 	
-	private void matchSegment(LiteralSegment segment) throws MatchError {
+	private String matchSegment(LiteralSegment segment) throws MatchError {
 		if(getRemainder().startsWith(segment.getValue())) {
 			pos += segment.getValue().length();
+			return segment.getValue();
 		} else {
 			throw new MatchError();
 		}
@@ -100,9 +114,10 @@ public abstract class BaseParser {
 	
 	private String matchSegment(RegexSegment segment) throws MatchError {
 		MatchResult result = segment.matchAgainst(getRemainder());
-		if(result != null)
+		if(result != null) {
+			pos += result.end();
 			return result.group(1);
-		else
+		} else
 			throw new MatchError();
 	}
 	
