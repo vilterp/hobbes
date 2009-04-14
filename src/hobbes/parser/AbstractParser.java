@@ -44,7 +44,8 @@ public abstract class AbstractParser {
 		stack = new Stack<SyntaxNode>();
 		loadRules();
 		loadMethods();
-		System.out.println(methods);
+		// System.out.println(methods);
+		// System.out.println(rules);
 	}
 	
 	public boolean isWaiting() {
