@@ -4,7 +4,7 @@ import hobbes.parser.syntaxtree.*;
 
 import java.util.Stack;
 
-public class Parser extends BaseParser {
+public class Parser extends AbstractParser {
 	
 	public static void main(String[] args) throws MatchError {
 		Parser p = new Parser();
