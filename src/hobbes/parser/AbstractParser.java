@@ -1,6 +1,7 @@
 package hobbes.parser;
 
 import hobbes.parser.rules.*;
+import hobbes.parser.syntaxtree.GenericNode;
 import hobbes.parser.syntaxtree.SyntaxNode;
 
 import java.io.File;
@@ -55,7 +56,7 @@ public abstract class AbstractParser {
 	public void parse(String line) throws MatchError {
 		code += line;
 		for(String ruleName: ruleNames) {
-			Stack<SyntaxNode> frozenStack = (Stack<SyntaxNode>) stack.clone();
+			Stack<SyntaxNode> frozenStack = (Stack<SyntaxNode>)stack.clone();
 			try {
 				matchRule(ruleName);
 				code = "";
@@ -72,8 +73,9 @@ public abstract class AbstractParser {
 		Rule rule = getRule(ruleName);
 		ArrayList<String> results = matchSegments(rule.getSegments());
 		try {
-			System.out.println(results);
+			System.out.println("matched "+ruleName);
 			getMethod(ruleName).invoke(this, results.toArray());
+			System.out.println(stack);
 		} catch (NullPointerException e) {
 			throw new GrammarError("No method for rule \""+ruleName+"\"");
 		} catch (IllegalArgumentException e) {
@@ -85,11 +87,18 @@ public abstract class AbstractParser {
 		}
 	}
 	
-	private ArrayList<String> matchSegments(ArrayList<RuleSegment> segments) throws MatchError {
+	private ArrayList<String> matchSegments(ArrayList<RuleSegment> segments) {
+		return matchSegments(segments,false);
+	}
+	
+	private ArrayList<String> matchSegments(ArrayList<RuleSegment> segments,
+											boolean returnLiterals) throws MatchError {
 		ArrayList<String> results = new ArrayList<String>();
 		for(RuleSegment segment: segments) {
 			if(segment instanceof LiteralSegment) {
-				matchSegment((LiteralSegment)segment);
+				String result = matchSegment((LiteralSegment)segment);
+				if(returnLiterals)
+					results.add(result);
 				continue;
 			} else if(segment instanceof RegexSegment) {
 				results.add(matchSegment((RegexSegment)segment));
@@ -97,6 +106,8 @@ public abstract class AbstractParser {
 			} else if(segment instanceof OptionsSegment) {
 				results.addAll(matchSegment((OptionsSegment)segment));
 				continue;
+			} else if(segment instanceof OptionalSegment) {
+				results.addAll(matchSegment((OptionalSegment)segment));
 			} else if(segment instanceof RepeatSegment) {
 				results.addAll(matchSegment((RepeatSegment)segment));
 				continue;
@@ -129,13 +140,23 @@ public abstract class AbstractParser {
 	
 	private ArrayList<String> matchSegment(OptionsSegment segment) throws MatchError {
 		for(Rule option: segment.getOptions()) {
+			Stack<SyntaxNode> frozenStack = (Stack<SyntaxNode>)stack.clone();
 			try {
-				return matchSegments(option.getSegments());
+				return matchSegments(option.getSegments(),true);
 			} catch(MatchError e) {
+				stack = frozenStack;
 				continue;
 			}
 		}
 		throw new MatchError();
+	}
+	
+	private ArrayList<String> matchSegment(OptionalSegment segment) {
+		try {
+			return matchSegments(segment.getRule().getSegments());
+		} catch(MatchError e) {
+			return null;
+		}
 	}
 	
 	private ArrayList<String> matchSegment(RepeatSegment segment) {

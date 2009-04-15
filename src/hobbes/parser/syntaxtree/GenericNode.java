@@ -19,7 +19,7 @@ public class GenericNode implements SyntaxNode {
 		left = null;
 		right = null;
 	}
-	
+
 	public String toString() {
 		String ans = value + "(";
 		if(left != null && right != null)
