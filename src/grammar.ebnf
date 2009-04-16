@@ -1,5 +1,0 @@
-expression = term , { addOp , expression } ;
-term = number , { multOp , term } ;
-number = ? (-?\d+)(\.\d+)? ? ;
-multOp = [ "*" | "/" ] ;
-addOp = [ "+" | "-" ] ;
