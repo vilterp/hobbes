@@ -16,7 +16,7 @@ public class Tokenizer {
 		Tokenizer t = new Tokenizer();
 		try {
 			System.out.println(t.tokenize("a = /my_regex/"));
-		} catch (UnexpectedEOL e) {
+		} catch (EOL e) {
 			e.printStackTrace();
 		}
 	}
@@ -36,7 +36,7 @@ public class Tokenizer {
 		trailingEquals.add('/');
 	}
 	
-	public ArrayList<Token> tokenize(String c) throws UnexpectedEOL {
+	public ArrayList<Token> tokenize(String c) throws EOL {
 		code = c;
 		pos = 0;
 		ArrayList<Token> tokens = new ArrayList<Token>();
@@ -96,13 +96,13 @@ public class Tokenizer {
 		return getToken(TokenType.NUMBER);
 	}
 	
-	private Token getString(char startChar) throws UnexpectedEOL {
+	private Token getString(char startChar) throws EOL {
 		// TODO: backslashed stuff (newlines, tabs, etc); unicode "\u1234" things?
 		advance();
 		while(true) {
 			Character next = peek();
 			if(next == null)
-				throw new UnexpectedEOL(startChar);
+				throw new EOL();
 			else if(next == startChar && endOfBuffer() != '\\') {
 				break;
 			} else
@@ -112,12 +112,12 @@ public class Tokenizer {
 		return getToken(TokenType.STRING);
 	}
 	
-	private Token getRegex() throws UnexpectedEOL {
+	private Token getRegex() throws EOL {
 		advance();
 		while(true) {
 			Character next = peek();
 			if(next == null)
-				throw new UnexpectedEOL('/');
+				throw new EOL();
 			else if(next == '/' && endOfBuffer() != '\\')
 				break;
 			else
