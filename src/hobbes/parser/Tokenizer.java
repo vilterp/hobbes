@@ -39,7 +39,12 @@ public class Tokenizer {
 	public static void main(String[] args) {
 		Tokenizer t = new Tokenizer();
 		try {
-			t.addCode("a = 2.0-.5+2.");
+			t.addCode("a = \"hello");
+		} catch (MismatchException e) {
+			e.printStackTrace();
+		}
+		try {
+			t.addCode("goodbye\"");
 		} catch (MismatchException e) {
 			e.printStackTrace();
 		}
@@ -85,22 +90,23 @@ public class Tokenizer {
 	
 	private void tokenize() throws MismatchException {
 		// TODO regex literals
-		// TODO open strings with ' and "
 		while(moreCode()) {
-			if(!isReady() && getLastOpener().equals("\"")) {
-				if(getLastOpener().equals("\""))
-					getString();
+			if(!isReady()) {
+				if(getLastOpener().equals("\"") || getLastOpener().equals("'"))
+					getString(getLastOpener().charAt(0));
 			} else {
 				if(peek() == '#')
 					code.clear();
-				else if(Character.isWhitespace(peek()))
+				else if(Character.isWhitespace(peek())) {
 					code.poll();
-				else if(Character.isLetter(peek()))
+					pos++;
+					startPos++;
+				} else if(Character.isLetter(peek()))
 					getWord();
-				else if(peek() == '"') {
-					read();
+				else if(peek() == '"' || peek() == '\'') {
+					char start = read();
 					depth.push(getToken(TokenType.SYMBOL));
-					getString();
+					getString(start);
 				} else if(Character.isDigit(peek()))
 					getNumber();
 				else if(peek() == '.') {
@@ -116,15 +122,16 @@ public class Tokenizer {
 		}
 	}
 
-	private void getString() {
+	private void getString(char start) {
 		// TODO backslashed stuff: \n, \t
 		// TODO unicode stuff: \u4564 or whatever
 		while(true) {
 			if(!moreCode()) {
 				buffer += "\n";
 				return;
-			} if(peek() == '"' && lastChar() != '\\') {
+			} if(peek() == start && lastChar() != '\\') {
 				code.poll();
+				pos++;
 				depth.pop();
 				tokens.add(getToken(TokenType.STRING));
 				return;
@@ -193,12 +200,8 @@ public class Tokenizer {
 	
 	private Character read() {
 		buffer += code.poll();
-		advance();
-		return lastChar();
-	}
-	
-	private void advance() {
 		pos++;
+		return lastChar();
 	}
 	
 	private boolean moreCode() {
