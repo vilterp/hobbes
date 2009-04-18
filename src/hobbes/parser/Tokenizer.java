@@ -8,7 +8,7 @@ import java.util.Scanner;
 
 public class Tokenizer {
 	
-	// TODO: location info for multiline tokens
+	// TODO: location info for multiline tokens (sep. SourcePoint & SourceSpan classes?)
 	
 	private LinkedList<Character> code;
 	private ArrayList<Token> tokens;
@@ -27,6 +27,8 @@ public class Tokenizer {
 		trailingEquals.add('>');
 		trailingEquals.add('<');
 	}
+	// TODO: multichar symbols other than ones that end in = (++, --, etc)
+	
 	private final static HashMap<String,String> pairs = new HashMap<String,String>();
 	static {
 		pairs.put("(", ")");
@@ -197,6 +199,11 @@ public class Tokenizer {
 							pos += 2;
 							code.poll();
 							code.poll();
+						} else if(peek(1) == start) {
+							buffer += start;
+							pos += 2;
+							code.poll();
+							code.poll();
 						} else
 							read();
 					} else
@@ -218,6 +225,27 @@ public class Tokenizer {
 				depth.pop();
 				tokens.add(makeToken(TokenType.REGEX));
 				return;
+			} else if(peek() == '\\') {
+				if(peek(1) != null) {
+					if(peek(1) == 'n') {
+						buffer += "\n";
+						pos += 2;
+						code.poll();
+						code.poll();
+					} else if(peek(1) == 't') {
+						buffer += "\t";
+						pos += 2;
+						code.poll();
+						code.poll();
+					} else if(peek(1) == '/') {
+						buffer += '/';
+						pos += 2;
+						code.poll();
+						code.poll();
+					} else
+						read();
+				} else
+					read();
 			} else
 				read();
 		}
