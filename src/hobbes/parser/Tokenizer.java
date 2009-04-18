@@ -80,6 +80,7 @@ public class Tokenizer {
 	}
 	
 	private void tokenize() throws MismatchException {
+		// TODO regex literals
 		while(moreCode()) {
 			if(!isReady() && getLastOpener().equals("\"")) {
 				if(getLastOpener().equals("\""))
