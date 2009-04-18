@@ -142,7 +142,7 @@ public class Tokenizer {
 			code.poll();
 			pos++;
 			startPos++;
-		} else if(Character.isLetter(peek()))
+		} else if(Character.isLetter(peek()) || peek() == '_')
 			getWord();
 		else if(peek() == '"' || peek() == '\'') {
 			char start = read();
@@ -253,7 +253,7 @@ public class Tokenizer {
 	
 	private void getWord() {
 		read();
-		while(moreCode() && (Character.isLetter(peek()) || Character.isDigit(peek())))
+		while(moreCode() && (Character.isLetterOrDigit(peek()) || peek() == '_'))
 			read();
 		Token word = makeToken(TokenType.WORD);
 		if(pairs.containsKey(word.getValue()))
