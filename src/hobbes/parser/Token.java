@@ -11,7 +11,7 @@ public class Token {
 	}
 	
 	public String toString() {
-		return "token["+type+","+value+"]";
+		return "token["+type+","+value.replaceAll("\n", "\\\\n")+"]";
 	}
 	
 	public String getValue() {
