@@ -4,8 +4,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Stack;
+import java.util.Scanner;
 
 public class Tokenizer {
+	
+	// TODO: location info for multiline tokens
 	
 	private LinkedList<Character> code;
 	private ArrayList<Token> tokens;
@@ -38,20 +41,32 @@ public class Tokenizer {
 	
 	public static void main(String[] args) {
 		Tokenizer t = new Tokenizer();
-		try {
-			t.addCode("a = \"hello");
-		} catch (MismatchException e) {
-			e.printStackTrace();
+		Scanner s = new Scanner(System.in);
+		
+		while(true) {
+			if(t.isReady())
+				System.out.print(">> ");
+			else
+				System.out.print(t.getLastOpener()+"> ");
+			try {
+				t.addCode(s.nextLine());
+				if(t.isReady())
+					System.out.println(t.getTokens());
+			} catch(MismatchException e) {
+				t.clear();
+				System.out.println(e.getMessage());
+			}
 		}
-		try {
-			t.addCode("goodbye\"");
-		} catch (MismatchException e) {
-			e.printStackTrace();
-		}
-		if(t.isReady())
-			System.out.println(t.getTokens());
-		else
-			System.out.println("waiting to close "+t.getLastOpener());
+		
+//		try {
+//			t.addCode("class A");
+//		} catch (MismatchException e) {
+//			e.printStackTrace();
+//		}
+//		if(t.isReady())
+//			System.out.println(t.getTokens());
+//		else
+//			System.out.println("waiting for "+t.getWaitingFor());
 	}
 	
 	public Tokenizer() {
@@ -80,12 +95,27 @@ public class Tokenizer {
 		}
 	}
 	
+	public String getWaitingFor() {
+		if(isReady())
+			return null;
+		else
+			return pairs.get(getLastOpener());
+	}
+	
 	public ArrayList<Token> getTokens() {
-		ArrayList<Token> temp = (ArrayList<Token>)tokens.clone();
+		if(isReady()) {
+			ArrayList<Token> temp = (ArrayList<Token>)tokens.clone();
+			clear();
+			return temp;
+		} else
+			throw new IllegalStateException("can't get tokens, still waiting to close "
+																+getLastOpener());
+	}
+	
+	public void clear() {
 		tokens.clear();
 		code.clear();
 		pos = startPos = 0;
-		return temp;
 	}
 	
 	private void tokenize() throws MismatchException {
@@ -94,49 +124,71 @@ public class Tokenizer {
 			if(!isReady()) {
 				if(getLastOpener().equals("\"") || getLastOpener().equals("'"))
 					getString(getLastOpener().charAt(0));
-			} else {
-				if(peek() == '#')
-					code.clear();
-				else if(Character.isWhitespace(peek())) {
-					code.poll();
-					pos++;
-					startPos++;
-				} else if(Character.isLetter(peek()))
-					getWord();
-				else if(peek() == '"' || peek() == '\'') {
-					char start = read();
-					depth.push(getToken(TokenType.SYMBOL));
-					getString(start);
-				} else if(Character.isDigit(peek()))
-					getNumber();
-				else if(peek() == '.') {
-					if(peek(1) != null && Character.isDigit(peek(1))) {
-						// .5
-						read();
-						getNumber();
-					} else
-						getSymbol();
-				} else
-					getSymbol();
-			}
+				else
+					getToken();
+			} else
+				getToken();
 		}
+	}
+	
+	private void getToken() throws MismatchException {
+		if(peek() == '#')
+			code.clear();
+		else if(Character.isWhitespace(peek())) {
+			code.poll();
+			pos++;
+			startPos++;
+		} else if(Character.isLetter(peek()))
+			getWord();
+		else if(peek() == '"' || peek() == '\'') {
+			char start = read();
+			depth.push(makeToken(TokenType.SYMBOL));
+			getString(start);
+		} else if(Character.isDigit(peek()))
+			getNumber();
+		else if(peek() == '.') {
+			if(peek(1) != null && Character.isDigit(peek(1))) {
+				// .5
+				read();
+				getNumber();
+			} else
+				getSymbol();
+		} else
+			getSymbol();
 	}
 
 	private void getString(char start) {
-		// TODO backslashed stuff: \n, \t
 		// TODO unicode stuff: \u4564 or whatever
 		while(true) {
 			if(!moreCode()) {
 				buffer += "\n";
 				return;
-			} if(peek() == start && lastChar() != '\\') {
+			} else if(peek() == start && lastChar() != '\\') {
 				code.poll();
 				pos++;
 				depth.pop();
-				tokens.add(getToken(TokenType.STRING));
+				tokens.add(makeToken(TokenType.STRING));
 				return;
-			} else
+			} else {
+				if(peek() == '\\') {
+					if(peek(1) != null) {
+						if(peek(1) == 'n') {
+							buffer += "\n";
+							pos += 2;
+							code.poll();
+							code.poll();
+						} else if(peek(1) == 't') {
+							buffer += "\t";
+							pos += 2;
+							code.poll();
+							code.poll();
+						} else
+							read();
+					} else
+						read();
+				}
 				read();
+			}
 		}
 	}
 	
@@ -144,11 +196,11 @@ public class Tokenizer {
 		read();
 		while(moreCode() && (Character.isLetter(peek()) || Character.isDigit(peek())))
 			read();
-		Token word = getToken(TokenType.WORD);
+		Token word = makeToken(TokenType.WORD);
 		if(pairs.containsKey(word.getValue()))
 			depth.push(word);
 		else if(pairs.containsValue(word.getValue())) {
-			if(pairs.get(getLastOpener()).equals(word.getValue()))
+			if(getWaitingFor().equals(word.getValue()))
 				depth.pop();
 		}
 		tokens.add(word);
@@ -163,22 +215,23 @@ public class Tokenizer {
 				while(moreCode() && Character.isDigit(peek()))
 					read();
 			}
-			tokens.add(getToken(TokenType.NUMBER));
+			tokens.add(makeToken(TokenType.NUMBER));
 		} else
-			tokens.add(getToken(TokenType.NUMBER));
+			tokens.add(makeToken(TokenType.NUMBER));
 	}
 	
 	private void getSymbol() throws MismatchException {
 		read();
 		// if this symbol might have a trailing = and there is one, read it
-		if(trailingEquals.indexOf(lastChar()) > 0 && peek() == '=')
+		if(moreCode() && 
+				trailingEquals.indexOf(lastChar()) >= 0 && peek() == '=')
 			read();
-		Token symbol = getToken(TokenType.SYMBOL);
+		Token symbol = makeToken(TokenType.SYMBOL);
 		// this symbol is the opening of a pair
 		if(pairs.containsKey(symbol.getValue()))
 			depth.push(symbol);
 		else if(pairs.containsValue(symbol.getValue())) {
-			if(getLastOpener() == symbol.getValue())
+			if(getWaitingFor().equals(symbol.getValue()))
 				depth.pop();
 			else
 				throw new MismatchException(symbol,pairs.get(getLastOpener()));
@@ -222,7 +275,7 @@ public class Tokenizer {
 		return temp;
 	}
 	
-	private Token getToken(TokenType type) {
+	private Token makeToken(TokenType type) {
 		SourceLocation loc = new SourceLocation(startPos,pos);
 		return new Token(flush(),type,loc);
 	}
