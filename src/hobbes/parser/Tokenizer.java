@@ -27,7 +27,6 @@ public class Tokenizer {
 		trailingEquals.add('>');
 		trailingEquals.add('<');
 	}
-	// TODO: multichar symbols other than ones that end in = (++, --, etc)
 	
 	private final static HashMap<String,String> pairs = new HashMap<String,String>();
 	static {
@@ -282,10 +281,15 @@ public class Tokenizer {
 	
 	private void getSymbol() throws MismatchException {
 		read();
-		// if this symbol might have a trailing = and there is one, read it
-		if(moreCode() && 
-				trailingEquals.indexOf(lastChar()) >= 0 && peek() == '=')
-			read();
+		if(moreCode()) {
+			// if this symbol might have a trailing = and there is one, read it
+			if(trailingEquals.indexOf(lastChar()) >= 0 && peek() == '=')
+				read();
+			else if(lastChar() == '-' && peek() == '-') // --
+				read();
+			else if(lastChar() == '+' && peek() == '+') // ++
+				read();
+		}
 		Token symbol = makeToken(TokenType.SYMBOL);
 		// this symbol is the opening of a pair
 		if(pairs.containsKey(symbol.getValue()))
