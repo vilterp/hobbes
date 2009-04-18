@@ -124,6 +124,8 @@ public class Tokenizer {
 			if(!isReady()) {
 				if(getLastOpener().equals("\"") || getLastOpener().equals("'"))
 					getString(getLastOpener().charAt(0));
+				else if(getLastOpener().equals("/"))
+					getRegex();
 				else
 					getToken();
 			} else
@@ -153,6 +155,19 @@ public class Tokenizer {
 				getNumber();
 			} else
 				getSymbol();
+		} else if(peek() == '/') {
+			Token lastToken = lastToken();
+			if(lastToken != null &&
+				(lastToken.getType() == TokenType.NUMBER || 
+				 lastToken.getType() == TokenType.WORD ||
+				 (lastToken.getType() == TokenType.SYMBOL &&
+					lastToken.getValue().equals(")"))))
+				getSymbol();
+			else {
+				read();
+				depth.push(makeToken(TokenType.SYMBOL));
+				getRegex();
+			}
 		} else
 			getSymbol();
 	}
@@ -189,6 +204,22 @@ public class Tokenizer {
 				}
 				read();
 			}
+		}
+	}
+	
+	private void getRegex() {
+		while(true) {
+			if(!moreCode()) {
+				buffer += "\n";
+				return;
+			} if(peek() == '/' && lastChar() != '\\') {
+				code.poll();
+				pos++;
+				depth.pop();
+				tokens.add(makeToken(TokenType.REGEX));
+				return;
+			} else
+				read();
 		}
 	}
 	
@@ -266,6 +297,13 @@ public class Tokenizer {
 			return buffer.charAt(buffer.length()-1);
 		else
 			return null;
+	}
+	
+	private Token lastToken() {
+		if(tokens.isEmpty())
+			return null;
+		else
+			return tokens.get(tokens.size()-1);
 	}
 	
 	private String flush() {
