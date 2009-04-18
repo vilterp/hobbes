@@ -3,15 +3,16 @@ package hobbes.parser;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Queue;
 import java.util.Stack;
 
 public class Tokenizer {
 	
-	private Queue<Character> code;
+	private LinkedList<Character> code;
 	private ArrayList<Token> tokens;
 	private String buffer;
 	private Stack<Token> depth;
+	private int pos;
+	private int startPos;
 	
 	private final static ArrayList<Character> trailingEquals = new ArrayList<Character>();
 	static {
@@ -38,7 +39,7 @@ public class Tokenizer {
 	public static void main(String[] args) {
 		Tokenizer t = new Tokenizer();
 		try {
-			t.addCode("class Bla end");
+			t.addCode("a = 2.0-.5+2.");
 		} catch (MismatchException e) {
 			e.printStackTrace();
 		}
@@ -53,6 +54,7 @@ public class Tokenizer {
 		tokens = new ArrayList<Token>();
 		buffer = "";
 		depth = new Stack<Token>();
+		pos = startPos = 0;
 	}
 	
 	public void addCode(String c) throws MismatchException {
@@ -81,25 +83,32 @@ public class Tokenizer {
 	
 	private void tokenize() throws MismatchException {
 		// TODO regex literals
+		// TODO open strings with ' and "
 		while(moreCode()) {
 			if(!isReady() && getLastOpener().equals("\"")) {
 				if(getLastOpener().equals("\""))
 					getString();
 			} else {
-				if(code.peek() == '#')
+				if(peek() == '#')
 					code.clear();
-				else if(Character.isWhitespace(code.peek()))
+				else if(Character.isWhitespace(peek()))
 					code.poll();
-				else if(Character.isLetter(code.peek()))
+				else if(Character.isLetter(peek()))
 					getWord();
-				else if(code.peek() == '"') {
-					depth.push(new Token(code.poll().toString(),TokenType.SYMBOL));
+				else if(peek() == '"') {
+					read();
+					depth.push(getToken(TokenType.SYMBOL));
 					getString();
-				} else if(Character.isDigit(code.peek()))
-					// TODO: number tokens can start with a '-'
-					// TODO: number tokens can start with a '.'
+				} else if(Character.isDigit(peek()))
 					getNumber();
-				else
+				else if(peek() == '.') {
+					if(peek(1) != null && Character.isDigit(peek(1))) {
+						// .5
+						read();
+						getNumber();
+					} else
+						getSymbol();
+				} else
 					getSymbol();
 			}
 		}
@@ -112,10 +121,10 @@ public class Tokenizer {
 			if(!moreCode()) {
 				buffer += "\n";
 				return;
-			} if(code.peek() == '"' && lastChar() != '\\') {
+			} if(peek() == '"' && lastChar() != '\\') {
 				code.poll();
 				depth.pop();
-				tokens.add(new Token(flush(),TokenType.STRING));
+				tokens.add(getToken(TokenType.STRING));
 				return;
 			} else
 				read();
@@ -124,38 +133,38 @@ public class Tokenizer {
 	
 	private void getWord() {
 		read();
-		while(moreCode() && (Character.isLetter(code.peek()) || Character.isDigit(code.peek())))
+		while(moreCode() && (Character.isLetter(peek()) || Character.isDigit(peek())))
 			read();
-		Token word = new Token(flush(),TokenType.WORD);
+		Token word = getToken(TokenType.WORD);
 		if(pairs.containsKey(word.getValue()))
 			depth.push(word);
 		else if(pairs.containsValue(word.getValue())) {
-			depth.pop(); // "end" is the only closing word
+			if(pairs.get(getLastOpener()).equals(word.getValue()))
+				depth.pop();
 		}
 		tokens.add(word);
 	}
 	
 	private void getNumber() {
-		while(moreCode() && Character.isDigit(code.peek()))
+		while(moreCode() && Character.isDigit(peek()))
 			read();
-		if(moreCode() && code.peek() == '.') {
-			Character point = code.poll();
-			if(Character.isDigit(code.peek())) {
-				buffer += point;
-				while(moreCode() && Character.isDigit(code.peek()))
+		if(moreCode() && peek() == '.') {
+			if(peek(1) != null && Character.isDigit(peek(1))) {
+				read();
+				while(moreCode() && Character.isDigit(peek()))
 					read();
-			} else
-				tokens.add(new Token(point.toString(),TokenType.SYMBOL));
-		}
-		tokens.add(new Token(flush(),TokenType.NUMBER));
+			}
+			tokens.add(getToken(TokenType.NUMBER));
+		} else
+			tokens.add(getToken(TokenType.NUMBER));
 	}
 	
 	private void getSymbol() throws MismatchException {
 		read();
 		// if this symbol might have a trailing = and there is one, read it
-		if(trailingEquals.indexOf(lastChar()) > 0 && code.peek() == '=')
+		if(trailingEquals.indexOf(lastChar()) > 0 && peek() == '=')
 			read();
-		Token symbol = new Token(flush(),TokenType.SYMBOL);
+		Token symbol = getToken(TokenType.SYMBOL);
 		// this symbol is the opening of a pair
 		if(pairs.containsKey(symbol.getValue()))
 			depth.push(symbol);
@@ -168,8 +177,25 @@ public class Tokenizer {
 		tokens.add(symbol);
 	}
 	
+	private Character peek() {
+		return peek(0);
+	}
+	
+	private Character peek(int ahead) {
+		try {
+			return code.get(ahead);
+		} catch(IndexOutOfBoundsException e) {
+			return null;
+		}
+	}
+	
 	private void read() {
 		buffer += code.poll();
+		advance();
+	}
+	
+	private void advance() {
+		pos++;
 	}
 	
 	private boolean moreCode() {
@@ -186,7 +212,13 @@ public class Tokenizer {
 	private String flush() {
 		String temp = buffer;
 		buffer = "";
+		startPos = pos;
 		return temp;
+	}
+	
+	private Token getToken(TokenType type) {
+		SourceLocation loc = new SourceLocation(startPos,pos);
+		return new Token(flush(),type,loc);
 	}
 	
 }
