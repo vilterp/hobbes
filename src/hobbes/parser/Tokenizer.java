@@ -121,7 +121,6 @@ public class Tokenizer {
 	}
 	
 	private void tokenize() throws MismatchException {
-		// TODO regex literals
 		while(moreCode()) {
 			if(!isReady()) {
 				if(getLastOpener().equals("\"") || getLastOpener().equals("'"))
@@ -254,6 +253,8 @@ public class Tokenizer {
 	private void getWord() {
 		read();
 		while(moreCode() && (Character.isLetterOrDigit(peek()) || peek() == '_'))
+			read();
+		if(moreCode() && (peek() == '?' || peek() == '!'))
 			read();
 		Token word = makeToken(TokenType.WORD);
 		if(pairs.containsKey(word.getValue()))
