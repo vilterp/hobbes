@@ -78,6 +78,8 @@ public class Tokenizer {
 	public ArrayList<Token> getTokens() {
 		ArrayList<Token> temp = (ArrayList<Token>)tokens.clone();
 		tokens.clear();
+		code.clear();
+		pos = startPos = 0;
 		return temp;
 	}
 	
@@ -189,9 +191,10 @@ public class Tokenizer {
 		}
 	}
 	
-	private void read() {
+	private Character read() {
 		buffer += code.poll();
 		advance();
+		return lastChar();
 	}
 	
 	private void advance() {
