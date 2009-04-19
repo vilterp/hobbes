@@ -17,15 +17,20 @@ public class Tokenizer {
 	private int pos;
 	private int startPos;
 	
-	private final static ArrayList<Character> trailingEquals = new ArrayList<Character>();
+	private final static ArrayList<String> multiChars = new ArrayList<String>();
 	static {
-		trailingEquals.add('=');
-		trailingEquals.add('+');
-		trailingEquals.add('-');
-		trailingEquals.add('*');
-		trailingEquals.add('/');
-		trailingEquals.add('>');
-		trailingEquals.add('<');
+		multiChars.add("==");
+		multiChars.add("!=");
+		multiChars.add("+=");
+		multiChars.add("-=");
+		multiChars.add("*=");
+		multiChars.add("/=");
+		multiChars.add(">=");
+		multiChars.add("<=");
+		multiChars.add("++");
+		multiChars.add("--");
+		multiChars.add("..");
+		multiChars.add("...");
 	}
 	
 	private final static HashMap<String,String> pairs = new HashMap<String,String>();
@@ -60,7 +65,7 @@ public class Tokenizer {
 		}
 		
 //		try {
-//			t.addCode("class A");
+//			t.addCode("==");
 //		} catch (MismatchException e) {
 //			e.printStackTrace();
 //		}
@@ -282,12 +287,11 @@ public class Tokenizer {
 	private void getSymbol() throws MismatchException {
 		read();
 		if(moreCode()) {
-			// if this symbol might have a trailing = and there is one, read it
-			if(trailingEquals.indexOf(lastChar()) >= 0 && peek() == '=')
+			if(peek(1) != null && multiChars.contains(
+			   lastChar().toString() + peek().toString() + peek(1).toString())) {
 				read();
-			else if(lastChar() == '-' && peek() == '-') // --
 				read();
-			else if(lastChar() == '+' && peek() == '+') // ++
+			} else if(multiChars.contains(lastChar().toString() + peek().toString()))
 				read();
 		}
 		Token symbol = makeToken(TokenType.SYMBOL);
