@@ -17,20 +17,20 @@ public class Tokenizer {
 	private int pos;
 	private int startPos;
 	
-	private final static ArrayList<String> multiChars = new ArrayList<String>();
+	private final static ArrayList<String> multiCharSymbols = new ArrayList<String>();
 	static {
-		multiChars.add("==");
-		multiChars.add("!=");
-		multiChars.add("+=");
-		multiChars.add("-=");
-		multiChars.add("*=");
-		multiChars.add("/=");
-		multiChars.add(">=");
-		multiChars.add("<=");
-		multiChars.add("++");
-		multiChars.add("--");
-		multiChars.add("..");
-		multiChars.add("...");
+		multiCharSymbols.add("==");
+		multiCharSymbols.add("!=");
+		multiCharSymbols.add("+=");
+		multiCharSymbols.add("-=");
+		multiCharSymbols.add("*=");
+		multiCharSymbols.add("/=");
+		multiCharSymbols.add(">=");
+		multiCharSymbols.add("<=");
+		multiCharSymbols.add("++");
+		multiCharSymbols.add("--");
+		multiCharSymbols.add("..");
+		multiCharSymbols.add("...");
 	}
 	
 	private final static HashMap<String,String> pairs = new HashMap<String,String>();
@@ -61,6 +61,9 @@ public class Tokenizer {
 			} catch(MismatchException e) {
 				t.clear();
 				System.out.println(e.getMessage());
+			} catch (UnexpectedTokenException e) {
+				t.clear();
+				System.out.println(e.getMessage());
 			}
 		}
 		
@@ -83,7 +86,7 @@ public class Tokenizer {
 		pos = startPos = 0;
 	}
 	
-	public void addCode(String c) throws MismatchException {
+	public void addCode(String c) throws MismatchException, UnexpectedTokenException {
 		for(int i=0; i < c.length(); i++)
 			code.add(c.charAt(i));
 		tokenize();
@@ -121,10 +124,11 @@ public class Tokenizer {
 	public void clear() {
 		tokens.clear();
 		code.clear();
+		depth.clear();
 		pos = startPos = 0;
 	}
 	
-	private void tokenize() throws MismatchException {
+	private void tokenize() throws MismatchException, UnexpectedTokenException {
 		while(moreCode()) {
 			if(!isReady()) {
 				if(getLastOpener().equals("\"") || getLastOpener().equals("'"))
@@ -138,7 +142,7 @@ public class Tokenizer {
 		}
 	}
 	
-	private void getToken() throws MismatchException {
+	private void getToken() throws MismatchException, UnexpectedTokenException {
 		if(peek() == '#')
 			code.clear();
 		else if(Character.isWhitespace(peek())) {
@@ -254,7 +258,7 @@ public class Tokenizer {
 		}
 	}
 	
-	private void getWord() {
+	private void getWord() throws UnexpectedTokenException {
 		read();
 		while(moreCode() && (Character.isLetterOrDigit(peek()) || peek() == '_'))
 			read();
@@ -264,7 +268,9 @@ public class Tokenizer {
 		if(pairs.containsKey(word.getValue()))
 			depth.push(word);
 		else if(pairs.containsValue(word.getValue())) {
-			if(getWaitingFor().equals(word.getValue()))
+			if(depth.isEmpty())
+				throw new UnexpectedTokenException(word);
+			else if(getWaitingFor().equals(word.getValue()))
 				depth.pop();
 		}
 		tokens.add(word);
@@ -284,14 +290,14 @@ public class Tokenizer {
 			tokens.add(makeToken(TokenType.NUMBER));
 	}
 	
-	private void getSymbol() throws MismatchException {
+	private void getSymbol() throws MismatchException, UnexpectedTokenException {
 		read();
 		if(moreCode()) {
-			if(peek(1) != null && multiChars.contains(
+			if(peek(1) != null && multiCharSymbols.contains(
 			   lastChar().toString() + peek().toString() + peek(1).toString())) {
 				read();
 				read();
-			} else if(multiChars.contains(lastChar().toString() + peek().toString()))
+			} else if(multiCharSymbols.contains(lastChar().toString() + peek().toString()))
 				read();
 		}
 		Token symbol = makeToken(TokenType.SYMBOL);
@@ -299,11 +305,13 @@ public class Tokenizer {
 		if(pairs.containsKey(symbol.getValue()))
 			depth.push(symbol);
 		else if(pairs.containsValue(symbol.getValue())) {
-			if(getWaitingFor().equals(symbol.getValue()))
+			if(depth.isEmpty())
+				throw new UnexpectedTokenException(symbol);
+			else if(getWaitingFor().equals(symbol.getValue()))
 				depth.pop();
 			else
 				throw new MismatchException(symbol,pairs.get(getLastOpener()));
-		}	
+		}
 		tokens.add(symbol);
 	}
 	

@@ -9,8 +9,15 @@ public class MismatchException extends Exception {
 		super("expected "+e+", found "+f.getValue());
 		found = f;
 		expected = e;
-		// TODO: show line with pointer
-		// this should really be some kind of HobbesException
+		// TODO: show line with pointer - will require capturing line...
+	}
+	
+	public Token getFound() {
+		return found;
+	}
+	
+	public String getExpected() {
+		return expected;
 	}
 	
 }
