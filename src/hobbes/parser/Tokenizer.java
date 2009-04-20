@@ -193,31 +193,29 @@ public class Tokenizer {
 				depth.pop();
 				tokens.add(makeToken(TokenType.STRING));
 				return;
-			} else {
-				if(peek() == '\\') {
-					if(peek(1) != null) {
-						if(peek(1) == 'n') {
-							buffer += "\n";
-							pos += 2;
-							code.poll();
-							code.poll();
-						} else if(peek(1) == 't') {
-							buffer += "\t";
-							pos += 2;
-							code.poll();
-							code.poll();
-						} else if(peek(1) == start) {
-							buffer += start;
-							pos += 2;
-							code.poll();
-							code.poll();
-						} else
-							read();
+			} else if(peek() == '\\') {
+				if(peek(1) != null) {
+					if(peek(1) == 'n') {
+						buffer += "\n";
+						pos += 2;
+						code.poll();
+						code.poll();
+					} else if(peek(1) == 't') {
+						buffer += "\t";
+						pos += 2;
+						code.poll();
+						code.poll();
+					} else if(peek(1) == start) {
+						buffer += start;
+						pos += 2;
+						code.poll();
+						code.poll();
 					} else
 						read();
-				}
+				} else
+					read();
+			} else
 				read();
-			}
 		}
 	}
 	

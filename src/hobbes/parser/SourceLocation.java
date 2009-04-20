@@ -2,6 +2,9 @@ package hobbes.parser;
 
 public class SourceLocation {
 	
+	// TODO: seperate SourcePoint & SourceSpan classes
+	// TODO: save file names, line numbers
+	
 	private int start;
 	private int end;
 	
