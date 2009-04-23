@@ -33,9 +33,4 @@ public class SyntaxError extends Exception {
 		return ans;
 	}
 	
-	public static void main(String[] args) {
-		SyntaxError s = new SyntaxError("unexpected (",2,"25(");
-		System.out.println(s.show());
-	}
-	
 }
