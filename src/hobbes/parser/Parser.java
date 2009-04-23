@@ -47,12 +47,13 @@ public class Parser {
 			return stack.pop();
 		else
 			return null; // TODO: throw error if no rules matched
-		// clear instance vairables after parsing
+		// TODO: clear instance variables after parsing
 	}
 	
 	public void clear() {
 		stack.clear();
 		tokens.clear();
+		line = "";
 	}
 	
 	private boolean term() throws SyntaxError {
