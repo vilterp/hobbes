@@ -28,4 +28,8 @@ public class Token {
 		return location;
 	}
 	
+	public int getEnd() {
+		return location.getEnd();
+	}
+	
 }

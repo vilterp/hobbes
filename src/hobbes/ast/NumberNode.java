@@ -1,15 +1,17 @@
 package hobbes.ast;
 
+import hobbes.parser.Token;
+
 public class NumberNode implements SyntaxNode {
 	
-	public String value;
+	public Token origin;
 	
-	public NumberNode(String val) {
-		value = val;
+	public NumberNode(Token token) {
+		origin = token;
 	}
 	
 	public String toString() {
-		return value;
+		return origin.getValue();
 	}
 	
 }

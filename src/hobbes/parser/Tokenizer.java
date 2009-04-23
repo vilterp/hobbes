@@ -45,38 +45,38 @@ public class Tokenizer {
 		pairs.put("while", "end");
 	}
 	
-	public static void main(String[] args) {
-		Tokenizer t = new Tokenizer();
-		Scanner s = new Scanner(System.in);
-		
-		while(true) {
-			if(t.isReady())
-				System.out.print(">> ");
-			else
-				System.out.print(t.getLastOpener()+"> ");
-			try {
-				t.addCode(s.nextLine());
-				if(t.isReady())
-					System.out.println(t.getTokens());
-			} catch(MismatchException e) {
-				t.clear();
-				System.out.println(e.getMessage());
-			} catch (UnexpectedTokenException e) {
-				t.clear();
-				System.out.println(e.getMessage());
-			}
-		}
-		
-//		try {
-//			t.addCode("==");
-//		} catch (MismatchException e) {
-//			e.printStackTrace();
+//	public static void main(String[] args) {
+//		Tokenizer t = new Tokenizer();
+//		Scanner s = new Scanner(System.in);
+//		
+//		while(true) {
+//			if(t.isReady())
+//				System.out.print(">> ");
+//			else
+//				System.out.print(t.getLastOpener()+"> ");
+//			try {
+//				t.addCode(s.nextLine());
+//				if(t.isReady())
+//					System.out.println(t.getTokens());
+//			} catch(MismatchException e) {
+//				t.clear();
+//				System.out.println(e.getMessage());
+//			} catch (UnexpectedTokenException e) {
+//				t.clear();
+//				System.out.println(e.getMessage());
+//			}
 //		}
-//		if(t.isReady())
-//			System.out.println(t.getTokens());
-//		else
-//			System.out.println("waiting for "+t.getWaitingFor());
-	}
+//		
+////		try {
+////			t.addCode("==");
+////		} catch (MismatchException e) {
+////			e.printStackTrace();
+////		}
+////		if(t.isReady())
+////			System.out.println(t.getTokens());
+////		else
+////			System.out.println("waiting for "+t.getWaitingFor());
+//	}
 	
 	public Tokenizer() {
 		code = new LinkedList<Character>();
