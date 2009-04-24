@@ -4,6 +4,7 @@ import hobbes.ast.*;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.Stack;
 
@@ -12,38 +13,40 @@ public class Parser {
 	public static void main(String[] args) {
 		Tokenizer t = new Tokenizer();
 		Parser p = new Parser();
-//		Scanner s = new Scanner(System.in);
-//		while(true) {
-//			if(t.isReady())
-//				System.out.print(">> ");
-//			else
-//				System.out.print(t.getLastOpener() + "> ");
-//			try {
-//				String line = s.nextLine(); 
-//				t.addCode(line);
-//				if(t.isReady())
-//					System.out.println(p.parse(t.getTokens(), line));
-//			} catch (MismatchException e) {
-//				System.err.println(e.getMessage());
-//			} catch (UnexpectedTokenException e) {
-//				System.err.println(e.getMessage());
-//			} catch (SyntaxError e) {
-//				System.err.println(e.getMessage());
-//				System.err.println(e.show());
-//			}
-//			
-//		}
-		String code = "(2+2)^2";
-		try {
-			t.addCode(code);
-			System.out.println(p.parse(t.getTokens(), code));
-		} catch (MismatchException e) {
-			e.printStackTrace();
-		} catch (UnexpectedTokenException e) {
-			e.printStackTrace();
-		} catch (SyntaxError e) {
-			e.printStackTrace();
+		
+		Scanner s = new Scanner(System.in);
+		while(true) {
+			if(t.isReady())
+				System.out.print(">> ");
+			else
+				System.out.print(t.getLastOpener() + "> ");
+			String line = s.nextLine();
+			try {
+				t.addCode(line);
+				if(t.isReady())
+					System.out.println(p.parse(t.getTokens(), line));
+			} catch (MismatchException e) {
+				System.err.println(e.getMessage());
+			} catch (UnexpectedTokenException e) {
+				System.err.println(e.getMessage());
+			} catch (SyntaxError e) {
+				System.err.println(e.getMessage());
+				System.err.println(e.show());
+			}
+			
 		}
+		
+//		String code = "2+4*6";
+//		try {
+//			t.addCode(code);
+//			System.out.println(p.parse(t.getTokens(), code));
+//		} catch (MismatchException e) {
+//			e.printStackTrace();
+//		} catch (UnexpectedTokenException e) {
+//			e.printStackTrace();
+//		} catch (SyntaxError e) {
+//			e.printStackTrace();
+//		}
 	}
 	
 	private Stack<SyntaxNode> stack;
@@ -75,107 +78,113 @@ public class Parser {
 		line = "";
 	}
 	
-	/*
-	 * term , { multOp , expression }	
-	 */
 	private boolean expression() throws SyntaxError {
-		if(!term())
-			if(!parentheticalExpression())
+		if(!or())
+			if(!parenthesizedExpression())
 				return false;
-		if(addOp()) {
-			if(!expression()) {
-				Token addOpToken = ((TempNode)stack.peek()).getToken();
-				throw new SyntaxError("no expression after "+addOpToken.getValue(),
-									  addOpToken.getEnd(),
-									  line);
-			} else {
-				ExpressionNode right = (ExpressionNode)stack.pop();
-				String operator = ((TempNode)stack.pop()).getToken().getValue();
-				ExpressionNode left = (ExpressionNode)stack.pop();
-				stack.push(new ExpressionNode(left,operator,right));
-				return true;
-			}
-		} else {
-			stack.push(new ExpressionNode((ExpressionNode)stack.pop()));
-			return true;
-		}
-	}
-	
-	private boolean parentheticalExpression() throws SyntaxError {
-		if(!symbol("("))
-			return false;
-		if(!expression())
-			throw new SyntaxError("no expression after (",lastToken().getEnd(),line);
-		symbol(")"); // tokenizer ensures it's there
 		return true;
 	}
 	
-	/*
-	 * powerResult , { addOp , term }
-	 */
-	private boolean term() throws SyntaxError {
-		if(!powerResult())
-			if(!parentheticalExpression())
+	private boolean parenthesizedExpression() throws SyntaxError {
+		if(symbol("("))
+			stack.pop();
+		else
+			return false;
+		if(!expression())
+			throw new SyntaxError("no expression after (",
+								  lastToken().getEnd(),line);
+		symbol(")"); // tokenizer makes sure it's there
+		stack.pop();
+		return true;
+	}
+	
+	private boolean or() throws SyntaxError {
+		if(!and())
+			return false;
+		if(orOp()) {
+			if(or()) {
+				makeExpression();
+				return true;
+			} else
+				throw new SyntaxError("No expression after \"and\"",
+									  lastToken().getEnd(),line);
+		} else
+			return true;
+	}
+	
+	private boolean and() throws SyntaxError {
+		if(!addition())
+			return false;
+		if(andOp()) {
+			if(and()) {
+				makeExpression();
+				return true;
+			} else
+				throw new SyntaxError("No expression after \"and\"",
+									  lastToken().getEnd(),line);
+		} else
+			return true;
+	}
+	
+	private boolean addition() throws SyntaxError {
+		if(!multiplication())
+			if(parenthesizedExpression())
+				return false;
+		if(addOp()) {
+			if(addition()) {
+				makeExpression();
+				return true;
+			} else
+				throw new SyntaxError("no expression after +",
+									  lastToken().getEnd(),line);
+		} else
+			return true;
+	}
+	
+	private boolean multiplication() throws SyntaxError {
+		if(!exponent())
+			if(parenthesizedExpression())
 				return false;
 		if(multOp()) {
-			if(!term()) {
-				Token multOpToken = ((TempNode)stack.peek()).getToken();
-				throw new SyntaxError("no expression after "+multOpToken.getValue(),
-									  multOpToken.getEnd(),
-									  line);
-			} else {
-				ExpressionNode right = (ExpressionNode)stack.pop();
-				String operator = ((TempNode)stack.pop()).getToken().getValue();
-				ExpressionNode left = (ExpressionNode)stack.pop();
-				stack.push(new TermNode(left,operator,right));
+			if(multiplication()) {
+				makeExpression();
 				return true;
-			}
-		} else {
-			if(stack.peek() instanceof PowerResultNode)
-				stack.push(new TermNode((PowerResultNode)stack.pop()));
-			else
-				
+			} else
+				throw new SyntaxError("no expression after *",
+									  lastToken().getEnd(),line);
+		} else
 			return true;
-		}
 	}
 	
-	/*
-	 * [ number | expression ] , { powerOp , powerResult }
-	 * eg 2^2, (2+2)^4, (2+2)^(2+2)
-	 */
-	private boolean powerResult() throws SyntaxError {
-		if(!number())
-			if(!parentheticalExpression())
+	private boolean exponent() throws SyntaxError {
+		if(!object())
+			if(parenthesizedExpression())
 				return false;
 		if(powerOp()) {
-			if(!powerResult()) {
-				Token powerOpToken = ((TempNode)stack.peek()).getToken();
-				throw new SyntaxError("no expression after ^",
-									  powerOpToken.getEnd(),
-									  line);
-			} else {
-				ExpressionNode right = (ExpressionNode)stack.pop();
-				stack.pop(); // don't have to get value cuz only one power operator
-				ExpressionNode left = (ExpressionNode)stack.pop();
-				stack.push(new PowerResultNode(left,right));
+			if(exponent()) {
+				makeExpression();
 				return true;
-			}
-		} else {
-			if(stack.peek() instanceof NumberNode)
-				stack.push(new PowerResultNode((NumberNode)stack.pop()));
-			else if(stack.peek() instanceof ExpressionNode)
-				stack.push(new PowerResultNode((ExpressionNode)stack.pop()));
+			} else
+				throw new SyntaxError("no expression after ^",
+									  lastToken().getEnd(),line);
+		} else
 			return true;
-		}
 	}
-	
-	private boolean powerOp() {
-		if(symbol("^"))
+
+	private boolean orOp() {
+		if(word("or"))
 			return true;
 		else
 			return false;
 	}
-	
+
+	private boolean andOp() {
+		if(word("and"))
+			return true;
+		else
+			return false;
+	}
+
 	private boolean addOp() {
 		if(symbol("+"))
 			return true;
@@ -183,7 +192,7 @@ public class Parser {
 			return true;
 		return false;
 	}
-	
+
 	private boolean multOp() {
 		if(symbol("*"))
 			return true;
@@ -191,11 +200,26 @@ public class Parser {
 			return true;
 		return false;
 	}
+
+	private boolean powerOp() {
+		if(symbol("^"))
+			return true;
+		else
+			return false;
+	}
+
+	private boolean object() {
+		if(number()) {
+			stack.push(new ExpressionNode((NumberNode)stack.pop()));
+			return true;
+		} else
+			return false;
+	}
 	
 	private boolean number() {
 		if(token(TokenType.NUMBER)) {
-			TempNode numberToken = (TempNode)stack.pop();
-			stack.push(new NumberNode(numberToken.getToken()));
+			Token numberToken = ((TempNode)stack.pop()).getToken();
+			stack.push(new NumberNode(numberToken));
 			return true;
 		} else
 			return false;
@@ -203,6 +227,10 @@ public class Parser {
 	
 	private boolean symbol(String value) {
 		return token(TokenType.SYMBOL,value);
+	}
+	
+	private boolean word(String value) {
+		return token(TokenType.WORD,value);
 	}
 	
 	private boolean token(TokenType type, String value) {
@@ -228,6 +256,13 @@ public class Parser {
 	
 	private Token lastToken() {
 		return ((TempNode)stack.peek()).getToken();
+	}
+	
+	private void makeExpression() {
+		ExpressionNode right = (ExpressionNode)stack.pop();
+		Token operator = ((TempNode)stack.pop()).getToken();
+		ExpressionNode left = (ExpressionNode)stack.pop();
+		stack.push(new ExpressionNode(left,operator,right));
 	}
 	
 }

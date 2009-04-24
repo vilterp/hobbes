@@ -2,13 +2,13 @@ package hobbes.ast;
 
 import hobbes.parser.Token;
 
-public class NumberNode implements SyntaxNode {
+public class NumberNode implements ObjectNode {
 	
 	public Token origin;
 	// TODO: capture line? for runtime errors... variables too...
 	
-	public NumberNode(Token token) {
-		origin = token;
+	public NumberNode(Token t) {
+		origin = t;
 	}
 	
 	public String toString() {
