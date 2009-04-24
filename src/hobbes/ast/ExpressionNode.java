@@ -2,17 +2,17 @@ package hobbes.ast;
 
 public class ExpressionNode implements SyntaxNode {
 	
-	private TermNode left;
+	private ExpressionNode left;
 	private String operator;
 	private ExpressionNode right;
 	
-	public ExpressionNode(TermNode l, String o, ExpressionNode r) {
+	public ExpressionNode(ExpressionNode l, String o, ExpressionNode r) {
 		left = l;
 		operator = o;
 		right = r;
 	}
 	
-	public ExpressionNode(TermNode l) {
+	public ExpressionNode(ExpressionNode l) {
 		left = l;
 		operator = null;
 		right = null;

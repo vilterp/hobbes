@@ -4,17 +4,17 @@ import hobbes.parser.Token;
 
 public class TermNode implements SyntaxNode {
 	
-	private PowerResultNode left;
+	private ExpressionNode left;
 	private String operator;
-	private TermNode right;
+	private ExpressionNode right;
 	
-	public TermNode(PowerResultNode l, String o, TermNode r) {
+	public TermNode(ExpressionNode l, String o, ExpressionNode r) {
 		left = l;
 		operator = o;
 		right = r;
 	}
 	
-	public TermNode(PowerResultNode l) {
+	public TermNode(ExpressionNode l) {
 		left = l;
 		operator = null;
 		right = null;

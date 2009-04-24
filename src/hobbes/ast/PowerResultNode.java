@@ -2,17 +2,22 @@ package hobbes.ast;
 
 public class PowerResultNode implements SyntaxNode {
 	
-	public NumberNode left;
-	public PowerResultNode right;
+	private ExpressionNode left;
+	private NumberNode number;
+	private ExpressionNode right;
 	
-	public PowerResultNode(NumberNode l, PowerResultNode r) {
+	public PowerResultNode(ExpressionNode l, ExpressionNode r) {
 		left = l;
 		right = r;
 	}
 	
-	public PowerResultNode(NumberNode l) {
+	public PowerResultNode(ExpressionNode l) {
 		left = l;
 		right = null;
+	}
+	
+	public PowerResultNode(NumberNode l) {
+		number = l;
 	}
 	
 	public String toString() {

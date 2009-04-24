@@ -33,7 +33,7 @@ public class Parser {
 //			}
 //			
 //		}
-		String code = "2+2";
+		String code = "(2+2)^2";
 		try {
 			t.addCode(code);
 			System.out.println(p.parse(t.getTokens(), code));
@@ -80,7 +80,8 @@ public class Parser {
 	 */
 	private boolean expression() throws SyntaxError {
 		if(!term())
-			return false;
+			if(!parentheticalExpression())
+				return false;
 		if(addOp()) {
 			if(!expression()) {
 				Token addOpToken = ((TempNode)stack.peek()).getToken();
@@ -90,14 +91,23 @@ public class Parser {
 			} else {
 				ExpressionNode right = (ExpressionNode)stack.pop();
 				String operator = ((TempNode)stack.pop()).getToken().getValue();
-				TermNode left = (TermNode)stack.pop();
+				ExpressionNode left = (ExpressionNode)stack.pop();
 				stack.push(new ExpressionNode(left,operator,right));
 				return true;
 			}
 		} else {
-			stack.push(new ExpressionNode((TermNode)stack.pop()));
+			stack.push(new ExpressionNode((ExpressionNode)stack.pop()));
 			return true;
 		}
+	}
+	
+	private boolean parentheticalExpression() throws SyntaxError {
+		if(!symbol("("))
+			return false;
+		if(!expression())
+			throw new SyntaxError("no expression after (",lastToken().getEnd(),line);
+		symbol(")"); // tokenizer ensures it's there
+		return true;
 	}
 	
 	/*
@@ -105,7 +115,8 @@ public class Parser {
 	 */
 	private boolean term() throws SyntaxError {
 		if(!powerResult())
-			return false;
+			if(!parentheticalExpression())
+				return false;
 		if(multOp()) {
 			if(!term()) {
 				Token multOpToken = ((TempNode)stack.peek()).getToken();
@@ -113,24 +124,29 @@ public class Parser {
 									  multOpToken.getEnd(),
 									  line);
 			} else {
-				TermNode right = (TermNode)stack.pop();
+				ExpressionNode right = (ExpressionNode)stack.pop();
 				String operator = ((TempNode)stack.pop()).getToken().getValue();
-				PowerResultNode left = (PowerResultNode)stack.pop();
+				ExpressionNode left = (ExpressionNode)stack.pop();
 				stack.push(new TermNode(left,operator,right));
 				return true;
 			}
 		} else {
-			stack.push(new TermNode((PowerResultNode)stack.pop()));
+			if(stack.peek() instanceof PowerResultNode)
+				stack.push(new TermNode((PowerResultNode)stack.pop()));
+			else
+				
 			return true;
 		}
 	}
 	
 	/*
-	 * number , { powerOp , powerResult }
+	 * [ number | expression ] , { powerOp , powerResult }
+	 * eg 2^2, (2+2)^4, (2+2)^(2+2)
 	 */
 	private boolean powerResult() throws SyntaxError {
 		if(!number())
-			return false;
+			if(!parentheticalExpression())
+				return false;
 		if(powerOp()) {
 			if(!powerResult()) {
 				Token powerOpToken = ((TempNode)stack.peek()).getToken();
@@ -138,14 +154,17 @@ public class Parser {
 									  powerOpToken.getEnd(),
 									  line);
 			} else {
-				PowerResultNode right = (PowerResultNode)stack.pop();
+				ExpressionNode right = (ExpressionNode)stack.pop();
 				stack.pop(); // don't have to get value cuz only one power operator
-				NumberNode left = (NumberNode)stack.pop();
+				ExpressionNode left = (ExpressionNode)stack.pop();
 				stack.push(new PowerResultNode(left,right));
 				return true;
 			}
 		} else {
-			stack.push(new PowerResultNode((NumberNode)stack.pop()));
+			if(stack.peek() instanceof NumberNode)
+				stack.push(new PowerResultNode((NumberNode)stack.pop()));
+			else if(stack.peek() instanceof ExpressionNode)
+				stack.push(new PowerResultNode((ExpressionNode)stack.pop()));
 			return true;
 		}
 	}
@@ -207,5 +226,8 @@ public class Parser {
 			return false;
 	}
 	
+	private Token lastToken() {
+		return ((TempNode)stack.peek()).getToken();
+	}
 	
 }
