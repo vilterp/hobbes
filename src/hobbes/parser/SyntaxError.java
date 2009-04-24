@@ -20,10 +20,6 @@ public class SyntaxError extends Exception {
 	public String getLine() {
 		return line;
 	}
-
-	public String getMessage() {
-		return message;
-	}
 	
 	public String show() {
 		String ans = line + "\n";

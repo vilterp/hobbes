@@ -9,7 +9,7 @@ public class MismatchException extends Exception {
 		super("expected "+e+", found "+f.getValue());
 		found = f;
 		expected = e;
-		// TODO: show line with pointer - will require capturing line...
+		// TODO: show line with pointer - will require capturing line in tokenizer
 	}
 	
 	public Token getFound() {

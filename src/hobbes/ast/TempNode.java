@@ -14,4 +14,8 @@ public class TempNode implements SyntaxNode {
 		return token;
 	}
 	
+	public String toString() {
+		return token.getValue();
+	}
+	
 }

@@ -1,12 +1,10 @@
 package hobbes.parser;
 
-import hobbes.ast.NumberNode;
-import hobbes.ast.OperationNode;
-import hobbes.ast.SyntaxNode;
-import hobbes.ast.TempNode;
+import hobbes.ast.*;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.Scanner;
 import java.util.Stack;
 
 public class Parser {
@@ -14,7 +12,28 @@ public class Parser {
 	public static void main(String[] args) {
 		Tokenizer t = new Tokenizer();
 		Parser p = new Parser();
-		String code = "2*5*2";
+//		Scanner s = new Scanner(System.in);
+//		while(true) {
+//			if(t.isReady())
+//				System.out.print(">> ");
+//			else
+//				System.out.print(t.getLastOpener() + "> ");
+//			try {
+//				String line = s.nextLine(); 
+//				t.addCode(line);
+//				if(t.isReady())
+//					System.out.println(p.parse(t.getTokens(), line));
+//			} catch (MismatchException e) {
+//				System.err.println(e.getMessage());
+//			} catch (UnexpectedTokenException e) {
+//				System.err.println(e.getMessage());
+//			} catch (SyntaxError e) {
+//				System.err.println(e.getMessage());
+//				System.err.println(e.show());
+//			}
+//			
+//		}
+		String code = "2+2";
 		try {
 			t.addCode(code);
 			System.out.println(p.parse(t.getTokens(), code));
@@ -23,8 +42,7 @@ public class Parser {
 		} catch (UnexpectedTokenException e) {
 			e.printStackTrace();
 		} catch (SyntaxError e) {
-			System.err.println(e.getMessage());
-			System.err.println(e.show());
+			e.printStackTrace();
 		}
 	}
 	
@@ -42,11 +60,12 @@ public class Parser {
 		for(Token t: tokenList)
 			tokens.add(t);
 		line = code;
-		
-		if(term())
+		if(expression())
 			return stack.pop();
-		else
+		else {
+			System.out.println(stack);
 			return null; // TODO: throw error if no rules matched
+		}
 		// TODO: clear instance variables after parsing
 	}
 	
@@ -56,26 +75,86 @@ public class Parser {
 		line = "";
 	}
 	
-	private boolean term() throws SyntaxError {
-		if(!number())
+	/*
+	 * term , { multOp , expression }	
+	 */
+	private boolean expression() throws SyntaxError {
+		if(!term())
 			return false;
-		if(multOp()) {
-			if(!term()) {
-				Token lastToken = ((TempNode)stack.peek()).getToken();
-				throw new SyntaxError("no expression after "+lastToken.getValue(),
-									  lastToken.getEnd(),
+		if(addOp()) {
+			if(!expression()) {
+				Token addOpToken = ((TempNode)stack.peek()).getToken();
+				throw new SyntaxError("no expression after "+addOpToken.getValue(),
+									  addOpToken.getEnd(),
 									  line);
 			} else {
-				OperationNode right = (OperationNode)stack.pop();
-				Token operator = ((TempNode)stack.pop()).getToken();
-				NumberNode left = (NumberNode)stack.pop();
-				stack.push(new OperationNode(left,operator,right));
+				ExpressionNode right = (ExpressionNode)stack.pop();
+				String operator = ((TempNode)stack.pop()).getToken().getValue();
+				TermNode left = (TermNode)stack.pop();
+				stack.push(new ExpressionNode(left,operator,right));
 				return true;
 			}
 		} else {
-			stack.push(new OperationNode((NumberNode)stack.pop()));
+			stack.push(new ExpressionNode((TermNode)stack.pop()));
 			return true;
 		}
+	}
+	
+	/*
+	 * powerResult , { addOp , term }
+	 */
+	private boolean term() throws SyntaxError {
+		if(!powerResult())
+			return false;
+		if(multOp()) {
+			if(!term()) {
+				Token multOpToken = ((TempNode)stack.peek()).getToken();
+				throw new SyntaxError("no expression after "+multOpToken.getValue(),
+									  multOpToken.getEnd(),
+									  line);
+			} else {
+				TermNode right = (TermNode)stack.pop();
+				String operator = ((TempNode)stack.pop()).getToken().getValue();
+				PowerResultNode left = (PowerResultNode)stack.pop();
+				stack.push(new TermNode(left,operator,right));
+				return true;
+			}
+		} else {
+			stack.push(new TermNode((PowerResultNode)stack.pop()));
+			return true;
+		}
+	}
+	
+	/*
+	 * number , { powerOp , powerResult }
+	 */
+	private boolean powerResult() throws SyntaxError {
+		if(!number())
+			return false;
+		if(powerOp()) {
+			if(!powerResult()) {
+				Token powerOpToken = ((TempNode)stack.peek()).getToken();
+				throw new SyntaxError("no expression after ^",
+									  powerOpToken.getEnd(),
+									  line);
+			} else {
+				PowerResultNode right = (PowerResultNode)stack.pop();
+				stack.pop(); // don't have to get value cuz only one power operator
+				NumberNode left = (NumberNode)stack.pop();
+				stack.push(new PowerResultNode(left,right));
+				return true;
+			}
+		} else {
+			stack.push(new PowerResultNode((NumberNode)stack.pop()));
+			return true;
+		}
+	}
+	
+	private boolean powerOp() {
+		if(symbol("^"))
+			return true;
+		else
+			return false;
 	}
 	
 	private boolean addOp() {

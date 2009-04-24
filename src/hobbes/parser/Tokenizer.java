@@ -9,6 +9,7 @@ import java.util.Scanner;
 public class Tokenizer {
 	
 	// TODO: location info for multiline tokens (sep. SourcePoint & SourceSpan classes?)
+	// TODO: give each token the line as a String (what about multilines?)
 	
 	private LinkedList<Character> code;
 	private ArrayList<Token> tokens;
