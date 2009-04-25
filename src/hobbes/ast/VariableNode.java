@@ -2,16 +2,16 @@ package hobbes.ast;
 
 import hobbes.parser.Token;
 
-public class RegexNode implements ObjectNode {
+public class VariableNode implements ObjectNode {
 	
 	private Token origin;
 	
-	public RegexNode(Token t) {
+	public VariableNode(Token t) {
 		origin = t;
 	}
 	
 	public String toString() {
-		return "/" + origin.getValue() + "/";
+		return origin.getValue();
 	}
 	
 }

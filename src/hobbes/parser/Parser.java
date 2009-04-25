@@ -7,8 +7,12 @@ import java.util.LinkedList;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.Stack;
+import java.util.regex.Pattern;
 
 public class Parser {
+	
+	private static final Pattern variablePattern =
+					Pattern.compile("[a-zA-Z][a-zA-Z0-9]?\\??");
 	
 	public static void main(String[] args) {
 		Tokenizer t = new Tokenizer();
@@ -23,7 +27,7 @@ public class Parser {
 			String line = s.nextLine();
 			try {
 				t.addCode(line);
-				if(t.isReady())
+				if(t.isReady() && t.numTokens() > 0)
 					System.out.println(p.parse(t.getTokens(), line));
 			} catch (MismatchException e) {
 				System.err.println(e.getMessage());
@@ -209,8 +213,8 @@ public class Parser {
 	}
 
 	private boolean object() {
-		if(number()) {
-			stack.push(new ExpressionNode((NumberNode)stack.pop()));
+		if(number() || variable()) {
+			stack.push(new ExpressionNode((ObjectNode)stack.pop()));
 			return true;
 		} else
 			return false;
@@ -225,12 +229,29 @@ public class Parser {
 			return false;
 	}
 	
+	private boolean variable() {
+		if(wordWithPattern(variablePattern)) {
+			Token variableToken = ((TempNode)stack.pop()).getToken();
+			stack.push(new VariableNode(variableToken));
+			return true;
+		} else
+			return false;
+	}
+	
 	private boolean symbol(String value) {
 		return token(TokenType.SYMBOL,value);
 	}
 	
 	private boolean word(String value) {
 		return token(TokenType.WORD,value);
+	}
+	
+	private boolean wordWithPattern(Pattern pattern) {
+		if(token(TokenType.WORD) &&
+		   pattern.matcher(lastToken().getValue()).matches())
+			return true;
+		else
+			return false;
 	}
 	
 	private boolean token(TokenType type, String value) {

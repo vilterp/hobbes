@@ -122,6 +122,10 @@ public class Tokenizer {
 																+getLastOpener());
 	}
 	
+	public int numTokens() {
+		return tokens.size();
+	}
+	
 	public void clear() {
 		tokens.clear();
 		code.clear();
