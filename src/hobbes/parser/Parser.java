@@ -11,7 +11,6 @@ import java.util.regex.Pattern;
 
 public class Parser {
 	
-	// FIXME: "+2" => Stack Overflow
 	// FIXME: weird things when you just say "to" or "or" or "and"
 	
 	private static final Pattern variablePattern =
