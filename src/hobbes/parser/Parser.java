@@ -4,6 +4,7 @@ import hobbes.ast.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Scanner;
 import java.util.Stack;
@@ -16,45 +17,58 @@ public class Parser {
 	private static final Pattern variablePattern =
 					Pattern.compile("[a-zA-Z][a-zA-Z0-9]?\\??");
 	
+	private static final HashSet<String> reservedWords = new HashSet<String>();
+	static {
+		reservedWords.add("or");
+		reservedWords.add("and");
+		reservedWords.add("to");
+		reservedWords.add("class");
+		reservedWords.add("def");
+		reservedWords.add("while");
+		reservedWords.add("for");
+		reservedWords.add("if");
+		reservedWords.add("end");
+	}
+	
 	public static void main(String[] args) {
 		Tokenizer t = new Tokenizer();
 		Parser p = new Parser();
 		
-		Scanner s = new Scanner(System.in);
-		while(true) {
-			if(t.isReady())
-				System.out.print(">> ");
-			else
-				System.out.print(t.getLastOpener() + "> ");
-			String line = s.nextLine();
-			try {
-				t.addCode(line);
-				if(t.isReady() && t.numTokens() > 0)
-					System.out.println(p.parse(t.getTokens(), line));
-			} catch (MismatchException e) {
-				System.err.println(e.getMessage());
-			} catch (UnexpectedTokenException e) {
-				System.err.println(e.getMessage());
-			} catch (SyntaxError e) {
-				System.err.println(e.getMessage());
-				System.err.println(e.show());
-				p.clear();
-			}
-			
-		}
-		
-//		String code = "2+2*5";
-//		try {
-//			t.addCode(code);
-//			System.out.println(p.parse(t.getTokens(), code));
-//		} catch (MismatchException e) {
-//			e.printStackTrace();
-//		} catch (UnexpectedTokenException e) {
-//			e.printStackTrace();
-//		} catch (SyntaxError e) {
-//			System.err.println(e.getMessage());
-//			System.err.println(e.show());
+//		Scanner s = new Scanner(System.in);
+//		while(true) {
+//			if(t.isReady())
+//				System.out.print(">> ");
+//			else
+//				System.out.print(t.getLastOpener() + "> ");
+//			String line = s.nextLine();
+//			try {
+//				t.addCode(line);
+//				if(t.isReady() && t.numTokens() > 0)
+//					System.out.println(p.parse(t.getTokens(), line));
+//			} catch (MismatchException e) {
+//				System.err.println(e.getMessage());
+//			} catch (UnexpectedTokenException e) {
+//				System.err.println(e.getMessage());
+//			} catch (SyntaxError e) {
+//				System.err.println(e.getMessage());
+//				System.err.println(e.show());
+//				p.clear();
+//			}
+//			
 //		}
+		
+		String code = "or";
+		try {
+			t.addCode(code);
+			System.out.println(p.parse(t.getTokens(), code));
+		} catch (MismatchException e) {
+			e.printStackTrace();
+		} catch (UnexpectedTokenException e) {
+			e.printStackTrace();
+		} catch (SyntaxError e) {
+			System.err.println(e.getMessage());
+			System.err.println(e.show());
+		}
 		
 	}
 	
@@ -290,8 +304,12 @@ public class Parser {
 	private boolean variable() {
 		if(wordWithPattern(variablePattern)) {
 			Token variableToken = ((TempNode)stack.pop()).getToken();
-			stack.push(new VariableNode(variableToken));
-			return true;
+			if(reservedWords.contains(variableToken.getValue()))
+				return false;
+			else {
+				stack.push(new VariableNode(variableToken));
+				return true;
+			}
 		} else
 			return false;
 	}
