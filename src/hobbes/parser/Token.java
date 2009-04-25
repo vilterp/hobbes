@@ -32,4 +32,8 @@ public class Token {
 		return location.getEnd();
 	}
 	
+	public int getStart() {
+		return location.getStart();
+	}
+	
 }

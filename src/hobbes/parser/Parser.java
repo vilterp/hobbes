@@ -40,7 +40,7 @@ public class Parser {
 			
 		}
 		
-//		String code = "2+4*6";
+//		String code = "[1,2,3]";
 //		try {
 //			t.addCode(code);
 //			System.out.println(p.parse(t.getTokens(), code));
@@ -49,8 +49,10 @@ public class Parser {
 //		} catch (UnexpectedTokenException e) {
 //			e.printStackTrace();
 //		} catch (SyntaxError e) {
-//			e.printStackTrace();
+//			System.err.println(e.getMessage());
+//			System.err.println(e.show());
 //		}
+		
 	}
 	
 	private Stack<SyntaxNode> stack;
@@ -69,10 +71,8 @@ public class Parser {
 		line = code;
 		if(expression())
 			return stack.pop();
-		else {
-			System.out.println(stack);
-			return null; // TODO: throw error if no rules matched
-		}
+		else
+			throw new SyntaxError("invalid syntax",tokens.peek().getStart(),line);
 		// TODO: clear instance variables after parsing
 	}
 	
@@ -104,7 +104,8 @@ public class Parser {
 	
 	private boolean or() throws SyntaxError {
 		if(!and())
-			return false;
+			if(!parenthesizedExpression())
+				return false;
 		if(orOp()) {
 			if(or()) {
 				makeExpression();
@@ -118,7 +119,8 @@ public class Parser {
 	
 	private boolean and() throws SyntaxError {
 		if(!addition())
-			return false;
+			if(!parenthesizedExpression())
+				return false;
 		if(andOp()) {
 			if(and()) {
 				makeExpression();
@@ -132,7 +134,7 @@ public class Parser {
 	
 	private boolean addition() throws SyntaxError {
 		if(!multiplication())
-			if(parenthesizedExpression())
+			if(!parenthesizedExpression())
 				return false;
 		if(addOp()) {
 			if(addition()) {
@@ -147,7 +149,7 @@ public class Parser {
 	
 	private boolean multiplication() throws SyntaxError {
 		if(!exponent())
-			if(parenthesizedExpression())
+			if(!parenthesizedExpression())
 				return false;
 		if(multOp()) {
 			if(multiplication()) {
@@ -162,7 +164,7 @@ public class Parser {
 	
 	private boolean exponent() throws SyntaxError {
 		if(!object())
-			if(parenthesizedExpression())
+			if(!parenthesizedExpression())
 				return false;
 		if(powerOp()) {
 			if(exponent()) {
@@ -212,12 +214,42 @@ public class Parser {
 			return false;
 	}
 
-	private boolean object() {
-		if(number() || variable()) {
+	private boolean object() throws SyntaxError {
+		if(number() || variable() || array()) {
 			stack.push(new ExpressionNode((ObjectNode)stack.pop()));
 			return true;
 		} else
 			return false;
+	}
+	
+	private boolean array() throws SyntaxError {
+		if(symbol("["))
+			stack.pop();
+		else
+			return false;
+		if(symbol("]")) {
+			stack.pop();
+			stack.push(new ArrayNode());
+			return true;
+		}
+		int numElements = 0;
+		while(expression()) {
+			numElements++;
+			if(symbol(","))
+				stack.pop();
+			else {
+				if(symbol("]")) {
+					stack.pop();
+					LinkedList<ExpressionNode> elements = 
+										new LinkedList<ExpressionNode>();
+					for(int left=numElements; left > 0; left--)
+						elements.add(0,(ExpressionNode)stack.pop());
+					stack.push(new ArrayNode(elements));
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 	
 	private boolean number() {
