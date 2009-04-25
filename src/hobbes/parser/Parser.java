@@ -200,21 +200,21 @@ public class Parser {
 	*/
 
 	private boolean object() throws SyntaxError {
-		if(number() || variable() || array()) {
+		if(number() || variable() || list()) {
 			stack.push(new ExpressionNode((ObjectNode)stack.pop()));
 			return true;
 		} else
 			return false;
 	}
 
-	private boolean array() throws SyntaxError {
+	private boolean list() throws SyntaxError {
 		if(symbol("["))
 			stack.pop();
 		else
 			return false;
 		if(symbol("]")) {
 			stack.pop();
-			stack.push(new ArrayNode());
+			stack.push(new ListNode());
 			return true;
 		}
 		ArrayList<ExpressionNode> elements = new ArrayList<ExpressionNode>();
@@ -225,7 +225,7 @@ public class Parser {
 			else {
 				if(symbol("]")) {
 					stack.pop();
-					stack.push(new ArrayNode(elements));
+					stack.push(new ListNode(elements));
 					return true;
 				}
 			}

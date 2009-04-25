@@ -2,15 +2,15 @@ package hobbes.ast;
 
 import java.util.ArrayList;
 
-public class ArrayNode implements ObjectNode {
+public class ListNode implements ObjectNode {
 	
 	private ArrayList<ExpressionNode> elements;
 	
-	public ArrayNode(ArrayList<ExpressionNode> elems) {
+	public ListNode(ArrayList<ExpressionNode> elems) {
 		elements = elems;
 	}
 	
-	public ArrayNode() {
+	public ListNode() {
 		elements = new ArrayList<ExpressionNode>();
 	}
 	
