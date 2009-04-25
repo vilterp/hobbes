@@ -11,6 +11,7 @@ import java.util.regex.Pattern;
 public class Parser {
 	
 	// FIXME: "+2" => Stack Overflow
+	// FIXME: weird things when you just say "to" or "or" or "and"
 	
 	private static final Pattern variablePattern =
 					Pattern.compile("[a-zA-Z][a-zA-Z0-9]?\\??");
@@ -37,11 +38,12 @@ public class Parser {
 			} catch (SyntaxError e) {
 				System.err.println(e.getMessage());
 				System.err.println(e.show());
+				p.clear();
 			}
 			
 		}
 		
-//		String code = "2";
+//		String code = "2+2*5";
 //		try {
 //			t.addCode(code);
 //			System.out.println(p.parse(t.getTokens(), code));
