@@ -3,6 +3,7 @@ package hobbes.parser;
 import hobbes.ast.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Scanner;
 import java.util.Stack;
@@ -74,8 +75,10 @@ public class Parser {
 		line = code;
 		if(expression())
 			return stack.pop();
-		else
+		else if(!tokens.isEmpty())
 			throw new SyntaxError("invalid syntax",tokens.peek().getStart(),line);
+		else
+			throw new SyntaxError("invalid syntax",0,line);
 		// TODO: clear instance variables after parsing
 	}
 	
@@ -194,30 +197,9 @@ public class Parser {
 		} else
 			return true;
 	}
-	
-	/*
-	private boolean range() throws SyntaxError {
-		if(!object())
-			if(!parenthesizedExpression())
-				return false;
-		if(symbol("..") || symbol("...")) {
-			if(expression() || parenthesizedExpression()) {
-				ExpressionNode end = (ExpressionNode)stack.pop();
-				Token dots = ((TempNode)stack.pop()).getToken();
-				ExpressionNode start = (ExpressionNode)stack.pop();
-				stack.push(new RangeNode(start,dots,end));
-				return true;
-			} else
-				throw new SyntaxError("no expression after "+lastToken().getValue(),
-									  lastToken().getEnd(),line);
-			
-		} else
-			return true;
-	}
-	*/
 
 	private boolean object() throws SyntaxError {
-		if(number() || variable() || list()) {
+		if(number() || string() || regex() || variable() || list() || dict()) {
 			stack.push(new ExpressionNode((ObjectNode)stack.pop()));
 			return true;
 		} else
@@ -249,11 +231,58 @@ public class Parser {
 		}
 		return false;
 	}
+	
+	private boolean dict() throws SyntaxError {
+		if(symbol("{"))
+			stack.pop();
+		else
+			return false;
+		if(symbol("}")) {
+			stack.pop();
+			stack.push(new DictNode());
+			return true;
+		}
+		HashMap<ExpressionNode,ExpressionNode> elements = new HashMap<ExpressionNode,ExpressionNode>();
+		while(expression()) {
+			ExpressionNode key = (ExpressionNode)stack.pop();
+			if(!(symbol(":") && expression())) {} // TODO: go to set()
+			ExpressionNode value = (ExpressionNode)stack.pop();
+			elements.put(key, value);
+			if(symbol(","))
+				stack.pop();
+			else {
+				if(symbol("}")) {
+					stack.pop();
+					stack.push(new DictNode(elements));
+					return true;
+				}
+			}
+		}
+		return false;
+	}
 
 	private boolean number() {
 		if(token(TokenType.NUMBER)) {
 			Token numberToken = ((TempNode)stack.pop()).getToken();
 			stack.push(new NumberNode(numberToken));
+			return true;
+		} else
+			return false;
+	}
+	
+	private boolean string() {
+		if(token(TokenType.STRING)) {
+			Token stringToken = ((TempNode)stack.pop()).getToken();
+			stack.push(new StringNode(stringToken));
+			return true;
+		} else
+			return false;
+	}
+	
+	private boolean regex() {
+		if(token(TokenType.REGEX)) {
+			Token regexToken = ((TempNode)stack.pop()).getToken();
+			stack.push(new RegexNode(regexToken));
 			return true;
 		} else
 			return false;
