@@ -107,7 +107,7 @@ public class Parser {
 		if(!and())
 			if(!parenthesizedExpression())
 				return false;
-		if(orOp()) {
+		if(word("or")) {
 			if(or()) {
 				makeExpression();
 				return true;
@@ -119,16 +119,31 @@ public class Parser {
 	}
 	
 	private boolean and() throws SyntaxError {
-		if(!addition())
+		if(!to())
 			if(!parenthesizedExpression())
 				return false;
-		if(andOp()) {
+		if(word("and")) {
 			if(and()) {
 				makeExpression();
 				return true;
 			} else
 				throw new SyntaxError("No expression after \"and\"",
 									  lastToken().getEnd(),line);
+		} else
+			return true;
+	}
+	
+	private boolean to() throws SyntaxError {
+		if(!addition())
+			if(!parenthesizedExpression())
+				return false;
+		if(word("to")) {
+			if(to()) {
+				makeExpression();
+				return true;
+			} else
+				throw new SyntaxError("No expression after \"to\"",
+						  lastToken().getEnd(),line);
 		} else
 			return true;
 	}
@@ -248,20 +263,6 @@ public class Parser {
 			stack.push(new VariableNode(variableToken));
 			return true;
 		} else
-			return false;
-	}
-
-	private boolean orOp() {
-		if(word("or"))
-			return true;
-		else
-			return false;
-	}
-
-	private boolean andOp() {
-		if(word("and"))
-			return true;
-		else
 			return false;
 	}
 

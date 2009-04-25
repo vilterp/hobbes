@@ -10,6 +10,7 @@ public class Tokenizer {
 	
 	// TODO: location info for multiline tokens (sep. SourcePoint & SourceSpan classes?)
 	// TODO: give each token the line as a String (what about multilines?)
+	// TODO: if statements, etc on a single line with no "end"
 	
 	private LinkedList<Character> code;
 	private ArrayList<Token> tokens;
@@ -30,8 +31,6 @@ public class Tokenizer {
 		multiCharSymbols.add("<=");
 		multiCharSymbols.add("++");
 		multiCharSymbols.add("--");
-		multiCharSymbols.add("..");
-		multiCharSymbols.add("...");
 	}
 	
 	private final static HashMap<String,String> pairs = new HashMap<String,String>();
