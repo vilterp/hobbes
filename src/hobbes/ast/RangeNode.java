@@ -2,7 +2,7 @@ package hobbes.ast;
 
 import hobbes.parser.Token;
 
-public class RangeNode implements SyntaxNode {
+public class RangeNode implements ObjectNode {
 	
 	private ExpressionNode start;
 	private Token dots;

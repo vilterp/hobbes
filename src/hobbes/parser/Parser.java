@@ -4,7 +4,6 @@ import hobbes.ast.*;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
-import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.Stack;
 import java.util.regex.Pattern;
@@ -42,7 +41,7 @@ public class Parser {
 			
 		}
 		
-//		String code = "[1,2,3]";
+//		String code = "2";
 //		try {
 //			t.addCode(code);
 //			System.out.println(p.parse(t.getTokens(), code));
@@ -165,7 +164,7 @@ public class Parser {
 	}
 	
 	private boolean exponent() throws SyntaxError {
-		if(!object())
+		if(!object()) // range()
 			if(!parenthesizedExpression())
 				return false;
 		if(powerOp()) {
@@ -177,6 +176,79 @@ public class Parser {
 									  lastToken().getEnd(),line);
 		} else
 			return true;
+	}
+	
+	/*
+	private boolean range() throws SyntaxError {
+		if(!object())
+			if(!parenthesizedExpression())
+				return false;
+		if(symbol("..") || symbol("...")) {
+			if(expression() || parenthesizedExpression()) {
+				ExpressionNode end = (ExpressionNode)stack.pop();
+				Token dots = ((TempNode)stack.pop()).getToken();
+				ExpressionNode start = (ExpressionNode)stack.pop();
+				stack.push(new RangeNode(start,dots,end));
+				return true;
+			} else
+				throw new SyntaxError("no expression after "+lastToken().getValue(),
+									  lastToken().getEnd(),line);
+			
+		} else
+			return true;
+	}
+	*/
+
+	private boolean object() throws SyntaxError {
+		if(number() || variable() || array()) {
+			stack.push(new ExpressionNode((ObjectNode)stack.pop()));
+			return true;
+		} else
+			return false;
+	}
+
+	private boolean array() throws SyntaxError {
+		if(symbol("["))
+			stack.pop();
+		else
+			return false;
+		if(symbol("]")) {
+			stack.pop();
+			stack.push(new ArrayNode());
+			return true;
+		}
+		ArrayList<ExpressionNode> elements = new ArrayList<ExpressionNode>();
+		while(expression()) {
+			elements.add((ExpressionNode)stack.pop());
+			if(symbol(","))
+				stack.pop();
+			else {
+				if(symbol("]")) {
+					stack.pop();
+					stack.push(new ArrayNode(elements));
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	private boolean number() {
+		if(token(TokenType.NUMBER)) {
+			Token numberToken = ((TempNode)stack.pop()).getToken();
+			stack.push(new NumberNode(numberToken));
+			return true;
+		} else
+			return false;
+	}
+
+	private boolean variable() {
+		if(wordWithPattern(variablePattern)) {
+			Token variableToken = ((TempNode)stack.pop()).getToken();
+			stack.push(new VariableNode(variableToken));
+			return true;
+		} else
+			return false;
 	}
 
 	private boolean orOp() {
@@ -216,82 +288,6 @@ public class Parser {
 			return false;
 	}
 
-	private boolean object() throws SyntaxError {
-		if(range() || number() || variable() || array()) {
-			stack.push(new ExpressionNode((ObjectNode)stack.pop()));
-			return true;
-		} else
-			return false;
-	}
-	
-	private boolean array() throws SyntaxError {
-		if(symbol("["))
-			stack.pop();
-		else
-			return false;
-		if(symbol("]")) {
-			stack.pop();
-			stack.push(new ArrayNode());
-			return true;
-		}
-		int numElements = 0;
-		while(expression()) {
-			numElements++;
-			if(symbol(","))
-				stack.pop();
-			else {
-				if(symbol("]")) {
-					stack.pop();
-					LinkedList<ExpressionNode> elements = 
-										new LinkedList<ExpressionNode>();
-					for(int left=numElements; left > 0; left--)
-						elements.add(0,(ExpressionNode)stack.pop());
-					stack.push(new ArrayNode(elements));
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-	
-	private boolean range() throws SyntaxError {
-		// FIXME: infinite loop
-		if(!object())
-			if(!parenthesizedExpression())
-				return false;
-		if(symbol("..") || symbol("...")) {
-			if(expression() || parenthesizedExpression()) {
-				ExpressionNode end = (ExpressionNode)stack.pop();
-				Token dots = ((TempNode)stack.pop()).getToken();
-				ExpressionNode start = (ExpressionNode)stack.pop();
-				stack.push(new RangeNode(start,dots,end));
-				return true;
-			} else
-				throw new SyntaxError("no expression after "+lastToken().getValue(),
-									  lastToken().getEnd(),line);
-			
-		} else
-			return true;
-	}
-	
-	private boolean number() {
-		if(token(TokenType.NUMBER)) {
-			Token numberToken = ((TempNode)stack.pop()).getToken();
-			stack.push(new NumberNode(numberToken));
-			return true;
-		} else
-			return false;
-	}
-	
-	private boolean variable() {
-		if(wordWithPattern(variablePattern)) {
-			Token variableToken = ((TempNode)stack.pop()).getToken();
-			stack.push(new VariableNode(variableToken));
-			return true;
-		} else
-			return false;
-	}
-	
 	private boolean symbol(String value) {
 		return token(TokenType.SYMBOL,value);
 	}

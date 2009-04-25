@@ -1,18 +1,17 @@
 package hobbes.ast;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 
 public class ArrayNode implements ObjectNode {
 	
-	private LinkedList<ExpressionNode> elements;
-	// linked list cuz the parser has to add them in reverse order
+	private ArrayList<ExpressionNode> elements;
 	
-	public ArrayNode(LinkedList<ExpressionNode> elems) {
+	public ArrayNode(ArrayList<ExpressionNode> elems) {
 		elements = elems;
 	}
 	
 	public ArrayNode() {
-		elements = new LinkedList<ExpressionNode>();
+		elements = new ArrayList<ExpressionNode>();
 	}
 	
 	public String toString() {
