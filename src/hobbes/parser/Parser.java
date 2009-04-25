@@ -11,6 +11,8 @@ import java.util.regex.Pattern;
 
 public class Parser {
 	
+	// FIXME: "+2" => Stack Overflow
+	
 	private static final Pattern variablePattern =
 					Pattern.compile("[a-zA-Z][a-zA-Z0-9]?\\??");
 	
@@ -215,7 +217,7 @@ public class Parser {
 	}
 
 	private boolean object() throws SyntaxError {
-		if(number() || variable() || array()) {
+		if(range() || number() || variable() || array()) {
 			stack.push(new ExpressionNode((ObjectNode)stack.pop()));
 			return true;
 		} else
@@ -250,6 +252,26 @@ public class Parser {
 			}
 		}
 		return false;
+	}
+	
+	private boolean range() throws SyntaxError {
+		// FIXME: infinite loop
+		if(!object())
+			if(!parenthesizedExpression())
+				return false;
+		if(symbol("..") || symbol("...")) {
+			if(expression() || parenthesizedExpression()) {
+				ExpressionNode end = (ExpressionNode)stack.pop();
+				Token dots = ((TempNode)stack.pop()).getToken();
+				ExpressionNode start = (ExpressionNode)stack.pop();
+				stack.push(new RangeNode(start,dots,end));
+				return true;
+			} else
+				throw new SyntaxError("no expression after "+lastToken().getValue(),
+									  lastToken().getEnd(),line);
+			
+		} else
+			return true;
 	}
 	
 	private boolean number() {
