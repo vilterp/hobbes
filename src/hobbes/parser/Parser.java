@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 
 public class Parser {
 	
-	// FIXME: weird things when you just say "to" or "or" or "and"
+	// TODO: test operators (==, !=)
 	
 	private static final Pattern variablePattern =
 					Pattern.compile("[a-zA-Z][a-zA-Z0-9]?\\??");
@@ -34,41 +34,41 @@ public class Parser {
 		Tokenizer t = new Tokenizer();
 		Parser p = new Parser();
 		
-//		Scanner s = new Scanner(System.in);
-//		while(true) {
-//			if(t.isReady())
-//				System.out.print(">> ");
-//			else
-//				System.out.print(t.getLastOpener() + "> ");
-//			String line = s.nextLine();
-//			try {
-//				t.addCode(line);
-//				if(t.isReady() && t.numTokens() > 0)
-//					System.out.println(p.parse(t.getTokens(), line));
-//			} catch (MismatchException e) {
-//				System.err.println(e.getMessage());
-//			} catch (UnexpectedTokenException e) {
-//				System.err.println(e.getMessage());
-//			} catch (SyntaxError e) {
-//				System.err.println(e.getMessage());
-//				System.err.println(e.show());
-//				p.clear();
-//			}
-//			
-//		}
-		
-		String code = "or";
-		try {
-			t.addCode(code);
-			System.out.println(p.parse(t.getTokens(), code));
-		} catch (MismatchException e) {
-			e.printStackTrace();
-		} catch (UnexpectedTokenException e) {
-			e.printStackTrace();
-		} catch (SyntaxError e) {
-			System.err.println(e.getMessage());
-			System.err.println(e.show());
+		Scanner s = new Scanner(System.in);
+		while(true) {
+			if(t.isReady())
+				System.out.print(">> ");
+			else
+				System.out.print(t.getLastOpener() + "> ");
+			String line = s.nextLine();
+			try {
+				t.addCode(line);
+				if(t.isReady() && t.numTokens() > 0)
+					System.out.println(p.parse(t.getTokens(), line));
+			} catch (MismatchException e) {
+				System.err.println(e.getMessage());
+			} catch (UnexpectedTokenException e) {
+				System.err.println(e.getMessage());
+			} catch (SyntaxError e) {
+				System.err.println(e.getMessage());
+				System.err.println(e.show());
+				p.clear();
+			}
+			
 		}
+		
+//		String code = "or";
+//		try {
+//			t.addCode(code);
+//			System.out.println(p.parse(t.getTokens(), code));
+//		} catch (MismatchException e) {
+//			e.printStackTrace();
+//		} catch (UnexpectedTokenException e) {
+//			e.printStackTrace();
+//		} catch (SyntaxError e) {
+//			System.err.println(e.getMessage());
+//			System.err.println(e.show());
+//		}
 		
 	}
 	
@@ -137,7 +137,7 @@ public class Parser {
 	}
 	
 	private boolean and() throws SyntaxError {
-		if(!to())
+		if(!test())
 			if(!parenthesizedExpression())
 				return false;
 		if(word("and")) {
@@ -147,6 +147,21 @@ public class Parser {
 			} else
 				throw new SyntaxError("No expression after \"and\"",
 									  lastToken().getEnd(),line);
+		} else
+			return true;
+	}
+	
+	private boolean test() throws SyntaxError {
+		if(!to())
+			if(!parenthesizedExpression())
+				return false;
+		if(testOp()) {
+			if(test()) {
+				makeExpression();
+				return true;
+			} else
+				throw new SyntaxError("No expression after "+lastToken().getValue(),
+						  			  lastToken().getEnd(),line);
 		} else
 			return true;
 	}
@@ -312,6 +327,33 @@ public class Parser {
 			}
 		} else
 			return false;
+	}
+	
+	private boolean testOp() {
+		// FIXME: "not in" and "is not" broken. make "NotNode"?
+		if(symbol("=="))
+			return true;
+		if(symbol("!="))
+			return true;
+		if(symbol(">="))
+			return true;
+		if(symbol("<="))
+			return true;
+		if(symbol("<"))
+			return true;
+		if(symbol(">"))
+			return true;
+		if(word("in"))
+			return true;
+		if(word("not") && word("in")) // WHATIF: one but not the other
+			return true;
+		if(word("is")) {
+			if(word("not"))
+				return true;
+			else
+				return true;
+		}
+		return false;
 	}
 
 	private boolean addOp() {

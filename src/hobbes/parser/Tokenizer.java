@@ -2,6 +2,7 @@ package hobbes.parser;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Stack;
 import java.util.Scanner;
@@ -19,7 +20,7 @@ public class Tokenizer {
 	private int pos;
 	private int startPos;
 	
-	private final static ArrayList<String> multiCharSymbols = new ArrayList<String>();
+	private final static HashSet<String> multiCharSymbols = new HashSet<String>();
 	static {
 		multiCharSymbols.add("==");
 		multiCharSymbols.add("!=");
@@ -45,38 +46,38 @@ public class Tokenizer {
 		pairs.put("while", "end");
 	}
 	
-//	public static void main(String[] args) {
-//		Tokenizer t = new Tokenizer();
-//		Scanner s = new Scanner(System.in);
-//		
-//		while(true) {
-//			if(t.isReady())
-//				System.out.print(">> ");
-//			else
-//				System.out.print(t.getLastOpener()+"> ");
-//			try {
-//				t.addCode(s.nextLine());
-//				if(t.isReady())
-//					System.out.println(t.getTokens());
-//			} catch(MismatchException e) {
-//				t.clear();
-//				System.out.println(e.getMessage());
-//			} catch (UnexpectedTokenException e) {
-//				t.clear();
-//				System.out.println(e.getMessage());
-//			}
+	public static void main(String[] args) {
+		Tokenizer t = new Tokenizer();
+		Scanner s = new Scanner(System.in);
+		
+		while(true) {
+			if(t.isReady())
+				System.out.print(">> ");
+			else
+				System.out.print(t.getLastOpener()+"> ");
+			try {
+				t.addCode(s.nextLine());
+				if(t.isReady())
+					System.out.println(t.getTokens());
+			} catch(MismatchException e) {
+				t.clear();
+				System.out.println(e.getMessage());
+			} catch (UnexpectedTokenException e) {
+				t.clear();
+				System.out.println(e.getMessage());
+			}
+		}
+		
+//		try {
+//			t.addCode("==");
+//		} catch (MismatchException e) {
+//			e.printStackTrace();
 //		}
-//		
-////		try {
-////			t.addCode("==");
-////		} catch (MismatchException e) {
-////			e.printStackTrace();
-////		}
-////		if(t.isReady())
-////			System.out.println(t.getTokens());
-////		else
-////			System.out.println("waiting for "+t.getWaitingFor());
-//	}
+//		if(t.isReady())
+//			System.out.println(t.getTokens());
+//		else
+//			System.out.println("waiting for "+t.getWaitingFor());
+	}
 	
 	public Tokenizer() {
 		code = new LinkedList<Character>();
