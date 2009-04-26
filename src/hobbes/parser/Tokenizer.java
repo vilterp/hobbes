@@ -169,6 +169,18 @@ public class Tokenizer {
 				getNumber();
 			} else
 				getSymbol();
+		} else if(peek() == '-') {
+			if(peek(1) != null && Character.isDigit(peek(1))) {
+				// -5
+				read();
+				getNumber();
+			} else if((peek(1) != null && peek(1) == '.') &&
+					  (peek(2) != null && Character.isDigit(peek(2)))) {
+				read();
+				read();
+				getNumber();
+			} else
+				getSymbol();
 		} else if(peek() == '/') {
 			Token lastToken = lastToken();
 			if(lastToken != null &&

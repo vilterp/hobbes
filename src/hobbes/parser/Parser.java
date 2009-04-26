@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 
 public class Parser {
 	
-	// TODO: test operators (==, !=)
+	// TODO: negation of expressions
 	
 	private static final Pattern variablePattern =
 					Pattern.compile("[a-zA-Z][a-zA-Z0-9]?\\??");
