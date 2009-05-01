@@ -127,7 +127,7 @@ public class Parser {
 				return false;
 		if(word("or")) {
 			if(or()) {
-				makeExpression();
+				makeOperation();
 				return true;
 			} else
 				throw new SyntaxError("No expression after \"and\"",
@@ -137,12 +137,12 @@ public class Parser {
 	}
 	
 	private boolean and() throws SyntaxError {
-		if(!test())
+		if(!not())
 			if(!parenthesizedExpression())
 				return false;
 		if(word("and")) {
 			if(and()) {
-				makeExpression();
+				makeOperation();
 				return true;
 			} else
 				throw new SyntaxError("No expression after \"and\"",
@@ -151,13 +151,27 @@ public class Parser {
 			return true;
 	}
 	
+	private boolean not() throws SyntaxError {
+		if(word("not")) {
+			if(expression()) {
+				stack.push(new NotNode((ExpressionNode)stack.pop()));
+				return true;
+			} else
+				throw new SyntaxError("No expression after \"not\"",
+									  lastToken().getEnd(),line);
+		} else if(test())
+			return true;
+		else
+			return false;
+	}
+	
 	private boolean test() throws SyntaxError {
 		if(!to())
 			if(!parenthesizedExpression())
 				return false;
 		if(testOp()) {
 			if(test()) {
-				makeExpression();
+				makeOperation();
 				return true;
 			} else
 				throw new SyntaxError("No expression after "+lastToken().getValue(),
@@ -172,7 +186,7 @@ public class Parser {
 				return false;
 		if(word("to")) {
 			if(to()) {
-				makeExpression();
+				makeOperation();
 				return true;
 			} else
 				throw new SyntaxError("No expression after \"to\"",
@@ -187,7 +201,7 @@ public class Parser {
 				return false;
 		if(addOp()) {
 			if(addition()) {
-				makeExpression();
+				makeOperation();
 				return true;
 			} else
 				throw new SyntaxError("no expression after +",
@@ -202,7 +216,7 @@ public class Parser {
 				return false;
 		if(multOp()) {
 			if(multiplication()) {
-				makeExpression();
+				makeOperation();
 				return true;
 			} else
 				throw new SyntaxError("no expression after *",
@@ -212,12 +226,12 @@ public class Parser {
 	}
 	
 	private boolean exponent() throws SyntaxError {
-		if(!object()) // range()
+		if(!literal()) // range()
 			if(!parenthesizedExpression())
 				return false;
 		if(powerOp()) {
 			if(exponent()) {
-				makeExpression();
+				makeOperation();
 				return true;
 			} else
 				throw new SyntaxError("no expression after ^",
@@ -226,9 +240,9 @@ public class Parser {
 			return true;
 	}
 
-	private boolean object() throws SyntaxError {
+	private boolean literal() throws SyntaxError {
 		if(number() || string() || regex() || variable() || list() || dict()) {
-			stack.push(new ExpressionNode((ObjectNode)stack.pop()));
+			stack.push(new OperationNode((ObjectNode)stack.pop()));
 			return true;
 		} else
 			return false;
@@ -330,7 +344,6 @@ public class Parser {
 	}
 	
 	private boolean testOp() {
-		// FIXME: "not in" and "is not" broken. make "NotNode"?
 		if(symbol("=="))
 			return true;
 		if(symbol("!="))
@@ -345,13 +358,8 @@ public class Parser {
 			return true;
 		if(word("in"))
 			return true;
-		if(word("not") && word("in")) // WHATIF: one but not the other
-			return true;
 		if(word("is")) {
-			if(word("not"))
-				return true;
-			else
-				return true;
+			return true;
 		}
 		return false;
 	}
@@ -420,11 +428,11 @@ public class Parser {
 		return ((TempNode)stack.peek()).getToken();
 	}
 	
-	private void makeExpression() {
+	private void makeOperation() {
 		ExpressionNode right = (ExpressionNode)stack.pop();
 		Token operator = ((TempNode)stack.pop()).getToken();
 		ExpressionNode left = (ExpressionNode)stack.pop();
-		stack.push(new ExpressionNode(left,operator,right));
+		stack.push(new OperationNode(left,operator,right));
 	}
 	
 }
