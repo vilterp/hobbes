@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.Stack;
 import java.util.regex.Pattern;
@@ -13,9 +14,11 @@ import java.util.regex.Pattern;
 public class Parser {
 	
 	// TODO: negation of expressions
+	// TODO: "x if C else y"
+	// TODO: -(123)
 	
 	private static final Pattern variablePattern =
-					Pattern.compile("[a-zA-Z][a-zA-Z0-9]?\\??");
+					Pattern.compile("[a-zA-Z][a-zA-Z0-9]*\\??");
 	
 	private static final HashSet<String> reservedWords = new HashSet<String>();
 	static {
@@ -25,8 +28,10 @@ public class Parser {
 		reservedWords.add("class");
 		reservedWords.add("def");
 		reservedWords.add("while");
+		reservedWords.add("until");
 		reservedWords.add("for");
 		reservedWords.add("if");
+		reservedWords.add("unless");
 		reservedWords.add("end");
 	}
 	
@@ -40,7 +45,12 @@ public class Parser {
 				System.out.print(">> ");
 			else
 				System.out.print(t.getLastOpener() + "> ");
-			String line = s.nextLine();
+			String line = null;
+			try {
+				line = s.nextLine();
+			} catch(NoSuchElementException e) {
+				System.out.println();
+			}
 			try {
 				t.addCode(line);
 				if(t.isReady() && t.numTokens() > 0)
@@ -57,7 +67,7 @@ public class Parser {
 			
 		}
 		
-//		String code = "or";
+//		String code = "a(1,)";
 //		try {
 //			t.addCode(code);
 //			System.out.println(p.parse(t.getTokens(), code));
@@ -86,10 +96,13 @@ public class Parser {
 		for(Token t: tokenList)
 			tokens.add(t);
 		line = code;
-		if(expression())
-			return stack.pop();
-		else if(!tokens.isEmpty())
-			throw new SyntaxError("invalid syntax",tokens.peek().getStart(),line);
+		if(expression()) {
+			if(tokens.isEmpty())
+				return stack.pop();
+			else
+				throw new SyntaxError("invalid syntax",tokens.peek().getEnd(),line);
+		} else if(!tokens.isEmpty())
+			throw new SyntaxError("invalid syntax",tokens.peek().getEnd(),line);
 		else
 			throw new SyntaxError("invalid syntax",0,line);
 		// TODO: clear instance variables after parsing
@@ -115,7 +128,7 @@ public class Parser {
 			return false;
 		if(!expression())
 			throw new SyntaxError("no expression after (",
-								  lastToken().getEnd(),line);
+								  	lastToken().getEnd(),line);
 		symbol(")"); // tokenizer makes sure it's there
 		stack.pop();
 		return true;
@@ -131,7 +144,7 @@ public class Parser {
 				return true;
 			} else
 				throw new SyntaxError("No expression after \"and\"",
-									  lastToken().getEnd(),line);
+									  	lastToken().getEnd(),line);
 		} else
 			return true;
 	}
@@ -146,19 +159,20 @@ public class Parser {
 				return true;
 			} else
 				throw new SyntaxError("No expression after \"and\"",
-									  lastToken().getEnd(),line);
+									  	lastToken().getEnd(),line);
 		} else
 			return true;
 	}
 	
 	private boolean not() throws SyntaxError {
 		if(word("not")) {
-			if(expression()) {
+			stack.pop();
+			if(test()) {
 				stack.push(new NotNode((ExpressionNode)stack.pop()));
 				return true;
 			} else
 				throw new SyntaxError("No expression after \"not\"",
-									  lastToken().getEnd(),line);
+									  	lastToken().getEnd(),line);
 		} else if(test())
 			return true;
 		else
@@ -175,7 +189,7 @@ public class Parser {
 				return true;
 			} else
 				throw new SyntaxError("No expression after "+lastToken().getValue(),
-						  			  lastToken().getEnd(),line);
+						  			  	lastToken().getEnd(),line);
 		} else
 			return true;
 	}
@@ -190,7 +204,7 @@ public class Parser {
 				return true;
 			} else
 				throw new SyntaxError("No expression after \"to\"",
-						  lastToken().getEnd(),line);
+						  				lastToken().getEnd(),line);
 		} else
 			return true;
 	}
@@ -204,8 +218,8 @@ public class Parser {
 				makeOperation();
 				return true;
 			} else
-				throw new SyntaxError("no expression after +",
-									  lastToken().getEnd(),line);
+				throw new SyntaxError("no expression after "+lastToken().getValue(),
+									  	lastToken().getEnd(),line);
 		} else
 			return true;
 	}
@@ -219,14 +233,14 @@ public class Parser {
 				makeOperation();
 				return true;
 			} else
-				throw new SyntaxError("no expression after *",
-									  lastToken().getEnd(),line);
+				throw new SyntaxError("no expression after "+lastToken().getValue(),
+									  	lastToken().getEnd(),line);
 		} else
 			return true;
 	}
 	
 	private boolean exponent() throws SyntaxError {
-		if(!literal()) // range()
+		if(!object())
 			if(!parenthesizedExpression())
 				return false;
 		if(powerOp()) {
@@ -235,17 +249,101 @@ public class Parser {
 				return true;
 			} else
 				throw new SyntaxError("no expression after ^",
-									  lastToken().getEnd(),line);
+									  	lastToken().getEnd(),line);
 		} else
 			return true;
 	}
-
-	private boolean literal() throws SyntaxError {
-		if(number() || string() || regex() || variable() || list() || dict()) {
-			stack.push(new OperationNode((ObjectNode)stack.pop()));
+	
+	private boolean object() throws SyntaxError {
+		if(!atom())
+			if(!parenthesizedExpression())
+				return false;
+		while(true) {
+			if(attribute())
+				continue;
+			else if(call())
+				continue;
+			else if(subscript())
+				continue;
+			else
+				break;
+		}
+		return true;
+	}
+	
+	private boolean attribute() throws SyntaxError {
+		if(!symbol("."))
+			return false;
+		else
+			stack.pop();
+		// FIXME: a methodname rule would be better here,
+			//but it wouldn't put TempNodes on the stack
+		if(wordWithPattern(variablePattern)) {
+			String attr = ((TempNode)stack.pop()).getToken().getValue();
+			ExpressionNode expr = (ExpressionNode)stack.pop();
+			stack.push(new AttributeNode(expr,attr));
 			return true;
 		} else
+			throw new SyntaxError("no attribute name after \".\"",
+								  	lastToken().getEnd(),line);
+	}
+	
+	private boolean subscript() throws SyntaxError {
+		Token opener = null;
+		if(!symbol("["))
 			return false;
+		else
+			opener = ((TempNode)stack.pop()).getToken();
+		if(expression()) {
+			symbol("]");
+			stack.pop();
+			ExpressionNode subscr = (ExpressionNode)stack.pop();
+			ExpressionNode obj = (ExpressionNode)stack.pop();
+			stack.push(new SubscriptNode(obj,subscr));
+			return true;
+		} else
+			throw new SyntaxError("no expression in []'s",
+									opener.getEnd(),line);
+	}
+	
+	private boolean call() throws SyntaxError {
+		if(!symbol("("))
+			return false;
+		else
+			stack.pop();
+		ArrayList<ExpressionNode> args = arguments();
+		symbol(")"); // FIXME: would this ever not be there?
+		stack.pop();
+		stack.push(new CallNode((ExpressionNode)stack.pop(),args));
+		return true;
+	}
+	
+	private ArrayList<ExpressionNode> arguments() throws SyntaxError {
+		// TODO: *['splat','args'], **{'kw':'args'}
+			// there'll have to be an Argument class or something
+		ArrayList<ExpressionNode> results = new ArrayList<ExpressionNode>();
+		while(expression()) {
+			results.add((ExpressionNode)stack.pop());
+			if(symbol(",")) {
+				stack.pop();
+				if(symbol(")"))
+					throw new SyntaxError("trailing comma",
+											lastToken().getStart(),line);
+			}
+		}
+		return results;
+	}
+	
+	private boolean atom() throws SyntaxError {
+		if(!variable())
+			if(!number())
+				if(!string())
+					if(!regex())
+						if(!list())
+							if(!dict())
+								return false;
+		stack.push(new OperationNode((ObjectNode)stack.pop()));
+		return true;
 	}
 
 	private boolean list() throws SyntaxError {

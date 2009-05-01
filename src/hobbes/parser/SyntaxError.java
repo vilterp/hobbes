@@ -22,7 +22,7 @@ public class SyntaxError extends Exception {
 	}
 	
 	public String show() {
-		String ans = line + "\n";
+		String ans = " " + line + "\n";
 		for(int i=0; i < pos; i++)
 			ans += ' ';
 		ans += '^';

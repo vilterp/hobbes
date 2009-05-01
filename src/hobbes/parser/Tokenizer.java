@@ -42,8 +42,11 @@ public class Tokenizer {
 		pairs.put("class", "end");
 		pairs.put("def", "end");
 		pairs.put("if", "end");
+		pairs.put("unless", "end");
 		pairs.put("for", "end");
 		pairs.put("while", "end");
+		pairs.put("until", "end");
+		pairs.put("trait", "end");
 	}
 	
 	public static void main(String[] args) {
@@ -69,14 +72,17 @@ public class Tokenizer {
 		}
 		
 //		try {
-//			t.addCode("==");
+//			t.addCode("//");
 //		} catch (MismatchException e) {
+//			e.printStackTrace();
+//		} catch (UnexpectedTokenException e) {
 //			e.printStackTrace();
 //		}
 //		if(t.isReady())
 //			System.out.println(t.getTokens());
 //		else
 //			System.out.println("waiting for "+t.getWaitingFor());
+		
 	}
 	
 	public Tokenizer() {
@@ -204,7 +210,7 @@ public class Tokenizer {
 			if(!moreCode()) {
 				buffer += "\n";
 				return;
-			} else if(peek() == start && lastChar() != '\\') {
+			} else if(peek() == start && (lastChar() == null || lastChar() != '\\')) {
 				code.poll();
 				pos++;
 				depth.pop();
@@ -241,7 +247,7 @@ public class Tokenizer {
 			if(!moreCode()) {
 				buffer += "\n";
 				return;
-			} if(peek() == '/' && lastChar() != '\\') {
+			} if(peek() == '/' && (lastChar() == null || lastChar() != '\\')) {
 				code.poll();
 				pos++;
 				depth.pop();
