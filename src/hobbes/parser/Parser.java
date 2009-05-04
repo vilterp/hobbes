@@ -67,7 +67,7 @@ public class Parser {
 			
 		}
 		
-//		String code = "a(1,)";
+//		String code = "-2--5";
 //		try {
 //			t.addCode(code);
 //			System.out.println(p.parse(t.getTokens(), code));
@@ -402,7 +402,18 @@ public class Parser {
 	}
 
 	private boolean number() {
-		if(token(TokenType.NUMBER)) {
+		if(symbol("-")) {
+			if(token(TokenType.NUMBER)) {
+				Token numberToken = ((TempNode)stack.pop()).getToken();
+				Token negativeToken = ((TempNode)stack.pop()).getToken();
+				stack.push(new NumberNode(negativeToken,numberToken));
+				return true;
+			} else {
+				Token negativeToken = ((TempNode)stack.pop()).getToken();
+				tokens.addFirst(negativeToken);
+				return false;
+			}
+		} else if(token(TokenType.NUMBER)) {
 			Token numberToken = ((TempNode)stack.pop()).getToken();
 			stack.push(new NumberNode(numberToken));
 			return true;
