@@ -1,11 +1,13 @@
 package hobbes.parser;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.Scanner;
 
 import hobbes.ast.*;
 
@@ -43,7 +45,13 @@ public class SerializationTester {
 		for(int test=0; test < tests.length; test++) {
 			long start = System.currentTimeMillis();
 			for(int trial=0; trial < NUM_TRIALS; trial++) {
-				SyntaxNode tree = t.readTree("test"+test+".hbt");
+				try {
+					Scanner s = new Scanner(new File("test"+test+".hbt"));
+					while(s.hasNext())
+						s.nextLine();
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
+				}
 			}
 			long end = System.currentTimeMillis();
 			int diff = (int)(end-start);
