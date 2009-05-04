@@ -1,6 +1,8 @@
 package hobbes.parser;
 
-public class Token {
+import java.io.Serializable;
+
+public class Token implements Serializable {
 	
 	private String value;
 	private TokenType type;

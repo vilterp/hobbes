@@ -1,6 +1,8 @@
 package hobbes.parser;
 
-public class SourceLocation {
+import java.io.Serializable;
+
+public class SourceLocation implements Serializable {
 	
 	// TODO: seperate SourcePoint & SourceSpan classes
 	// TODO: save file names, line numbers

@@ -1,6 +1,8 @@
 package hobbes.ast;
 
-public interface SyntaxNode {
+import java.io.Serializable;
+
+public interface SyntaxNode extends Serializable {
 	
 	String toString();
 	
