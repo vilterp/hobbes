@@ -14,7 +14,8 @@ import java.util.regex.Pattern;
 public class Parser {
 	
 	// TODO: "x if C else y"
-	// FIXME: () => EmptyStackException
+	// FIXME: () => EmptyStackException (L132)
+	// FIXME: yo! => NullPointerException (L66)
 	
 	private static final Pattern variablePattern =
 					Pattern.compile("[a-zA-Z][a-zA-Z0-9]*\\??");
