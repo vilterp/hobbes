@@ -1,21 +1,19 @@
 package hobbes.parser;
 
-import java.io.Serializable;
-
-public class Token implements Serializable {
+public class Token {
 	
 	private String value;
 	private TokenType type;
-	private SourceLocation location;
+	private SourceSpan location;
 	
-	public Token(String val, TokenType t, SourceLocation loc) {
+	public Token(String val, TokenType t, SourceSpan loc) {
 		value = val;
 		type = t;
 		location = loc;
 	}
 	
 	public String toString() {
-		return "token["+type+":"+value.replaceAll("\n", "\\\\n")+"@"+location+"]";
+		return "["+value.replaceAll("\n", "\\\\n")+":"+type+"@"+location+"]";
 	}
 	
 	public String getValue() {
@@ -26,16 +24,12 @@ public class Token implements Serializable {
 		return type;
 	}
 	
-	public SourceLocation getLocation() {
-		return location;
-	}
-	
-	public int getEnd() {
-		return location.getEnd();
-	}
-	
-	public int getStart() {
+	public SourceLocation getStart() {
 		return location.getStart();
+	}
+
+	public SourceLocation getEnd() {
+		return location.getEnd();
 	}
 	
 }

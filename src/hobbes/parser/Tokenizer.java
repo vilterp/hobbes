@@ -13,12 +13,14 @@ public class Tokenizer {
 	// TODO: give UnexpectedTokenExceptions the line show they can show themselves
 		// will necessitate storing line as String instead of Queue
 	
-	private LinkedList<Character> code;
+	private SourceLine line;
+	private String code;
 	private ArrayList<Token> tokens;
 	private String buffer;
 	private Stack<Token> depth;
-	private int pos;
-	private int startPos;
+	private SourceLocation pos;
+	private SourceLocation startPos;
+	private int lineNo;
 	
 	private final static HashSet<String> multiCharSymbols = new HashSet<String>();
 	static {
@@ -54,29 +56,35 @@ public class Tokenizer {
 		Scanner s = new Scanner(System.in);
 		
 		while(true) {
+			System.out.print(t.getLineNo() + ":");
 			if(t.isReady())
 				System.out.print(">> ");
 			else
 				System.out.print(t.getLastOpener()+"> ");
 			try {
-				t.addCode(s.nextLine());
+				t.addLine(s.nextLine());
 				if(t.isReady())
 					System.out.println(t.getTokens());
 			} catch(MismatchException e) {
 				t.clear();
-				System.out.println(e.getMessage());
+				System.err.println(e.getMessage());
+				System.err.println(e.getLocation().show());
 			} catch (UnexpectedTokenException e) {
 				t.clear();
-				System.out.println(e.getMessage());
+				System.err.println(e.getMessage());
+				System.err.println(e.getLocation().show());
 			}
 		}
 		
 //		try {
-//			t.addCode("//");
+//			t.addLine("\"hello");
+//			t.addLine("world\"");
 //		} catch (MismatchException e) {
-//			e.printStackTrace();
+//			System.err.println(e.getMessage());
+//			System.err.println(e.getLocation().show());
 //		} catch (UnexpectedTokenException e) {
-//			e.printStackTrace();
+//			System.err.println(e.getMessage());
+//			System.err.println(e.getLocation().show());
 //		}
 //		if(t.isReady())
 //			System.out.println(t.getTokens());
@@ -86,21 +94,35 @@ public class Tokenizer {
 	}
 	
 	public Tokenizer() {
-		code = new LinkedList<Character>();
+		line = null;
+		code = "";
 		tokens = new ArrayList<Token>();
 		buffer = "";
 		depth = new Stack<Token>();
-		pos = startPos = 0;
+		pos = startPos = null;
+		lineNo = 1;
 	}
 	
-	public void addCode(String c) throws MismatchException, UnexpectedTokenException {
-		for(int i=0; i < c.length(); i++)
-			code.add(c.charAt(i));
+	public void clear() {
+		tokens.clear();
+		depth.clear();
+		pos = startPos = null;
+	}
+
+	public void addLine(String c) throws MismatchException, UnexpectedTokenException {
+		code = c;
+		line = new SourceLine(c,lineNo);
+		pos = new SourceLocation(line,0);
+		lineNo++;
 		tokenize();
 	}
 	
 	public boolean isReady() {
 		return depth.isEmpty();
+	}
+	
+	public int getLineNo() {
+		return lineNo;
 	}
 	
 	public String getLastOpener() {
@@ -132,13 +154,6 @@ public class Tokenizer {
 		return tokens.size();
 	}
 	
-	public void clear() {
-		tokens.clear();
-		code.clear();
-		depth.clear();
-		pos = startPos = 0;
-	}
-	
 	private void tokenize() throws MismatchException, UnexpectedTokenException {
 		while(moreCode()) {
 			if(!isReady()) {
@@ -155,11 +170,9 @@ public class Tokenizer {
 	
 	private void getToken() throws MismatchException, UnexpectedTokenException {
 		if(peek() == '#')
-			code.clear();
+			code = "";
 		else if(Character.isWhitespace(peek())) {
-			code.poll();
-			pos++;
-			startPos++;
+			advance();
 		} else if(Character.isLetter(peek()) || peek() == '_')
 			getWord();
 		else if(peek() == '"' || peek() == '\'') {
@@ -199,8 +212,7 @@ public class Tokenizer {
 				buffer += "\n";
 				return;
 			} else if(peek() == start && (lastChar() == null || lastChar() != '\\')) {
-				code.poll();
-				pos++;
+				advance();
 				depth.pop();
 				tokens.add(makeToken(TokenType.STRING));
 				return;
@@ -208,19 +220,16 @@ public class Tokenizer {
 				if(peek(1) != null) {
 					if(peek(1) == 'n') {
 						buffer += "\n";
-						pos += 2;
-						code.poll();
-						code.poll();
+						advance();
+						advance();
 					} else if(peek(1) == 't') {
 						buffer += "\t";
-						pos += 2;
-						code.poll();
-						code.poll();
+						advance();
+						advance();
 					} else if(peek(1) == start) {
 						buffer += start;
-						pos += 2;
-						code.poll();
-						code.poll();
+						advance();
+						advance();
 					} else
 						read();
 				} else
@@ -236,8 +245,7 @@ public class Tokenizer {
 				buffer += "\n";
 				return;
 			} if(peek() == '/' && (lastChar() == null || lastChar() != '\\')) {
-				code.poll();
-				pos++;
+				advance();
 				depth.pop();
 				tokens.add(makeToken(TokenType.REGEX));
 				return;
@@ -245,19 +253,16 @@ public class Tokenizer {
 				if(peek(1) != null) {
 					if(peek(1) == 'n') {
 						buffer += "\n";
-						pos += 2;
-						code.poll();
-						code.poll();
+						advance();
+						advance();
 					} else if(peek(1) == 't') {
 						buffer += "\t";
-						pos += 2;
-						code.poll();
-						code.poll();
+						advance();
+						advance();
 					} else if(peek(1) == '/') {
 						buffer += '/';
-						pos += 2;
-						code.poll();
-						code.poll();
+						advance();
+						advance();
 					} else
 						read();
 				} else
@@ -330,20 +335,31 @@ public class Tokenizer {
 	
 	private Character peek(int ahead) {
 		try {
-			return code.get(ahead);
+			return code.charAt(pos.getPosition() + ahead);
 		} catch(IndexOutOfBoundsException e) {
 			return null;
 		}
 	}
 	
 	private Character read() {
-		buffer += code.poll();
-		pos++;
-		return lastChar();
+		char next = nextChar();
+		buffer += next;
+		return next;
+	}
+	
+	private char nextChar() {
+		char temp = code.charAt(pos.getPosition());
+		advance();
+		return temp;
+	}
+	
+	private void advance() {
+		pos = new SourceLocation(line,pos.getPosition()+1);
+		// FIXME: eww too many objects!
 	}
 	
 	private boolean moreCode() {
-		return !code.isEmpty();
+		return pos.getPosition() < code.length();
 	}
 	
 	private Character lastChar() {
@@ -368,7 +384,7 @@ public class Tokenizer {
 	}
 	
 	private Token makeToken(TokenType type) {
-		SourceLocation loc = new SourceLocation(startPos,pos);
+		SourceSpan loc = new SourceSpan(startPos,pos);
 		return new Token(flush(),type,loc);
 	}
 	

@@ -2,31 +2,15 @@ package hobbes.parser;
 
 public class SyntaxError extends Exception {
 	
-	private int pos;
-	private String line;
-	private String message;
+	private SourceLocation location;
 	
-	public SyntaxError(String msg, int at, String code) {
+	public SyntaxError(String msg, SourceLocation loc) {
 		super(msg);
-		pos = at;
-		line = code;
-		message = msg;
-	}
-
-	public int getPos() {
-		return pos;
-	}
-
-	public String getLine() {
-		return line;
+		location = loc;
 	}
 	
-	public String show() {
-		String ans = " " + line + "\n";
-		for(int i=0; i < pos; i++)
-			ans += ' ';
-		ans += '^';
-		return ans;
+	public SourceLocation getLocation() {
+		return location;
 	}
 	
 }

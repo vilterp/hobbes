@@ -9,6 +9,8 @@ public class UnexpectedTokenException extends Exception {
 		token = tok;
 	}
 	
-	// TODO: show
+	public SourceLocation getLocation() {
+		return token.getEnd();
+	}
 	
 }

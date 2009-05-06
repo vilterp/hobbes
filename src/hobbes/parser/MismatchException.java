@@ -12,12 +12,8 @@ public class MismatchException extends Exception {
 		// TODO: show line with pointer - will require capturing line in tokenizer
 	}
 	
-	public Token getFound() {
-		return found;
-	}
-	
-	public String getExpected() {
-		return expected;
+	public SourceLocation getLocation() {
+		return found.getEnd();
 	}
 	
 }

@@ -12,6 +12,11 @@ public class CallNode implements ObjectNode {
 		arguments = args;
 	}
 	
+	public CallNode(ExpressionNode rec) {
+		receiver = rec;
+		arguments = new ArrayList<ExpressionNode>();
+	}
+
 	public String toString() {
 		return "call(" + arguments + "," + receiver + ")";
 	}
