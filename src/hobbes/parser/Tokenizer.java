@@ -30,8 +30,8 @@ public class Tokenizer {
 		multiCharSymbols.add("/=");
 		multiCharSymbols.add(">=");
 		multiCharSymbols.add("<=");
-		multiCharSymbols.add("++");
-		multiCharSymbols.add("--");
+		// multiCharSymbols.add("++");
+		// multiCharSymbols.add("--"); // breaks 2--2 (=> [2, --, 2])
 	}
 	
 	private final static HashMap<String,String> pairs = new HashMap<String,String>();

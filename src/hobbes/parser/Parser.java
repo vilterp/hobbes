@@ -13,9 +13,7 @@ import java.util.regex.Pattern;
 
 public class Parser {
 	
-	// TODO: negation of expressions
 	// TODO: "x if C else y"
-	// TODO: -(123)
 	
 	private static final Pattern variablePattern =
 					Pattern.compile("[a-zA-Z][a-zA-Z0-9]*\\??");
@@ -39,46 +37,46 @@ public class Parser {
 		Tokenizer t = new Tokenizer();
 		Parser p = new Parser();
 		
-		Scanner s = new Scanner(System.in);
-		while(true) {
-			if(t.isReady())
-				System.out.print(">> ");
-			else
-				System.out.print(t.getLastOpener() + "> ");
-			String line = null;
-			try {
-				line = s.nextLine();
-			} catch(NoSuchElementException e) {
-				System.out.println();
-			}
-			try {
-				t.addCode(line);
-				if(t.isReady() && t.numTokens() > 0)
-					System.out.println(p.parse(t.getTokens(), line));
-			} catch (MismatchException e) {
-				System.err.println(e.getMessage());
-			} catch (UnexpectedTokenException e) {
-				System.err.println(e.getMessage());
-			} catch (SyntaxError e) {
-				System.err.println(e.getMessage());
-				System.err.println(e.show());
-				p.clear();
-			}
-			
-		}
-		
-//		String code = "-2--5";
-//		try {
-//			t.addCode(code);
-//			System.out.println(p.parse(t.getTokens(), code));
-//		} catch (MismatchException e) {
-//			e.printStackTrace();
-//		} catch (UnexpectedTokenException e) {
-//			e.printStackTrace();
-//		} catch (SyntaxError e) {
-//			System.err.println(e.getMessage());
-//			System.err.println(e.show());
+//		Scanner s = new Scanner(System.in);
+//		while(true) {
+//			if(t.isReady())
+//				System.out.print(">> ");
+//			else
+//				System.out.print(t.getLastOpener() + "> ");
+//			String line = null;
+//			try {
+//				line = s.nextLine();
+//			} catch(NoSuchElementException e) {
+//				System.out.println();
+//			}
+//			try {
+//				t.addCode(line);
+//				if(t.isReady() && t.numTokens() > 0)
+//					System.out.println(p.parse(t.getTokens(), line));
+//			} catch (MismatchException e) {
+//				System.err.println(e.getMessage());
+//			} catch (UnexpectedTokenException e) {
+//				System.err.println(e.getMessage());
+//			} catch (SyntaxError e) {
+//				System.err.println(e.getMessage());
+//				System.err.println(e.show());
+//				p.clear();
+//			}
+//			
 //		}
+		
+		String code = "2--2";
+		try {
+			t.addCode(code);
+			System.out.println(p.parse(t.getTokens(), code));
+		} catch (MismatchException e) {
+			e.printStackTrace();
+		} catch (UnexpectedTokenException e) {
+			e.printStackTrace();
+		} catch (SyntaxError e) {
+			System.err.println(e.getMessage());
+			System.err.println(e.show());
+		}
 		
 	}
 	
@@ -225,7 +223,7 @@ public class Parser {
 	}
 	
 	private boolean multiplication() throws SyntaxError {
-		if(!exponent())
+		if(!negative())
 			if(!parenthesizedExpression())
 				return false;
 		if(multOp()) {
@@ -237,6 +235,23 @@ public class Parser {
 									  	lastToken().getEnd(),line);
 		} else
 			return true;
+	}
+	
+	private boolean negative() throws SyntaxError {
+		if(symbol("-")) {
+			Token negative = lastToken();
+			stack.pop();
+			if(exponent() || parenthesizedExpression()) {
+				stack.push(new NegativeNode((ExpressionNode)stack.pop()));
+				return true;
+			} else {
+				tokens.addFirst(negative);
+				return false;
+			}
+		} else if(exponent())
+			return true;
+		else
+			return false;
 	}
 	
 	private boolean exponent() throws SyntaxError {
@@ -340,7 +355,7 @@ public class Parser {
 				if(!string())
 					if(!regex())
 						if(!list())
-							if(!dict())
+							if(!dictOrSet())
 								return false;
 		stack.push(new OperationNode((ObjectNode)stack.pop()));
 		return true;
@@ -372,7 +387,7 @@ public class Parser {
 		return false;
 	}
 	
-	private boolean dict() throws SyntaxError {
+	private boolean dictOrSet() throws SyntaxError {
 		if(symbol("{"))
 			stack.pop();
 		else
@@ -382,10 +397,13 @@ public class Parser {
 			stack.push(new DictNode());
 			return true;
 		}
-		HashMap<ExpressionNode,ExpressionNode> elements = new HashMap<ExpressionNode,ExpressionNode>();
+		HashMap<ExpressionNode,ExpressionNode> elements =
+							new HashMap<ExpressionNode,ExpressionNode>();
 		while(expression()) {
 			ExpressionNode key = (ExpressionNode)stack.pop();
-			if(!(symbol(":") && expression())) {} // TODO: go to set()
+			if(!(symbol(":") && expression())) {
+				return set(key);
+			}
 			ExpressionNode value = (ExpressionNode)stack.pop();
 			elements.put(key, value);
 			if(symbol(","))
@@ -400,20 +418,36 @@ public class Parser {
 		}
 		return false;
 	}
+	
+	private boolean set(ExpressionNode firstElement) throws SyntaxError {
+		HashSet<ExpressionNode> elements = new HashSet<ExpressionNode>();
+		elements.add(firstElement);
+		if(symbol(","))
+			stack.pop();
+		else {
+			if(symbol("}")) {
+				stack.pop();
+				stack.push(new SetNode(elements));
+				return true;
+			}
+		}
+		while(expression()) {
+			elements.add((ExpressionNode)stack.pop());
+			if(symbol(","))
+				stack.pop();
+			else {
+				if(symbol("}")) {
+					stack.pop();
+					stack.push(new SetNode(elements));
+					return true;
+				}
+			}
+		}
+		return false;
+	}
 
 	private boolean number() {
-		if(symbol("-")) {
-			if(token(TokenType.NUMBER)) {
-				Token numberToken = ((TempNode)stack.pop()).getToken();
-				Token negativeToken = ((TempNode)stack.pop()).getToken();
-				stack.push(new NumberNode(negativeToken,numberToken));
-				return true;
-			} else {
-				Token negativeToken = ((TempNode)stack.pop()).getToken();
-				tokens.addFirst(negativeToken);
-				return false;
-			}
-		} else if(token(TokenType.NUMBER)) {
+		if(token(TokenType.NUMBER)) {
 			Token numberToken = ((TempNode)stack.pop()).getToken();
 			stack.push(new NumberNode(numberToken));
 			return true;
