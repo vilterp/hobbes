@@ -37,46 +37,46 @@ public class Parser {
 		Tokenizer t = new Tokenizer();
 		Parser p = new Parser();
 		
-//		Scanner s = new Scanner(System.in);
-//		while(true) {
-//			if(t.isReady())
-//				System.out.print(">> ");
-//			else
-//				System.out.print(t.getLastOpener() + "> ");
-//			String line = null;
-//			try {
-//				line = s.nextLine();
-//			} catch(NoSuchElementException e) {
-//				System.out.println();
-//			}
-//			try {
-//				t.addCode(line);
-//				if(t.isReady() && t.numTokens() > 0)
-//					System.out.println(p.parse(t.getTokens(), line));
-//			} catch (MismatchException e) {
-//				System.err.println(e.getMessage());
-//			} catch (UnexpectedTokenException e) {
-//				System.err.println(e.getMessage());
-//			} catch (SyntaxError e) {
-//				System.err.println(e.getMessage());
-//				System.err.println(e.show());
-//				p.clear();
-//			}
-//			
-//		}
-		
-		String code = "2--2";
-		try {
-			t.addCode(code);
-			System.out.println(p.parse(t.getTokens(), code));
-		} catch (MismatchException e) {
-			e.printStackTrace();
-		} catch (UnexpectedTokenException e) {
-			e.printStackTrace();
-		} catch (SyntaxError e) {
-			System.err.println(e.getMessage());
-			System.err.println(e.show());
+		Scanner s = new Scanner(System.in);
+		while(true) {
+			if(t.isReady())
+				System.out.print(">> ");
+			else
+				System.out.print(t.getLastOpener() + "> ");
+			String line = null;
+			try {
+				line = s.nextLine();
+			} catch(NoSuchElementException e) {
+				System.out.println();
+			}
+			try {
+				t.addCode(line);
+				if(t.isReady() && t.numTokens() > 0)
+					System.out.println(p.parse(t.getTokens(), line));
+			} catch (MismatchException e) {
+				System.err.println(e.getMessage());
+			} catch (UnexpectedTokenException e) {
+				System.err.println(e.getMessage());
+			} catch (SyntaxError e) {
+				System.err.println(e.getMessage());
+				System.err.println(e.show());
+				p.clear();
+			}
+			
 		}
+		
+//		String code = "{}";
+//		try {
+//			t.addCode(code);
+//			System.out.println(p.parse(t.getTokens(), code));
+//		} catch (MismatchException e) {
+//			e.printStackTrace();
+//		} catch (UnexpectedTokenException e) {
+//			e.printStackTrace();
+//		} catch (SyntaxError e) {
+//			System.err.println(e.getMessage());
+//			System.err.println(e.show());
+//		}
 		
 	}
 	
@@ -362,61 +362,81 @@ public class Parser {
 	}
 
 	private boolean list() throws SyntaxError {
-		if(symbol("["))
-			stack.pop();
-		else
+		if(!symbol("["))
 			return false;
-		if(symbol("]")) {
+		else
 			stack.pop();
+		if(symbol("]")) {
 			stack.push(new ListNode());
 			return true;
 		}
 		ArrayList<ExpressionNode> elements = new ArrayList<ExpressionNode>();
-		while(expression()) {
-			elements.add((ExpressionNode)stack.pop());
-			if(symbol(","))
-				stack.pop();
-			else {
-				if(symbol("]")) {
+		while(true) {
+			if(expression())
+				elements.add((ExpressionNode)stack.pop());
+			if(symbol(",")) {
+				if(symbol(","))
+					throw new SyntaxError("double comma",
+											lastToken().getEnd(),line);
+				else if(symbol("]")) {
 					stack.pop();
-					stack.push(new ListNode(elements));
-					return true;
-				}
+					throw new SyntaxError("trailing comma",
+											lastToken().getEnd(),line);
+				} else
+					stack.pop();
+			} else {
+				symbol("]");
+				stack.pop();
+				stack.push(new ListNode(elements));
+				return true;
 			}
 		}
-		return false;
 	}
-	
+
 	private boolean dictOrSet() throws SyntaxError {
-		if(symbol("{"))
-			stack.pop();
-		else
+		if(!symbol("{"))
 			return false;
-		if(symbol("}")) {
+		else
 			stack.pop();
+		if(symbol("}")) {
 			stack.push(new DictNode());
 			return true;
 		}
 		HashMap<ExpressionNode,ExpressionNode> elements =
 							new HashMap<ExpressionNode,ExpressionNode>();
-		while(expression()) {
-			ExpressionNode key = (ExpressionNode)stack.pop();
-			if(!(symbol(":") && expression())) {
-				return set(key);
-			}
-			ExpressionNode value = (ExpressionNode)stack.pop();
-			elements.put(key, value);
-			if(symbol(","))
-				stack.pop();
-			else {
-				if(symbol("}")) {
+		while(true) {
+			if(expression()) {
+				ExpressionNode key = (ExpressionNode)stack.pop();
+				if(!symbol(":"))
+					return set(key);
+				else {
+					Token colon = lastToken();
 					stack.pop();
-					stack.push(new DictNode(elements));
-					return true;
+					if(expression()) {
+						ExpressionNode value = (ExpressionNode)stack.pop();
+						elements.put(key, value);
+					} else
+						throw new SyntaxError("no expression after \":\"",
+												colon.getEnd(),line);
 				}
 			}
+			if(symbol(",")) {
+				if(symbol(","))
+					throw new SyntaxError("double comma",
+											lastToken().getEnd(),line);
+				else if(symbol("}")) {
+					stack.pop();
+					throw new SyntaxError("trailing comma",
+											lastToken().getEnd(),line);
+				} else
+					stack.pop();
+			} else {
+				symbol("}");
+				stack.pop();
+				stack.push(new DictNode(elements));
+				return true;
+			}
 		}
-		return false;
 	}
 	
 	private boolean set(ExpressionNode firstElement) throws SyntaxError {
@@ -429,21 +449,31 @@ public class Parser {
 				stack.pop();
 				stack.push(new SetNode(elements));
 				return true;
-			}
+			} else
+				throw new SyntaxError("trailing comma",
+										lastToken().getEnd(),line);
 		}
-		while(expression()) {
-			elements.add((ExpressionNode)stack.pop());
-			if(symbol(","))
-				stack.pop();
-			else {
-				if(symbol("}")) {
+		while(true) {
+			if(expression())
+				elements.add((ExpressionNode)stack.pop());
+			// if not?
+			if(symbol(",")) {
+				if(symbol(","))
+					throw new SyntaxError("double comma",
+											lastToken().getEnd(),line);
+				else if(symbol("}")) {
 					stack.pop();
-					stack.push(new SetNode(elements));
-					return true;
-				}
+					throw new SyntaxError("trailing comma",
+											lastToken().getEnd(),line);
+				} else
+					stack.pop();
+			} else {
+				symbol("}");
+				stack.pop();
+				stack.push(new SetNode(elements));
+				return true;
 			}
 		}
-		return false;
 	}
 
 	private boolean number() {

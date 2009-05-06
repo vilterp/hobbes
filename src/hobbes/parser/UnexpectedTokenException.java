@@ -2,11 +2,13 @@ package hobbes.parser;
 
 public class UnexpectedTokenException extends Exception {
 	
-	Token symbol;
+	Token token;
 	
-	public UnexpectedTokenException(Token sym) {
-		super("Unexpected \""+sym.getValue()+"\"");
-		symbol = sym;
+	public UnexpectedTokenException(Token tok) {
+		super("Unexpected \""+tok.getValue()+"\"");
+		token = tok;
 	}
+	
+	// TODO: show
 	
 }

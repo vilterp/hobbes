@@ -10,8 +10,8 @@ import java.util.Scanner;
 public class Tokenizer {
 	
 	// TODO: location info for multiline tokens (sep. SourcePoint & SourceSpan classes?)
-	// TODO: give each token the line as a String (what about multilines?)
-	// TODO: if statements, etc on a single line with no "end"
+	// TODO: give UnexpectedTokenExceptions the line show they can show themselves
+		// will necessitate storing line as String instead of Queue
 	
 	private LinkedList<Character> code;
 	private ArrayList<Token> tokens;
