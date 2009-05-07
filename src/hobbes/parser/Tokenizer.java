@@ -9,19 +9,47 @@ import java.util.Scanner;
 
 public class Tokenizer {
 	
-	// TODO: location info for multiline tokens (sep. SourcePoint & SourceSpan classes?)
-	// TODO: give UnexpectedTokenExceptions the line show they can show themselves
-		// will necessitate storing line as String instead of Queue
-	
-	private SourceLine line;
-	private String code;
-	private ArrayList<Token> tokens;
-	private String buffer;
-	private Stack<Token> depth;
-	private SourceLocation pos;
-	private SourceLocation startPos;
-	private int lineNo;
-	private boolean lastWasBackslash;
+	public static void main(String[] args) {
+		Tokenizer t = new Tokenizer();
+		Scanner s = new Scanner(System.in);
+		
+		while(true) {
+			System.out.print(t.getLineNo() + ":");
+			if(t.isReady())
+				System.out.print(">> ");
+			else
+				System.out.print(t.getLastOpener()+"> ");
+			try {
+				t.addLine(s.nextLine());
+				if(t.isReady())
+					System.out.println(t.getTokens());
+			} catch(MismatchException e) {
+				t.clear();
+				System.err.println(e.getMessage());
+				System.err.println(e.getLocation().show());
+			} catch (UnexpectedTokenException e) {
+				t.clear();
+				System.err.println(e.getMessage());
+				System.err.println(e.getLocation().show());
+			}
+		}
+		
+//		try {
+//			t.addLine("2+\\");
+//			t.addLine("2");
+//		} catch (MismatchException e) {
+//			System.err.println(e.getMessage());
+//			System.err.println(e.getLocation().show());
+//		} catch (UnexpectedTokenException e) {
+//			System.err.println(e.getMessage());
+//			System.err.println(e.getLocation().show());
+//		}
+//		if(t.isReady())
+//			System.out.println(t.getTokens());
+//		else
+//			System.out.println("waiting to close "+t.getLastOpener());
+		
+	}
 	
 	private final static HashSet<String> multiCharSymbols = new HashSet<String>();
 	static {
@@ -52,47 +80,14 @@ public class Tokenizer {
 		pairs.put("trait", "end");
 	}
 	
-	public static void main(String[] args) {
-		Tokenizer t = new Tokenizer();
-		Scanner s = new Scanner(System.in);
-		
-		while(true) {
-			System.out.print(t.getLineNo() + ":");
-			if(t.isReady())
-				System.out.print(">> ");
-			else
-				System.out.print(t.getLastOpener()+"> ");
-			try {
-				t.addLine(s.nextLine());
-				if(t.isReady())
-					System.out.println(t.getTokens());
-			} catch(MismatchException e) {
-				t.clear();
-				System.err.println(e.getMessage());
-				System.err.println(e.getLocation().show());
-			} catch (UnexpectedTokenException e) {
-				t.clear();
-				System.err.println(e.getMessage());
-				System.err.println(e.getLocation().show());
-			}
-		}
-		
-//		try {
-//			t.addLine("\"hello");
-//			t.addLine("world\"");
-//		} catch (MismatchException e) {
-//			System.err.println(e.getMessage());
-//			System.err.println(e.getLocation().show());
-//		} catch (UnexpectedTokenException e) {
-//			System.err.println(e.getMessage());
-//			System.err.println(e.getLocation().show());
-//		}
-//		if(t.isReady())
-//			System.out.println(t.getTokens());
-//		else
-//			System.out.println("waiting for "+t.getWaitingFor());
-		
-	}
+	private SourceLine line;
+	private String code;
+	private ArrayList<Token> tokens;
+	private String buffer;
+	private Stack<Token> depth;
+	private SourceLocation pos;
+	private SourceLocation startPos;
+	private int lineNo;
 	
 	public Tokenizer() {
 		line = null;
@@ -102,7 +97,6 @@ public class Tokenizer {
 		depth = new Stack<Token>();
 		pos = startPos = null;
 		lineNo = 1;
-		lastWasBackslash = false;
 	}
 	
 	public void clear() {
@@ -115,14 +109,14 @@ public class Tokenizer {
 		code = c;
 		line = new SourceLine(c,lineNo);
 		pos = new SourceLocation(line,0);
-		if(isReady())
+		if(isReady() || getLastOpener().equals("\\"))
 			startPos = pos;
 		lineNo++;
 		tokenize();
 	}
 	
 	public boolean isReady() {
-		return depth.isEmpty() && !lastWasBackslash;
+		return depth.isEmpty() || (depth.peek().getValue() == "\\");
 	}
 	
 	public int getLineNo() {
@@ -137,7 +131,7 @@ public class Tokenizer {
 		}
 	}
 	
-	public String getWaitingFor() {
+	private String getWaitingFor() {
 		if(isReady())
 			return null;
 		else
@@ -174,13 +168,13 @@ public class Tokenizer {
 	
 	private void getToken() throws MismatchException, UnexpectedTokenException {
 		if(peek() == '\\') {
+			read();
 			depth.push(makeToken(TokenType.SYMBOL));
 			if(moreCode())
 				throw new UnexpectedTokenException(depth.pop());
 		} else {
-			lastWasBackslash = false;
 			if(peek() == '#')
-				code = "";
+					code = "";
 			else if(Character.isWhitespace(peek()))
 				advance();
 			else if(Character.isLetter(peek()) || peek() == '_')
@@ -213,6 +207,8 @@ public class Tokenizer {
 				}
 			} else
 				getSymbol();
+			if(!isReady() && getLastOpener().equals("\\"))
+				depth.pop();
 		}
 	}
 
