@@ -65,7 +65,7 @@ public class Parser {
 		}
 
 	private static final Pattern variablePattern =
-					Pattern.compile("[a-zA-Z][a-zA-Z0-9]*\\??");
+					Pattern.compile("(_?[a-zA-Z0-9]|[a-zA-Z][a-zA-Z0-9]*(\\?|!)?)");
 	
 	private static final HashSet<String> reservedWords = new HashSet<String>();
 	static {
