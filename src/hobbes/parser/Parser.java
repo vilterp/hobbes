@@ -19,8 +19,8 @@ public class Parser {
 	public static void main(String[] args) {
 			Tokenizer t = new Tokenizer();
 			Parser p = new Parser();
-			int lineNo = 1;
 			
+			int lineNo = 1;
 			Scanner s = new Scanner(System.in);
 			while(true) {
 				System.out.print(lineNo + ":");
@@ -47,25 +47,21 @@ public class Parser {
 				
 			}
 			
-	//		String code = "[]";
-	//		try {
-	//			t.addLine(code);
-	//			System.out.println(p.parse(t.getTokens()));
-	//		} catch (MismatchException e) {
-	//			System.err.println(e.getMessage());
-	//			System.err.println(e.getLocation().show());
-	//		} catch (UnexpectedTokenException e) {
-	//			System.err.println(e.getMessage());
-	//			System.err.println(e.getLocation().show());
-	//		} catch (SyntaxError e) {
-	//			System.err.println(e.getMessage());
-	//			System.err.println(e.getLocation().show());
-	//		}
+//			String code = "|a:Int|:nil{a>2}";
+//			try {
+//				t.addLine(new SourceLine(code,1));
+//				System.out.println(p.parse(t.getTokens()));
+//			} catch (SyntaxError e) {
+//				System.err.println(e.getMessage());
+//				System.err.println(e.getLocation().show());
+//			}
 			
 		}
 
 	private static final Pattern variablePattern =
 					Pattern.compile("(_?[a-zA-Z0-9]|[a-zA-Z][a-zA-Z0-9]*(\\?|!)?)");
+	private static final Pattern classNamePattern = 
+					Pattern.compile("[A-Z][a-zA-Z0-9]*");
 	
 	private static final HashSet<String> reservedWords = new HashSet<String>();
 	static {
@@ -361,13 +357,15 @@ public class Parser {
 	}
 	
 	private boolean atom() throws SyntaxError {
+		// TODO: switch to or? does it break after one returns true?
 		if(!variable())
 			if(!number())
 				if(!string())
 					if(!regex())
 						if(!list())
 							if(!dictOrSet())
-								return false;
+								if(!anonymousFunction())
+									return false;
 		stack.push(new OperationNode((ObjectNode)stack.pop()));
 		return true;
 	}
@@ -480,6 +478,116 @@ public class Parser {
 			}
 		}
 	}
+	
+	private boolean anonymousFunction() throws SyntaxError {
+		ArgsSpecNode args = null;
+		if(!argsSpec("|","|"))
+			return false;
+		else
+			args = (ArgsSpecNode)stack.pop();
+		VariableNode returnType = null;
+		if(classSpec())
+			returnType = (VariableNode)stack.pop();
+		if(!symbol("{"))
+			throw new SyntaxError("no block after anonymous function " +
+									"argument specification",
+									args.getClosingToken().getEnd());
+		else
+			stack.pop();
+		block();
+		BlockNode funcBlock = (BlockNode)stack.pop();
+		symbol("}");
+		stack.pop();
+		stack.push(new AnonymousFunctionNode(args,returnType,funcBlock));
+		return true;
+	}
+	
+	private boolean block() throws SyntaxError {
+		ArrayList<SyntaxNode> lines = new ArrayList<SyntaxNode>();
+		while(expression())
+			lines.add(stack.pop());
+		stack.push(new BlockNode(lines));
+		return true;
+	}
+	
+	private boolean argsSpec(String open, String close) throws SyntaxError {
+		if(!symbol(open))
+			return false;
+		else
+			stack.pop();
+		ArrayList<ArgSpecNode> args = new ArrayList<ArgSpecNode>();
+		while(true) {
+			if(argSpec()) {
+				args.add((ArgSpecNode)stack.pop());
+				if(symbol(",")) {
+					if(symbol(","))
+						throw getSyntaxError("double comma");
+					else if(symbol(close))
+						throw getSyntaxError("trailing comma");
+					else
+						stack.pop();
+				}
+			} else {
+				symbol(close);
+				Token closingToken = ((TempNode)stack.pop()).getToken();
+				stack.push(new ArgsSpecNode(args,closingToken));
+				return true;
+			}
+		}
+	}
+	
+	private boolean argSpec() throws SyntaxError {
+		ArgSpecType type = ArgSpecType.NORMAL;
+		if(symbol("*")) {
+			stack.pop();
+			if(symbol("*")) {
+				stack.pop();
+				type = ArgSpecType.KEYWORDS;
+			} else
+				type = ArgSpecType.SPLAT;
+		}
+		if(variable()) {
+			Token argName = ((VariableNode)stack.pop()).getOrigin();
+			Token className = null;
+			if(classSpec())
+				className = ((VariableNode)stack.pop()).getOrigin();
+			OperationNode defaultValue = null;
+			if(defaultSpec())
+				defaultValue = (OperationNode)stack.pop();
+			stack.push(new ArgSpecNode(argName,type,className,defaultValue));
+			return true;
+		} else
+			return false;
+	}
+	
+	private boolean classSpec() throws SyntaxError {
+		if(!symbol(":"))
+			return false;
+		else {
+			Token colon = ((TempNode)stack.pop()).getToken();
+			if(className())
+				return true;
+			else if(word("nil")) {
+				stack.push(new VariableNode(((TempNode)stack.pop()).getToken()));
+				return true;
+			} else
+				throw new SyntaxError("no class name after \":\"",
+											colon.getEnd());
+		}
+	}
+	
+	private boolean defaultSpec() throws SyntaxError {
+		if(!symbol("="))
+			return false;
+		else {
+			Token equals = ((TempNode)stack.pop()).getToken();
+			if(expression())
+				return true;
+			else
+				throw new SyntaxError("no default value specified after =",
+										equals.getStart());
+		}
+	}
 
 	private boolean number() {
 		if(token(TokenType.NUMBER)) {
@@ -517,6 +625,15 @@ public class Parser {
 				stack.push(new VariableNode(variableToken));
 				return true;
 			}
+		} else
+			return false;
+	}
+	
+	private boolean className() {
+		if(wordWithPattern(classNamePattern)) {
+			Token classNameToken = ((TempNode)stack.pop()).getToken();
+			stack.push(new VariableNode(classNameToken));
+			return true;
 		} else
 			return false;
 	}
@@ -574,11 +691,17 @@ public class Parser {
 	}
 	
 	private boolean wordWithPattern(Pattern pattern) {
-		if(token(TokenType.WORD) &&
-		   pattern.matcher(lastToken().getValue()).matches())
-			return true;
-		else
+		if(!token(TokenType.WORD))
 			return false;
+		else {
+			if(pattern.matcher(lastToken().getValue()).matches())
+				return true;
+			else {
+				tokens.addFirst(lastToken());
+				stack.pop();
+				return false;
+			}
+		}
 	}
 	
 	private boolean token(TokenType type, String value) {

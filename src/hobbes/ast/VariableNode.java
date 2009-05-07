@@ -10,6 +10,10 @@ public class VariableNode implements ObjectNode {
 		origin = t;
 	}
 	
+	public Token getOrigin() {
+		return origin;
+	}
+	
 	public String toString() {
 		return origin.getValue();
 	}
