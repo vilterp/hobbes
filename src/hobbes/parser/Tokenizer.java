@@ -21,6 +21,7 @@ public class Tokenizer {
 	private SourceLocation pos;
 	private SourceLocation startPos;
 	private int lineNo;
+	private boolean lastWasBackslash;
 	
 	private final static HashSet<String> multiCharSymbols = new HashSet<String>();
 	static {
@@ -101,6 +102,7 @@ public class Tokenizer {
 		depth = new Stack<Token>();
 		pos = startPos = null;
 		lineNo = 1;
+		lastWasBackslash = false;
 	}
 	
 	public void clear() {
@@ -113,12 +115,14 @@ public class Tokenizer {
 		code = c;
 		line = new SourceLine(c,lineNo);
 		pos = new SourceLocation(line,0);
+		if(isReady())
+			startPos = pos;
 		lineNo++;
 		tokenize();
 	}
 	
 	public boolean isReady() {
-		return depth.isEmpty();
+		return depth.isEmpty() && !lastWasBackslash;
 	}
 	
 	public int getLineNo() {
@@ -169,40 +173,47 @@ public class Tokenizer {
 	}
 	
 	private void getToken() throws MismatchException, UnexpectedTokenException {
-		if(peek() == '#')
-			code = "";
-		else if(Character.isWhitespace(peek())) {
-			advance();
-		} else if(Character.isLetter(peek()) || peek() == '_')
-			getWord();
-		else if(peek() == '"' || peek() == '\'') {
-			char start = read();
+		if(peek() == '\\') {
 			depth.push(makeToken(TokenType.SYMBOL));
-			getString(start);
-		} else if(Character.isDigit(peek()))
-			getNumber();
-		else if(peek() == '.') {
-			if(peek(1) != null && Character.isDigit(peek(1))) {
-				// .5
-				read();
+			if(moreCode())
+				throw new UnexpectedTokenException(depth.pop());
+		} else {
+			lastWasBackslash = false;
+			if(peek() == '#')
+				code = "";
+			else if(Character.isWhitespace(peek()))
+				advance();
+			else if(Character.isLetter(peek()) || peek() == '_')
+				getWord();
+			else if(peek() == '"' || peek() == '\'') {
+				char start = read();
+				depth.push(makeToken(TokenType.SYMBOL));
+				getString(start);
+			} else if(Character.isDigit(peek()))
 				getNumber();
+			else if(peek() == '.') {
+				if(peek(1) != null && Character.isDigit(peek(1))) {
+					// .5
+					read();
+					getNumber();
+				} else
+					getSymbol();
+			} else if(peek() == '/') {
+				Token lastToken = lastToken();
+				if(lastToken != null &&
+					(lastToken.getType() == TokenType.NUMBER || 
+					 lastToken.getType() == TokenType.WORD ||
+					 (lastToken.getType() == TokenType.SYMBOL &&
+						lastToken.getValue().equals(")"))))
+					getSymbol();
+				else {
+					read();
+					depth.push(makeToken(TokenType.SYMBOL));
+					getRegex();
+				}
 			} else
 				getSymbol();
-		} else if(peek() == '/') {
-			Token lastToken = lastToken();
-			if(lastToken != null &&
-				(lastToken.getType() == TokenType.NUMBER || 
-				 lastToken.getType() == TokenType.WORD ||
-				 (lastToken.getType() == TokenType.SYMBOL &&
-					lastToken.getValue().equals(")"))))
-				getSymbol();
-			else {
-				read();
-				depth.push(makeToken(TokenType.SYMBOL));
-				getRegex();
-			}
-		} else
-			getSymbol();
+		}
 	}
 
 	private void getString(char start) {
@@ -311,7 +322,8 @@ public class Tokenizer {
 			   lastChar().toString() + peek().toString() + peek(1).toString())) {
 				read();
 				read();
-			} else if(multiCharSymbols.contains(lastChar().toString() + peek().toString()))
+			} else if(multiCharSymbols.contains(
+							lastChar().toString()+peek().toString()))
 				read();
 		}
 		Token symbol = makeToken(TokenType.SYMBOL);
