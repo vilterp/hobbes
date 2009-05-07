@@ -12,15 +12,16 @@ public class Tokenizer {
 	public static void main(String[] args) {
 		Tokenizer t = new Tokenizer();
 		Scanner s = new Scanner(System.in);
+		int lineNo = 1;
 		
 		while(true) {
-			System.out.print(t.getLineNo() + ":");
+			System.out.print(lineNo + ":");
 			if(t.isReady())
 				System.out.print(">> ");
 			else
 				System.out.print(t.getLastOpener()+"> ");
 			try {
-				t.addLine(s.nextLine());
+				t.addLine(new SourceLine(s.nextLine(),lineNo));
 				if(t.isReady())
 					System.out.println(t.getTokens());
 			} catch(MismatchException e) {
@@ -32,6 +33,7 @@ public class Tokenizer {
 				System.err.println(e.getMessage());
 				System.err.println(e.getLocation().show());
 			}
+			lineNo++;
 		}
 		
 //		try {
@@ -87,7 +89,6 @@ public class Tokenizer {
 	private Stack<Token> depth;
 	private SourceLocation pos;
 	private SourceLocation startPos;
-	private int lineNo;
 	
 	public Tokenizer() {
 		line = null;
@@ -96,7 +97,6 @@ public class Tokenizer {
 		buffer = "";
 		depth = new Stack<Token>();
 		pos = startPos = null;
-		lineNo = 1;
 	}
 	
 	public void clear() {
@@ -105,22 +105,17 @@ public class Tokenizer {
 		pos = startPos = null;
 	}
 
-	public void addLine(String c) throws MismatchException, UnexpectedTokenException {
-		code = c;
-		line = new SourceLine(c,lineNo);
+	public void addLine(SourceLine l) throws MismatchException, UnexpectedTokenException {
+		code = l.getCode();
+		line = l;
 		pos = new SourceLocation(line,0);
 		if(isReady() || getLastOpener().equals("\\"))
 			startPos = pos;
-		lineNo++;
 		tokenize();
 	}
 	
 	public boolean isReady() {
 		return depth.isEmpty() || (depth.peek().getValue() == "\\");
-	}
-	
-	public int getLineNo() {
-		return lineNo;
 	}
 	
 	public String getLastOpener() {
@@ -327,7 +322,7 @@ public class Tokenizer {
 		if(pairs.containsKey(symbol.getValue()))
 			depth.push(symbol);
 		else if(pairs.containsValue(symbol.getValue())) {
-			if(depth.isEmpty())
+			if(isReady())
 				throw new UnexpectedTokenException(symbol);
 			else if(getWaitingFor().equals(symbol.getValue()))
 				depth.pop();

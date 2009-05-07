@@ -14,9 +14,62 @@ import java.util.regex.Pattern;
 public class Parser {
 	
 	// TODO: "x if C else y"
-	// FIXME: () => EmptyStackException (L132)
 	// FIXME: yo! => NullPointerException (L66)
 	
+	public static void main(String[] args) {
+			Tokenizer t = new Tokenizer();
+			Parser p = new Parser();
+			int lineNo = 1;
+			
+			Scanner s = new Scanner(System.in);
+			while(true) {
+				System.out.print(lineNo + ":");
+				if(t.isReady())
+					System.out.print(">> ");
+				else
+					System.out.print(t.getLastOpener() + "> ");
+				String line = null;
+				try {
+					line = s.nextLine();
+				} catch(NoSuchElementException e) {
+					System.out.println();
+				}
+				try {
+					t.addLine(new SourceLine(line,lineNo));
+					if(t.isReady() && t.numTokens() > 0)
+						System.out.println(p.parse(t.getTokens()));
+				} catch (MismatchException e) {
+					System.err.println(e.getMessage());
+					System.err.println(e.getLocation().show());
+				} catch (UnexpectedTokenException e) {
+					System.err.println(e.getMessage());
+					System.err.println(e.getLocation().show());
+				} catch (SyntaxError e) {
+					System.err.println(e.getMessage());
+					System.err.println(e.getLocation().show());
+					p.clear();
+				}
+				lineNo++;
+				
+			}
+			
+	//		String code = "[]";
+	//		try {
+	//			t.addLine(code);
+	//			System.out.println(p.parse(t.getTokens()));
+	//		} catch (MismatchException e) {
+	//			System.err.println(e.getMessage());
+	//			System.err.println(e.getLocation().show());
+	//		} catch (UnexpectedTokenException e) {
+	//			System.err.println(e.getMessage());
+	//			System.err.println(e.getLocation().show());
+	//		} catch (SyntaxError e) {
+	//			System.err.println(e.getMessage());
+	//			System.err.println(e.getLocation().show());
+	//		}
+			
+		}
+
 	private static final Pattern variablePattern =
 					Pattern.compile("[a-zA-Z][a-zA-Z0-9]*\\??");
 	
@@ -33,58 +86,6 @@ public class Parser {
 		reservedWords.add("if");
 		reservedWords.add("unless");
 		reservedWords.add("end");
-	}
-	
-	public static void main(String[] args) {
-		Tokenizer t = new Tokenizer();
-		Parser p = new Parser();
-		
-		Scanner s = new Scanner(System.in);
-		while(true) {
-			System.out.print(t.getLineNo() + ":");
-			if(t.isReady())
-				System.out.print(">> ");
-			else
-				System.out.print(t.getLastOpener() + "> ");
-			String line = null;
-			try {
-				line = s.nextLine();
-			} catch(NoSuchElementException e) {
-				System.out.println();
-			}
-			try {
-				t.addLine(line);
-				if(t.isReady() && t.numTokens() > 0)
-					System.out.println(p.parse(t.getTokens()));
-			} catch (MismatchException e) {
-				System.err.println(e.getMessage());
-				System.err.println(e.getLocation().show());
-			} catch (UnexpectedTokenException e) {
-				System.err.println(e.getMessage());
-				System.err.println(e.getLocation().show());
-			} catch (SyntaxError e) {
-				System.err.println(e.getMessage());
-				System.err.println(e.getLocation().show());
-				p.clear();
-			}
-			
-		}
-		
-//		String code = "[]";
-//		try {
-//			t.addLine(code);
-//			System.out.println(p.parse(t.getTokens()));
-//		} catch (MismatchException e) {
-//			System.err.println(e.getMessage());
-//			System.err.println(e.getLocation().show());
-//		} catch (UnexpectedTokenException e) {
-//			System.err.println(e.getMessage());
-//			System.err.println(e.getLocation().show());
-//		} catch (SyntaxError e) {
-//			System.err.println(e.getMessage());
-//			System.err.println(e.getLocation().show());
-//		}
-		
 	}
 	
 	private Stack<SyntaxNode> stack;
