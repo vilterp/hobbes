@@ -24,11 +24,7 @@ public class Tokenizer {
 				t.addLine(new SourceLine(s.nextLine(),lineNo));
 				if(t.isReady())
 					System.out.println(t.getTokens());
-			} catch(MismatchException e) {
-				t.clear();
-				System.err.println(e.getMessage());
-				System.err.println(e.getLocation().show());
-			} catch (UnexpectedTokenException e) {
+			} catch(SyntaxError e) {
 				t.clear();
 				System.err.println(e.getMessage());
 				System.err.println(e.getLocation().show());
@@ -105,7 +101,7 @@ public class Tokenizer {
 		pos = startPos = null;
 	}
 
-	public void addLine(SourceLine l) throws MismatchException, UnexpectedTokenException {
+	public void addLine(SourceLine l) throws SyntaxError {
 		code = l.getCode();
 		line = l;
 		pos = new SourceLocation(line,0);
@@ -147,7 +143,7 @@ public class Tokenizer {
 		return tokens.size();
 	}
 	
-	private void tokenize() throws MismatchException, UnexpectedTokenException {
+	private void tokenize() throws SyntaxError {
 		while(moreCode()) {
 			if(!isReady()) {
 				if(getLastOpener().equals("\"") || getLastOpener().equals("'"))
@@ -161,12 +157,12 @@ public class Tokenizer {
 		}
 	}
 	
-	private void getToken() throws MismatchException, UnexpectedTokenException {
+	private void getToken() throws SyntaxError {
 		if(peek() == '\\') {
 			read();
 			depth.push(makeToken(TokenType.SYMBOL));
 			if(moreCode())
-				throw new UnexpectedTokenException(depth.pop());
+				throw getUnexpectedTokenError(depth.pop());
 		} else {
 			if(peek() == '#')
 					code = "";
@@ -274,7 +270,7 @@ public class Tokenizer {
 		}
 	}
 	
-	private void getWord() throws UnexpectedTokenException {
+	private void getWord() throws SyntaxError {
 		read();
 		while(moreCode() && (Character.isLetterOrDigit(peek()) || peek() == '_'))
 			read();
@@ -285,7 +281,7 @@ public class Tokenizer {
 			depth.push(word);
 		else if(pairs.containsValue(word.getValue())) {
 			if(depth.isEmpty())
-				throw new UnexpectedTokenException(word);
+				throw getUnexpectedTokenError(word);
 			else if(getWaitingFor().equals(word.getValue()))
 				depth.pop();
 		}
@@ -306,7 +302,7 @@ public class Tokenizer {
 			tokens.add(makeToken(TokenType.NUMBER));
 	}
 	
-	private void getSymbol() throws MismatchException, UnexpectedTokenException {
+	private void getSymbol() throws SyntaxError {
 		read();
 		if(moreCode()) {
 			if(peek(1) != null && multiCharSymbols.contains(
@@ -323,11 +319,11 @@ public class Tokenizer {
 			depth.push(symbol);
 		else if(pairs.containsValue(symbol.getValue())) {
 			if(isReady())
-				throw new UnexpectedTokenException(symbol);
+				throw getUnexpectedTokenError(symbol);
 			else if(getWaitingFor().equals(symbol.getValue()))
 				depth.pop();
 			else
-				throw new MismatchException(symbol,pairs.get(getLastOpener()));
+				throw getMismatchError(symbol,pairs.get(getLastOpener()));
 		}
 		tokens.add(symbol);
 	}
@@ -389,6 +385,21 @@ public class Tokenizer {
 	private Token makeToken(TokenType type) {
 		SourceSpan loc = new SourceSpan(startPos,pos);
 		return new Token(flush(),type,loc);
+	}
+	
+	private SyntaxError getMismatchError(Token found, String expected) {
+		return new SyntaxError("Expected "+expected+", found "+found.getValue(),
+									found.getEnd());
+	}
+	
+	private SyntaxError getUnexpectedTokenError(Token theUnexpected) {
+		return getUnexpectedTokenError(theUnexpected,null);
+	}
+	
+	private SyntaxError getUnexpectedTokenError(Token theUnexpected, String note) {
+		String message = "Unexpected "+theUnexpected.getValue() +
+								(note == null ? "" : "(" + note + ")");
+		return new SyntaxError(message,theUnexpected.getEnd());
 	}
 	
 }

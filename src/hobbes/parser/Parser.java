@@ -38,12 +38,6 @@ public class Parser {
 					t.addLine(new SourceLine(line,lineNo));
 					if(t.isReady() && t.numTokens() > 0)
 						System.out.println(p.parse(t.getTokens()));
-				} catch (MismatchException e) {
-					System.err.println(e.getMessage());
-					System.err.println(e.getLocation().show());
-				} catch (UnexpectedTokenException e) {
-					System.err.println(e.getMessage());
-					System.err.println(e.getLocation().show());
 				} catch (SyntaxError e) {
 					System.err.println(e.getMessage());
 					System.err.println(e.getLocation().show());

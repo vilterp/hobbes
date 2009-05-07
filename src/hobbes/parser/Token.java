@@ -24,6 +24,10 @@ public class Token {
 		return type;
 	}
 	
+	public SourceSpan getLocation() {
+		return location;
+	}
+	
 	public SourceLocation getStart() {
 		return location.getStart();
 	}
