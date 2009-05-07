@@ -251,10 +251,24 @@ public class Parser {
 				tokens.addFirst(negative);
 				return false;
 			}
-		} else if(exponent())
+		} else if(mod())
 			return true;
 		else
 			return false;
+	}
+	
+	private boolean mod() throws SyntaxError {
+		if(!exponent())
+			if(!parenthesizedExpression())
+				return false;
+		if(symbol("%")) {
+			if(mod()) {
+				makeOperation();
+				return true;
+			} else
+				throw getSyntaxError("no expression after %");
+		} else
+			return true;
 	}
 	
 	private boolean exponent() throws SyntaxError {
