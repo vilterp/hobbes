@@ -129,6 +129,8 @@ public class Parser {
 			stack.pop();
 		else
 			return false;
+		if(symbol(")"))
+			throw getSyntaxError("nothing inside ()'s");
 		if(!expression())
 			throw getSyntaxError("no expression after (");
 		symbol(")"); // tokenizer makes sure it's there
