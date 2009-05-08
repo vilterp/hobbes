@@ -13,8 +13,8 @@ public class AnonymousFunctionNode implements ObjectNode {
 	}
 	
 	public String toString() {
-		return "|" + args + "|" +
-				(returnType == null ? "" : ":" + returnType)
+		return "|" + args + "|"
+				+ (returnType == null ? "" : ":" + returnType)
 				+ "{" + block + "}";
 	}
 	
