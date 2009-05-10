@@ -46,11 +46,9 @@ public class Parser {
 //				
 //			}
 			
-			// String code = "{a:}";
+			 String code = "'hello'";
 			try {
-				t.addLine(new SourceLine("",1));
-				System.out.println(p.parse(t.getTokens()));
-				t.addLine(new SourceLine("'hello'",1));
+				t.addLine(new SourceLine(code,1));
 				System.out.println(p.parse(t.getTokens()));
 			} catch (SyntaxError e) {
 				System.err.println(e.getMessage());
@@ -134,9 +132,9 @@ public class Parser {
 		if(!or())
 			if(!parenthesizedExpression())
 				return false;
-		ExpressionNode theIf = (ExpressionNode)stack.pop();
 		if(word("if") || word("unless")) {
 			Token ifOrUnless = ((TempNode)stack.pop()).getToken();
+			ExpressionNode theIf = (ExpressionNode)stack.pop();
 			ExpressionNode condition = null;
 			if(or()) {
 				condition = (ExpressionNode)stack.pop();
