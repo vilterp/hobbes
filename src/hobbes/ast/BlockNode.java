@@ -11,6 +11,12 @@ public class BlockNode implements SyntaxNode {
 		lines = ls;
 	}
 	
+	public BlockNode(SyntaxNode l) {
+		ArrayList<SyntaxNode> ls = new ArrayList<SyntaxNode>();
+		ls.add(l);
+		lines = ls;
+	}
+	
 	public String toString() {
 		if(lines.size() == 0)
 			return "";

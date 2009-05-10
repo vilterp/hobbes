@@ -19,41 +19,43 @@ public class Parser {
 			Tokenizer t = new Tokenizer();
 			Parser p = new Parser();
 			
-			int lineNo = 1;
-			Scanner s = new Scanner(System.in);
-			while(true) {
-				System.out.print(lineNo + ":");
-				if(t.isReady())
-					System.out.print(">> ");
-				else
-					System.out.print(t.getLastOpener() + "> ");
-				String line = null;
-				try {
-					line = s.nextLine();
-				} catch(NoSuchElementException e) {
-					System.out.println();
-				}
-				try {
-					t.addLine(new SourceLine(line,lineNo));
-					if(t.isReady() && t.numTokens() > 0)
-						System.out.println(p.parse(t.getTokens()));
-				} catch (SyntaxError e) {
-					System.err.println(e.getMessage());
-					System.err.println(e.getLocation().show());
-					p.clear();
-				}
-				lineNo++;
-				
-			}
-			
-//			String code = "{a:}";
-//			try {
-//				t.addLine(new SourceLine(code,1));
-//				System.out.println(p.parse(t.getTokens()));
-//			} catch (SyntaxError e) {
-//				System.err.println(e.getMessage());
-//				System.err.println(e.getLocation().show());
+//			int lineNo = 1;
+//			Scanner s = new Scanner(System.in);
+//			while(true) {
+//				System.out.print(lineNo + ":");
+//				if(t.isReady())
+//					System.out.print(">> ");
+//				else
+//					System.out.print(t.getLastOpener() + "> ");
+//				String line = null;
+//				try {
+//					line = s.nextLine();
+//				} catch(NoSuchElementException e) {
+//					System.out.println();
+//				}
+//				try {
+//					t.addLine(new SourceLine(line,lineNo));
+//					if(t.isReady() && t.numTokens() > 0)
+//						System.out.println(p.parse(t.getTokens()));
+//				} catch (SyntaxError e) {
+//					System.err.println(e.getMessage());
+//					System.err.println(e.getLocation().show());
+//					p.clear();
+//				}
+//				lineNo++;
+//				
 //			}
+			
+			// String code = "{a:}";
+			try {
+				t.addLine(new SourceLine("",1));
+				System.out.println(p.parse(t.getTokens()));
+				t.addLine(new SourceLine("'hello'",1));
+				System.out.println(p.parse(t.getTokens()));
+			} catch (SyntaxError e) {
+				System.err.println(e.getMessage());
+				System.err.println(e.getLocation().show());
+			}
 			
 		}
 
@@ -108,7 +110,7 @@ public class Parser {
 	}
 	
 	private boolean expression() throws SyntaxError {
-		if(!or())
+		if(!inlineIfStatement())
 			if(!parenthesizedExpression())
 				return false;
 		return true;
@@ -126,6 +128,38 @@ public class Parser {
 		symbol(")"); // tokenizer makes sure it's there
 		stack.pop();
 		return true;
+	}
+	
+	private boolean inlineIfStatement() throws SyntaxError {
+		if(!or())
+			if(!parenthesizedExpression())
+				return false;
+		ExpressionNode theIf = (ExpressionNode)stack.pop();
+		if(word("if") || word("unless")) {
+			Token ifOrUnless = ((TempNode)stack.pop()).getToken();
+			ExpressionNode condition = null;
+			if(or()) {
+				condition = (ExpressionNode)stack.pop();
+				if(word("else")) {
+					if(or()) {
+						ExpressionNode theElse = (ExpressionNode)stack.pop();
+						BlockNode ifBlock = new BlockNode(theIf);
+						BlockNode elseBlock = new BlockNode(theElse);
+						stack.push(new IfStatementNode(ifOrUnless,condition,ifBlock,elseBlock));
+						return true;
+					} else
+						throw getSyntaxError("No expression after \"else\"");
+				} else {
+					BlockNode ifBlock = new BlockNode(theIf);
+					stack.push(new IfStatementNode(ifOrUnless,condition,ifBlock));
+					return true;
+				}
+			} else
+				throw new SyntaxError("No expression after \"" + 
+										ifOrUnless.getValue() + "\"",
+										ifOrUnless.getEnd());
+		} else
+			return true;
 	}
 	
 	private boolean or() throws SyntaxError {
