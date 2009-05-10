@@ -19,41 +19,41 @@ public class Parser {
 			Tokenizer t = new Tokenizer();
 			Parser p = new Parser();
 			
-//			int lineNo = 1;
-//			Scanner s = new Scanner(System.in);
-//			while(true) {
-//				System.out.print(lineNo + ":");
-//				if(t.isReady())
-//					System.out.print(">> ");
-//				else
-//					System.out.print(t.getLastOpener() + "> ");
-//				String line = null;
-//				try {
-//					line = s.nextLine();
-//				} catch(NoSuchElementException e) {
-//					System.out.println();
-//				}
-//				try {
-//					t.addLine(new SourceLine(line,lineNo));
-//					if(t.isReady() && t.numTokens() > 0)
-//						System.out.println(p.parse(t.getTokens()));
-//				} catch (SyntaxError e) {
-//					System.err.println(e.getMessage());
-//					System.err.println(e.getLocation().show());
-//					p.clear();
-//				}
-//				lineNo++;
-//				
-//			}
-			
-			 String code = "'hello'";
-			try {
-				t.addLine(new SourceLine(code,1));
-				System.out.println(p.parse(t.getTokens()));
-			} catch (SyntaxError e) {
-				System.err.println(e.getMessage());
-				System.err.println(e.getLocation().show());
+			int lineNo = 1;
+			Scanner s = new Scanner(System.in);
+			while(true) {
+				System.out.print(lineNo + ":");
+				if(t.isReady())
+					System.out.print(">> ");
+				else
+					System.out.print(t.getLastOpener() + "> ");
+				String line = null;
+				try {
+					line = s.nextLine();
+				} catch(NoSuchElementException e) {
+					System.out.println();
+				}
+				try {
+					t.addLine(new SourceLine(line,lineNo));
+					if(t.isReady() && t.numTokens() > 0)
+						System.out.println(p.parse(t.getTokens()));
+				} catch (SyntaxError e) {
+					System.err.println(e.getMessage());
+					System.err.println(e.getLocation().show());
+					p.clear();
+				}
+				lineNo++;
+				
 			}
+			
+//			 String code = "'hello'";
+//			try {
+//				t.addLine(new SourceLine(code,1));
+//				System.out.println(p.parse(t.getTokens()));
+//			} catch (SyntaxError e) {
+//				System.err.println(e.getMessage());
+//				System.err.println(e.getLocation().show());
+//			}
 			
 		}
 
@@ -324,10 +324,11 @@ public class Parser {
 	}
 	
 	private boolean attribute() throws SyntaxError {
+		Token dot = null;
 		if(!symbol("."))
 			return false;
 		else
-			stack.pop();
+			dot = ((TempNode)stack.pop()).getToken();
 		// FIXME: a methodname rule would be better here,
 			//but it wouldn't put TempNodes on the stack
 		if(wordWithPattern(variablePattern)) {
@@ -336,7 +337,7 @@ public class Parser {
 			stack.push(new AttributeNode(expr,attr));
 			return true;
 		} else
-			throw getSyntaxError("no attribute name after \".\"");
+			throw new SyntaxError("no attribute name after \".\"",dot.getEnd());
 	}
 	
 	private boolean subscript() throws SyntaxError {
@@ -379,10 +380,12 @@ public class Parser {
 				} else
 					stack.pop();
 			} else {
-				symbol(")"); // FIXME: would this ever not be there?
-				stack.pop();
-				stack.push(new CallNode((ExpressionNode)stack.pop(),args));
-				return true;
+				if(symbol(")")) {
+					stack.pop();
+					stack.push(new CallNode((ExpressionNode)stack.pop(),args));
+					return true;
+				} else
+					throw new SyntaxError("missing comma",tokens.peek().getStart());
 			}
 		}
 	}
