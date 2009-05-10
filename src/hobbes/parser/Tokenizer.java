@@ -25,7 +25,7 @@ public class Tokenizer {
 				if(t.isReady())
 					System.out.println(t.getTokens());
 			} catch(SyntaxError e) {
-				t.clear();
+				t.reset();
 				System.err.println(e.getMessage());
 				System.err.println(e.getLocation().show());
 			}
@@ -95,7 +95,7 @@ public class Tokenizer {
 		pos = startPos = null;
 	}
 	
-	public void clear() {
+	public void reset() {
 		tokens.clear();
 		depth.clear();
 		pos = startPos = null;
@@ -132,7 +132,7 @@ public class Tokenizer {
 	public ArrayList<Token> getTokens() {
 		if(isReady()) {
 			ArrayList<Token> temp = (ArrayList<Token>)tokens.clone();
-			clear();
+			reset();
 			return temp;
 		} else
 			throw new IllegalStateException("can't get tokens, still waiting to close "

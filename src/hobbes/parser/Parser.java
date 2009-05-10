@@ -40,7 +40,8 @@ public class Parser {
 				} catch (SyntaxError e) {
 					System.err.println(e.getMessage());
 					System.err.println(e.getLocation().show());
-					p.clear();
+					p.reset();
+					t.reset();
 				}
 				lineNo++;
 				
@@ -102,7 +103,7 @@ public class Parser {
 			throw new SyntaxError("invalid syntax",firstToken.getStart());
 	}
 	
-	public void clear() {
+	public void reset() {
 		stack.clear();
 		tokens.clear();
 	}
