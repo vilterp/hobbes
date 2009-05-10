@@ -13,7 +13,10 @@ public class Token {
 	}
 	
 	public String toString() {
-		return "["+value.replaceAll("\n", "\\\\n")+":"+type+"@"+location+"]";
+		return "["+ 
+				(type == TokenType.TAB ? 
+						"" : value.replaceAll("\n", "\\\\n") + ":")
+				+ type + "@" + location + "]";
 	}
 	
 	public String getValue() {

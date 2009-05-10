@@ -3,7 +3,7 @@ package hobbes.ast;
 import java.util.HashMap;
 import java.util.Iterator;
 
-public class DictNode implements ObjectNode {
+public class DictNode implements AtomNode {
 	
 	private HashMap<ExpressionNode,ExpressionNode> elements;
 	

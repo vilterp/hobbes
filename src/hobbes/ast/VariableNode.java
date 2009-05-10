@@ -2,7 +2,7 @@ package hobbes.ast;
 
 import hobbes.parser.Token;
 
-public class VariableNode implements ObjectNode {
+public class VariableNode implements AtomNode {
 	
 	private Token origin;
 	

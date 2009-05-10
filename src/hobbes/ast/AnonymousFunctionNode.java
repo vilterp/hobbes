@@ -1,6 +1,6 @@
 package hobbes.ast;
 
-public class AnonymousFunctionNode implements ObjectNode {
+public class AnonymousFunctionNode implements AtomNode {
 	
 	private ArgsSpecNode args;
 	private VariableNode returnType;

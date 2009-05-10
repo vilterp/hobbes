@@ -2,7 +2,7 @@ package hobbes.ast;
 
 import hobbes.parser.Token;
 
-public class RegexNode implements ObjectNode {
+public class RegexNode implements AtomNode {
 	
 	private Token origin;
 	

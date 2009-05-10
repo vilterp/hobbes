@@ -3,7 +3,7 @@ package hobbes.ast;
 import java.util.HashSet;
 import java.util.Iterator;
 
-public class SetNode implements ObjectNode {
+public class SetNode implements AtomNode {
 	
 	private HashSet<ExpressionNode> elements;
 	

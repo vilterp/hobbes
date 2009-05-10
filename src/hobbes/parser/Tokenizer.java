@@ -166,9 +166,23 @@ public class Tokenizer {
 		} else {
 			if(peek() == '#')
 					code = "";
-			else if(Character.isWhitespace(peek()))
-				advance();
-			else if(Character.isLetter(peek()) || peek() == '_')
+			else if(peek() == '\t') {
+				read();
+				tokens.add(makeToken(TokenType.TAB));
+			} else if(peek() == ' ') {
+				if(moreCode(4) && peek(1) == ' ' && peek(2) == ' ' && peek(3) == ' ') {
+					read();
+					read();
+					read();
+					read();
+					tokens.add(makeToken(TokenType.TAB));
+				} else if(moreCode(2) && peek(1) == ' ') {
+					read();
+					read();
+					tokens.add(makeToken(TokenType.TAB));
+				} else
+					advance();
+			} else if(Character.isLetter(peek()) || peek() == '_')
 				getWord();
 			else if(peek() == '"' || peek() == '\'') {
 				char start = read();
@@ -335,7 +349,7 @@ public class Tokenizer {
 	private Character peek(int ahead) {
 		try {
 			return code.charAt(pos.getPosition() + ahead);
-		} catch(IndexOutOfBoundsException e) {
+		} catch(StringIndexOutOfBoundsException e) {
 			return null;
 		}
 	}
@@ -358,7 +372,11 @@ public class Tokenizer {
 	}
 	
 	private boolean moreCode() {
-		return pos.getPosition() < code.length();
+		return moreCode(1);
+	}
+	
+	private boolean moreCode(int howMuchMore) {
+		return pos.getPosition() + howMuchMore <= code.length();
 	}
 	
 	private Character lastChar() {

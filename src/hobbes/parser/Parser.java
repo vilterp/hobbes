@@ -14,7 +14,6 @@ import java.util.regex.Pattern;
 public class Parser {
 	
 	// TODO: "x if C else y"
-	// FIXME: yo! => NullPointerException (L66)
 	
 	public static void main(String[] args) {
 			Tokenizer t = new Tokenizer();
@@ -47,7 +46,7 @@ public class Parser {
 				
 			}
 			
-//			String code = "|a:Int|:nil{a>2}";
+//			String code = "{a:}";
 //			try {
 //				t.addLine(new SourceLine(code,1));
 //				System.out.println(p.parse(t.getTokens()));
@@ -366,7 +365,7 @@ public class Parser {
 							if(!dictOrSet())
 								if(!anonymousFunction())
 									return false;
-		stack.push(new OperationNode((ObjectNode)stack.pop()));
+		stack.push(new OperationNode((AtomNode)stack.pop()));
 		return true;
 	}
 
@@ -393,10 +392,12 @@ public class Parser {
 				} else
 					stack.pop();
 			} else {
-				symbol("]");
-				stack.pop();
-				stack.push(new ListNode(elements));
-				return true;
+				if(symbol("]")) {
+					stack.pop();
+					stack.push(new ListNode(elements));
+					return true;
+				} else
+					throw new SyntaxError("missing comma",tokens.peek().getStart());
 			}
 		}
 	}
@@ -438,10 +439,12 @@ public class Parser {
 				} else
 					stack.pop();
 			} else {
-				symbol("}");
-				stack.pop();
-				stack.push(new DictNode(elements));
-				return true;
+				if(symbol("}")) {
+					stack.pop();
+					stack.push(new DictNode(elements));
+					return true;
+				} else
+					throw new SyntaxError("missing comma",tokens.peek().getStart());
 			}
 		}
 	}
@@ -457,7 +460,8 @@ public class Parser {
 				throw getSyntaxError("trailing comma");
 			} else
 				stack.pop();
-		}
+		} else
+			throw new SyntaxError("missing comma",tokens.peek().getStart());
 		while(true) {
 			if(expression())
 				elements.add((ExpressionNode)stack.pop());
@@ -471,10 +475,12 @@ public class Parser {
 				} else
 					stack.pop();
 			} else {
-				symbol("}");
-				stack.pop();
-				stack.push(new SetNode(elements));
-				return true;
+				if(symbol("}")) {
+					stack.pop();
+					stack.push(new SetNode(elements));
+					return true;
+				} else
+					throw new SyntaxError("missing comma",tokens.peek().getStart());
 			}
 		}
 	}
@@ -483,8 +489,7 @@ public class Parser {
 		ArgsSpecNode args = null;
 		if(!argsSpec("|","|"))
 			return false;
-		else
-			args = (ArgsSpecNode)stack.pop();
+		args = (ArgsSpecNode)stack.pop();
 		VariableNode returnType = null;
 		if(classSpec())
 			returnType = (VariableNode)stack.pop();

@@ -6,5 +6,5 @@ public enum TokenType {
 	NUMBER,
 	STRING,
 	REGEX,
-	RANGE
+	TAB
 }

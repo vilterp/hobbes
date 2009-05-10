@@ -2,7 +2,7 @@ package hobbes.ast;
 
 import java.util.ArrayList;
 
-public class ListNode implements ObjectNode {
+public class ListNode implements AtomNode {
 	
 	private ArrayList<ExpressionNode> elements;
 	

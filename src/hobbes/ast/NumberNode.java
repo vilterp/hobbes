@@ -2,7 +2,7 @@ package hobbes.ast;
 
 import hobbes.parser.Token;
 
-public class NumberNode implements ObjectNode {
+public class NumberNode implements AtomNode {
 	
 	public Token origin;
 	public Token negative;

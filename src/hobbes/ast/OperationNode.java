@@ -8,7 +8,7 @@ public class OperationNode implements ExpressionNode {
 	private Token operator;
 	private ExpressionNode right;
 	
-	private ObjectNode object;
+	private AtomNode object;
 	
 	public OperationNode(ExpressionNode l, Token o, ExpressionNode r) {
 		left = l;
@@ -16,7 +16,7 @@ public class OperationNode implements ExpressionNode {
 		right = r;
 	}
 	
-	public OperationNode(ObjectNode obj) {
+	public OperationNode(AtomNode obj) {
 		object = obj;
 	}
 	
