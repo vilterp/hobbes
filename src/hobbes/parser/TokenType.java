@@ -5,6 +5,7 @@ public enum TokenType {
 	SYMBOL,
 	NUMBER,
 	STRING,
+	CHAR,
 	REGEX,
 	TAB
 }

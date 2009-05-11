@@ -26,4 +26,15 @@ public class SourceLocation {
 		return position;
 	}
 	
+	public SourceLine getLine() {
+		return line;
+	}
+	
+	public SourceLocation next() {
+		if((position + 1) <= line.getCode().length())
+			return new SourceLocation(line,position+1);
+		else
+			return null;
+	}
+	
 }

@@ -12,36 +12,37 @@ public class Tokenizer {
 	public static void main(String[] args) {
 		Tokenizer t = new Tokenizer();
 		Scanner s = new Scanner(System.in);
+		
 		int lineNo = 1;
-		
-//		while(true) {
-//			System.out.print(lineNo + ":");
-//			if(t.isReady())
-//				System.out.print(">> ");
-//			else
-//				System.out.print(t.getLastOpener()+"> ");
-//			try {
-//				t.addLine(new SourceLine(s.nextLine(),lineNo));
-//				if(t.isReady())
-//					System.out.println(t.getTokens());
-//			} catch(SyntaxError e) {
-//				t.reset();
-//				System.err.println(e.getMessage());
-//				System.err.println(e.getLocation().show());
-//			}
-//			lineNo++;
-//		}
-		
-		try {
-			t.addLine(new SourceLine("|abc|",1));
-		} catch (SyntaxError e) {
-			System.err.println(e.getMessage());
-			System.err.println(e.getLocation().show());
+		while(true) {
+			System.out.print(lineNo + ":");
+			if(t.isReady())
+				System.out.print(">> ");
+			else
+				System.out.print(t.getLastOpener()+"> ");
+			try {
+				t.addLine(new SourceLine(s.nextLine(),lineNo));
+				if(t.isReady())
+					System.out.println(t.getTokens());
+			} catch(SyntaxError e) {
+				t.reset();
+				System.err.println(e.getMessage());
+				System.err.println(e.getLocation().show());
+			}
+			lineNo++;
 		}
-		if(t.isReady())
-			System.out.println(t.getTokens());
-		else
-			System.out.println("waiting to close "+t.getLastOpener());
+		
+//		try {
+//			t.addLine(new SourceLine("\"abc",1));
+//			t.addLine(new SourceLine("def\"",2));
+//		} catch (SyntaxError e) {
+//			System.err.println(e.getMessage());
+//			System.err.println(e.getLocation().show());
+//		}
+//		if(t.isReady())
+//			System.out.println(t.getTokens());
+//		else
+//			System.out.println("waiting to close "+t.getLastOpener());
 		
 	}
 	
@@ -135,8 +136,8 @@ public class Tokenizer {
 	private void tokenize() throws SyntaxError {
 		while(moreCode()) {
 			if(!isReady()) {
-				if(getLastOpener().equals("\"") || getLastOpener().equals("'"))
-					getString(getLastOpener().charAt(0));
+				if(getLastOpener().equals("\""))
+					getString();
 				else if(getLastOpener().equals("/"))
 					getRegex();
 				else
@@ -173,10 +174,13 @@ public class Tokenizer {
 					advance();
 			} else if(Character.isLetter(peek()) || peek() == '_')
 				getWord();
-			else if(peek() == '"' || peek() == '\'') {
-				char start = read();
+			else if(peek() == '"') {
+				read();
 				depth.push(makeToken(TokenType.SYMBOL));
-				getString(start);
+				getString();
+			} else if(peek() == '\'') {
+				advance();
+				getChar();
 			} else if(Character.isDigit(peek()))
 				getNumber();
 			else if(peek() == '.') {
@@ -206,13 +210,13 @@ public class Tokenizer {
 		}
 	}
 
-	private void getString(char start) {
+	private void getString() throws SyntaxError {
 		// TODO unicode stuff: \u4564 or whatever
 		while(true) {
 			if(!moreCode()) {
 				buffer += "\n";
 				return;
-			} else if(peek() == start && (lastChar() == null || lastChar() != '\\')) {
+			} else if(peek() == '"') {
 				advance();
 				depth.pop();
 				tokens.add(makeToken(TokenType.STRING));
@@ -227,12 +231,18 @@ public class Tokenizer {
 						buffer += "\t";
 						advance();
 						advance();
-					} else if(peek(1) == start) {
-						buffer += start;
+					} else if(peek(1) == '"') {
+						buffer += '"';
+						advance();
+						advance();
+					} else if(peek(1) == '\\') {
+						buffer += "\\";
 						advance();
 						advance();
 					} else
-						read();
+						throw new SyntaxError("invalid escape sequence " +
+												"(only \\t, \\n, \\\" and \\\\)",
+												pos.next().next());
 				} else
 					read();
 			} else
@@ -240,7 +250,44 @@ public class Tokenizer {
 		}
 	}
 	
-	private void getRegex() {
+	private void getChar() throws SyntaxError {
+		// TODO unicode stuff: \u4564 or whatever
+		if(peek() == '\'')
+			throw new SyntaxError("empty character literal",pos.next());
+		else if(peek() == '\\') {
+			if(peek(1) == 'n') {
+				buffer += "\n";
+				advance();
+				advance();
+			} else if(peek(1) == 't') {
+				buffer += "\t";
+				advance();
+				advance();
+			} else if(peek(1) == '\'') {
+				buffer += "'";
+				advance();
+				advance();
+			} else if(peek(1) == '\\') {
+				buffer += "\\";
+				advance();
+				advance();
+			} else
+				throw new SyntaxError("not a valid escape sequence " +
+										"(only \\t, \\n, \\' and \\\\)",
+										pos.next().next());
+		}
+		if(peek() != '\'')
+			throw new SyntaxError("can only put one character " +
+					"in a character literal (put strings in \"'s)",
+					pos.next());
+		else {
+			advance();
+			tokens.add(makeToken(TokenType.CHAR));
+			return;
+		}
+	}
+
+	private void getRegex() throws SyntaxError {
 		while(true) {
 			if(!moreCode()) {
 				buffer += "\n";
@@ -264,8 +311,14 @@ public class Tokenizer {
 						buffer += '/';
 						advance();
 						advance();
+					} else if(peek(1) == '\\') {
+						buffer += "\\";
+						advance();
+						advance();
 					} else
-						read();
+						throw new SyntaxError("not a valid escape sequence " +
+												"(only \\n, \\t, \\/ and \\\\)",
+												pos.next().next());
 				} else
 					read();
 			} else
@@ -354,7 +407,7 @@ public class Tokenizer {
 	}
 	
 	private void advance() {
-		pos = new SourceLocation(line,pos.getPosition()+1);
+		pos = pos.next();
 		// FIXME: eww too many objects!
 	}
 	
