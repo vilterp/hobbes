@@ -463,7 +463,7 @@ public class Tokenizer {
 	
 	private SyntaxError getMismatchError(Token found, String expected) {
 		return new SyntaxError("Expected "+expected+", found "+found.getValue(),
-									found.getEnd());
+									found.getStart());
 	}
 	
 	private SyntaxError getUnexpectedTokenError(Token theUnexpected) {
@@ -473,7 +473,7 @@ public class Tokenizer {
 	private SyntaxError getUnexpectedTokenError(Token theUnexpected, String note) {
 		String message = "Unexpected "+theUnexpected.getValue() +
 								(note == null ? "" : "(" + note + ")");
-		return new SyntaxError(message,theUnexpected.getEnd());
+		return new SyntaxError(message,theUnexpected.getStart());
 	}
 	
 }
