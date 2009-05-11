@@ -14,38 +14,34 @@ public class Tokenizer {
 		Scanner s = new Scanner(System.in);
 		int lineNo = 1;
 		
-		while(true) {
-			System.out.print(lineNo + ":");
-			if(t.isReady())
-				System.out.print(">> ");
-			else
-				System.out.print(t.getLastOpener()+"> ");
-			try {
-				t.addLine(new SourceLine(s.nextLine(),lineNo));
-				if(t.isReady())
-					System.out.println(t.getTokens());
-			} catch(SyntaxError e) {
-				t.reset();
-				System.err.println(e.getMessage());
-				System.err.println(e.getLocation().show());
-			}
-			lineNo++;
-		}
-		
-//		try {
-//			t.addLine("2+\\");
-//			t.addLine("2");
-//		} catch (MismatchException e) {
-//			System.err.println(e.getMessage());
-//			System.err.println(e.getLocation().show());
-//		} catch (UnexpectedTokenException e) {
-//			System.err.println(e.getMessage());
-//			System.err.println(e.getLocation().show());
+//		while(true) {
+//			System.out.print(lineNo + ":");
+//			if(t.isReady())
+//				System.out.print(">> ");
+//			else
+//				System.out.print(t.getLastOpener()+"> ");
+//			try {
+//				t.addLine(new SourceLine(s.nextLine(),lineNo));
+//				if(t.isReady())
+//					System.out.println(t.getTokens());
+//			} catch(SyntaxError e) {
+//				t.reset();
+//				System.err.println(e.getMessage());
+//				System.err.println(e.getLocation().show());
+//			}
+//			lineNo++;
 //		}
-//		if(t.isReady())
-//			System.out.println(t.getTokens());
-//		else
-//			System.out.println("waiting to close "+t.getLastOpener());
+		
+		try {
+			t.addLine(new SourceLine("|abc|",1));
+		} catch (SyntaxError e) {
+			System.err.println(e.getMessage());
+			System.err.println(e.getLocation().show());
+		}
+		if(t.isReady())
+			System.out.println(t.getTokens());
+		else
+			System.out.println("waiting to close "+t.getLastOpener());
 		
 	}
 	
@@ -68,14 +64,7 @@ public class Tokenizer {
 		pairs.put("(", ")");
 		pairs.put("[", "]");
 		pairs.put("{", "}");
-		pairs.put("class", "end");
-		pairs.put("def", "end");
-		pairs.put("if", "end");
-		pairs.put("unless", "end");
-		pairs.put("for", "end");
-		pairs.put("while", "end");
-		pairs.put("until", "end");
-		pairs.put("trait", "end");
+		pairs.put("|", "|");
 	}
 	
 	private SourceLine line;
@@ -291,14 +280,6 @@ public class Tokenizer {
 		if(moreCode() && (peek() == '?' || peek() == '!'))
 			read();
 		Token word = makeToken(TokenType.WORD);
-		if(pairs.containsKey(word.getValue()))
-			depth.push(word);
-		else if(pairs.containsValue(word.getValue())) {
-			if(depth.isEmpty())
-				throw getUnexpectedTokenError(word);
-			else if(getWaitingFor().equals(word.getValue()))
-				depth.pop();
-		}
 		tokens.add(word);
 	}
 	
@@ -329,9 +310,15 @@ public class Tokenizer {
 		}
 		Token symbol = makeToken(TokenType.SYMBOL);
 		// this symbol is the opening of a pair
-		if(pairs.containsKey(symbol.getValue()))
-			depth.push(symbol);
-		else if(pairs.containsValue(symbol.getValue())) {
+		if(pairs.containsKey(symbol.getValue())) {
+			if(symbol.getValue().equals("|")) {
+				if(!"|".equals(getLastOpener())) // |'s can't be nested
+					depth.push(symbol);
+				else
+					depth.pop();
+			} else
+				depth.push(symbol);
+		} else if(pairs.containsValue(symbol.getValue())) {
 			if(isReady())
 				throw getUnexpectedTokenError(symbol);
 			else if(getWaitingFor().equals(symbol.getValue()))
