@@ -13,8 +13,6 @@ import java.util.regex.Pattern;
 
 public class Parser {
 	
-	// TODO: "x if C else y"
-	
 	public static void main(String[] args) {
 			Tokenizer t = new Tokenizer();
 			Parser p = new Parser();
@@ -389,7 +387,7 @@ public class Parser {
 					stack.push(new CallNode((ExpressionNode)stack.pop(),args));
 					return true;
 				} else
-					throw new SyntaxError("missing comma",tokens.peek().getStart());
+					throw new SyntaxError("missing comma",tokens.peek().getStart().next());
 			}
 		}
 	}
@@ -454,7 +452,7 @@ public class Parser {
 					stack.push(new ListNode(elements));
 					return true;
 				} else
-					throw new SyntaxError("missing comma",tokens.peek().getStart());
+					throw new SyntaxError("missing comma",tokens.peek().getStart().next());
 			}
 		}
 	}
@@ -501,7 +499,7 @@ public class Parser {
 					stack.push(new DictNode(elements));
 					return true;
 				} else
-					throw new SyntaxError("missing comma",tokens.peek().getStart());
+					throw new SyntaxError("missing comma",tokens.peek().getStart().next());
 			}
 		}
 	}
@@ -518,7 +516,7 @@ public class Parser {
 			} else
 				stack.pop();
 		} else
-			throw new SyntaxError("missing comma",tokens.peek().getStart());
+			throw new SyntaxError("missing comma",tokens.peek().getStart().next());
 		while(true) {
 			if(expression())
 				elements.add((ExpressionNode)stack.pop());
@@ -537,7 +535,7 @@ public class Parser {
 					stack.push(new SetNode(elements));
 					return true;
 				} else
-					throw new SyntaxError("missing comma",tokens.peek().getStart());
+					throw new SyntaxError("missing comma",tokens.peek().getStart().next());
 			}
 		}
 	}

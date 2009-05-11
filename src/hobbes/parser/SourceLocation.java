@@ -31,10 +31,7 @@ public class SourceLocation {
 	}
 	
 	public SourceLocation next() {
-		if((position + 1) <= line.getCode().length())
-			return new SourceLocation(line,position+1);
-		else
-			return null;
+		return new SourceLocation(line,position+1);
 	}
 	
 }
