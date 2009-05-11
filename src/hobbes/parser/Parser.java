@@ -334,7 +334,7 @@ public class Parser {
 		// FIXME: a methodname rule would be better here,
 			//but it wouldn't put TempNodes on the stack
 		if(wordWithPattern(variablePattern)) {
-			String attr = ((TempNode)stack.pop()).getToken().getValue();
+			Token attr = ((TempNode)stack.pop()).getToken();
 			ExpressionNode expr = (ExpressionNode)stack.pop();
 			stack.push(new AttributeNode(expr,attr));
 			return true;
@@ -393,7 +393,6 @@ public class Parser {
 	}
 	
 	private boolean atom() throws SyntaxError {
-		// TODO: switch to or? does it break after one returns true?
 		if(variable() || number() || string() || regex() || list() || dictOrSet() ||
 				character() || anonymousFunction()) {
 			stack.push(new OperationNode((AtomNode)stack.pop()));
@@ -780,10 +779,17 @@ public class Parser {
 	}
 	
 	private void makeOperation() {
-		ExpressionNode right = (ExpressionNode)stack.pop();
-		Token operator = ((TempNode)stack.pop()).getToken();
-		ExpressionNode left = (ExpressionNode)stack.pop();
-		stack.push(new OperationNode(left,operator,right));
+		// get arg
+		ExpressionNode arg = (ExpressionNode)stack.pop();
+		// put attribute on stack
+		Token methodName = ((TempNode)stack.pop()).getToken();
+		ExpressionNode rec = (ExpressionNode)stack.pop();
+		stack.push(new AttributeNode(arg,methodName));
+		// call method with arg
+		AttributeNode method = (AttributeNode)stack.pop();
+		ArrayList<ExpressionNode> args = new ArrayList<ExpressionNode>();
+		args.add(arg);
+		stack.push(new CallNode(method,args));
 	}
 	
 	private SyntaxError getSyntaxError(String message) {

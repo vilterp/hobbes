@@ -1,17 +1,19 @@
 package hobbes.ast;
 
+import hobbes.parser.Token;
+
 public class AttributeNode implements ObjectNode {
 	
 	private ExpressionNode object;
-	private String attribute;
+	private Token attribute;
 	
-	public AttributeNode(ExpressionNode obj, String attr) {
+	public AttributeNode(ExpressionNode obj, Token attr) {
 		object = obj;
 		attribute = attr;
 	}
 	
 	public String toString() {
-		return "attr(" + attribute + "," + object + ")";
+		return "attr(" + attribute.getValue() + "," + object + ")";
 	}
 	
 }

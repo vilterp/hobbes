@@ -6,7 +6,6 @@ public class NumberNode implements AtomNode {
 	
 	public Token origin;
 	public Token negative;
-	// TODO: capture line? for runtime errors... variables too...
 	
 	public NumberNode(Token t) {
 		origin = t;
