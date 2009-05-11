@@ -275,7 +275,8 @@ public class Tokenizer {
 				throw new SyntaxError("not a valid escape sequence " +
 										"(only \\t, \\n, \\' and \\\\)",
 										pos.next().next());
-		}
+		} else
+			read();
 		if(peek() != '\'')
 			throw new SyntaxError("can only put one character " +
 					"in a character literal (put strings in \"'s)",
