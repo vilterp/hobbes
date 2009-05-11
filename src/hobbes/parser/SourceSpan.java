@@ -14,6 +14,17 @@ public class SourceSpan {
 		return "(" + start + "-" + end + ")";
 	}
 	
+	public String show() {
+		if(!start.getLine().equals(end.getLine()))
+			throw new UnsupportedOperationException("only works with same line");
+		String ans = start.getLine().getCode() + "\n";
+		for(int i=0; i < start.getPosition(); i++)
+			ans += " ";
+		for(int i=0; i < end.getPosition() - start.getPosition(); i++)
+			ans += "*";
+		return ans;
+	}
+	
 	public SourceLocation getStart() {
 		return start;
 	}

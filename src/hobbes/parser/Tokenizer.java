@@ -22,8 +22,12 @@ public class Tokenizer {
 				System.out.print(t.getLastOpener()+"> ");
 			try {
 				t.addLine(new SourceLine(s.nextLine(),lineNo));
-				if(t.isReady())
-					System.out.println(t.getTokens());
+				if(t.isReady()) {
+					ArrayList<Token> tokens = t.getTokens();
+					System.out.println(tokens);
+					for(Token token: tokens)
+						System.out.println(token.getSourceSpan().show());
+				}
 			} catch(SyntaxError e) {
 				t.reset();
 				System.err.println(e.getMessage());
@@ -33,15 +37,17 @@ public class Tokenizer {
 		}
 		
 //		try {
-//			t.addLine(new SourceLine("\"abc",1));
-//			t.addLine(new SourceLine("def\"",2));
+//			t.addLine(new SourceLine("a = 2+2.b(/oh yeah/)",1));
 //		} catch (SyntaxError e) {
 //			System.err.println(e.getMessage());
 //			System.err.println(e.getLocation().show());
 //		}
-//		if(t.isReady())
-//			System.out.println(t.getTokens());
-//		else
+//		if(t.isReady()) {
+//			ArrayList<Token> tokens = t.getTokens();
+//			System.out.println(tokens);
+//			for(Token token: tokens)
+//				System.out.println(token.getLocation().show());
+//		} else
 //			System.out.println("waiting to close "+t.getLastOpener());
 		
 	}
@@ -170,13 +176,17 @@ public class Tokenizer {
 					read();
 					read();
 					tokens.add(makeToken(TokenType.TAB));
-				} else
+				} else {
 					advance();
+					advanceStart();
+				}
 			} else if(Character.isLetter(peek()) || peek() == '_')
 				getWord();
 			else if(peek() == '"') {
 				read();
-				depth.push(makeToken(TokenType.SYMBOL));
+				Token startingQuote = makeToken(TokenType.SYMBOL);
+				depth.push(startingQuote);
+				startPos = startingQuote.getStart();
 				getString();
 			} else if(peek() == '\'') {
 				advance();
@@ -200,7 +210,9 @@ public class Tokenizer {
 					getSymbol();
 				else {
 					read();
-					depth.push(makeToken(TokenType.SYMBOL));
+					Token openingSlash = makeToken(TokenType.SYMBOL);
+					depth.push(openingSlash);
+					startPos = openingSlash.getStart();
 					getRegex();
 				}
 			} else
@@ -333,8 +345,7 @@ public class Tokenizer {
 			read();
 		if(moreCode() && (peek() == '?' || peek() == '!'))
 			read();
-		Token word = makeToken(TokenType.WORD);
-		tokens.add(word);
+		tokens.add(makeToken(TokenType.WORD));
 	}
 	
 	private void getNumber() {
@@ -410,6 +421,10 @@ public class Tokenizer {
 	private void advance() {
 		pos = pos.next();
 		// FIXME: eww too many objects!
+	}
+	
+	private void advanceStart() {
+		startPos = startPos.next();
 	}
 	
 	private boolean moreCode() {

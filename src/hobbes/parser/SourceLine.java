@@ -16,6 +16,11 @@ public class SourceLine {
 		return "SourceLine[" + lineNo + ":" + code + "]";
 	}
 	
+	public boolean equals(SourceLine other) {
+		return lineNo == other.getLineNo() &&
+			   code.equals(other.getCode());
+	}
+	
 	public String getCode() {
 		return code;
 	}

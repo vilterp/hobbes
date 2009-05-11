@@ -17,44 +17,40 @@ public class Parser {
 			Tokenizer t = new Tokenizer();
 			Parser p = new Parser();
 			
-			int lineNo = 1;
-			Scanner s = new Scanner(System.in);
-			while(true) {
-				System.out.print(lineNo + ":");
-				if(t.isReady())
-					System.out.print(">> ");
-				else
-					System.out.print(t.getLastOpener() + "> ");
-				String line = null;
-				try {
-					line = s.nextLine();
-				} catch(NoSuchElementException e) {
-					System.out.println();
-				}
-				try {
-					t.addLine(new SourceLine(line,lineNo));
-					if(t.isReady() && t.numTokens() > 0)
-						System.out.println(p.parse(t.getTokens()));
-				} catch (SyntaxError e) {
-					System.err.println(e.getMessage());
-					System.err.println(e.getLocation().show());
-					p.reset();
-					t.reset();
-				}
-				lineNo++;			
-			}
-			
-//			String code = "'hello'";
-//			try {
-//				//t.addLine(new SourceLine(code,1));
-//				t.addLine(new SourceLine("|abc| {",1));
-//				t.addLine(new SourceLine("  print(abc)",2));
-//				t.addLine(new SourceLine("}",3));
-//				System.out.println(p.parse(t.getTokens()));
-//			} catch (SyntaxError e) {
-//				System.err.println(e.getMessage());
-//				System.err.println(e.getLocation().show());
+//			int lineNo = 1;
+//			Scanner s = new Scanner(System.in);
+//			while(true) {
+//				System.out.print(lineNo + ":");
+//				if(t.isReady())
+//					System.out.print(">> ");
+//				else
+//					System.out.print(t.getLastOpener() + "> ");
+//				String line = null;
+//				try {
+//					line = s.nextLine();
+//				} catch(NoSuchElementException e) {
+//					System.out.println();
+//				}
+//				try {
+//					t.addLine(new SourceLine(line,lineNo));
+//					if(t.isReady() && t.numTokens() > 0)
+//						System.out.println(p.parse(t.getTokens()));
+//				} catch (SyntaxError e) {
+//					System.err.println(e.getMessage());
+//					System.err.println(e.getLocation().show());
+//					p.reset();
+//					t.reset();
+//				}
+//				lineNo++;			
 //			}
+			
+			try {
+				t.addLine(new SourceLine("|x:Int=2 to 10|{x/5}",1));
+				System.out.println(p.parse(t.getTokens()));
+			} catch (SyntaxError e) {
+				System.err.println(e.getMessage());
+				System.err.println(e.getLocation().show());
+			}
 			
 		}
 
@@ -395,7 +391,7 @@ public class Parser {
 	private boolean atom() throws SyntaxError {
 		if(variable() || number() || string() || regex() || list() || dictOrSet() ||
 				character() || anonymousFunction()) {
-			stack.push(new OperationNode((AtomNode)stack.pop()));
+			stack.push((AtomNode)stack.pop());
 			return true;
 		} else
 			return false;
@@ -615,6 +611,10 @@ public class Parser {
 						throw getSyntaxError("trailing comma");
 					else
 						stack.pop();
+				} else {
+					Token unexpected = tokens.peek();
+					throw new SyntaxError("unexpected \""+unexpected.getValue()+"\"",
+											unexpected.getStart());
 				}
 			} else {
 				symbol(close);
@@ -640,9 +640,9 @@ public class Parser {
 			Token className = null;
 			if(classSpec())
 				className = ((VariableNode)stack.pop()).getOrigin();
-			OperationNode defaultValue = null;
+			AtomNode defaultValue = null;
 			if(defaultSpec())
-				defaultValue = (OperationNode)stack.pop();
+				defaultValue = (AtomNode)stack.pop();
 			stack.push(new ArgSpecNode(argName,type,className,defaultValue));
 			return true;
 		} else
@@ -670,7 +670,7 @@ public class Parser {
 			return false;
 		else {
 			Token equals = ((TempNode)stack.pop()).getToken();
-			if(expression())
+			if(atom())
 				return true;
 			else
 				throw new SyntaxError("no default value specified after =",

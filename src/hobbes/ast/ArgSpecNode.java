@@ -7,9 +7,9 @@ public class ArgSpecNode implements SyntaxNode {
 	private ArgSpecType type;
 	private Token name;
 	private Token className;
-	private OperationNode defaultValue;
+	private AtomNode defaultValue;
 	
-	public ArgSpecNode(Token n, ArgSpecType t, Token cn, OperationNode d) {
+	public ArgSpecNode(Token n, ArgSpecType t, Token cn, AtomNode d) {
 		name = n;
 		className = cn;
 		defaultValue = d;

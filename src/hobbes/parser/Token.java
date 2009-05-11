@@ -29,7 +29,7 @@ public class Token {
 		return type;
 	}
 	
-	public SourceSpan getLocation() {
+	public SourceSpan getSourceSpan() {
 		return location;
 	}
 	

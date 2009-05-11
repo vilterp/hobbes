@@ -15,7 +15,7 @@ public class SourceLocation {
 	}
 	
 	public String show() {
-		String ans = " " + line.getCode() + "\n";
+		String ans = line.getCode() + "\n";
 		for(int i=0; i < position; i++)
 			ans += " ";
 		ans += "^";
