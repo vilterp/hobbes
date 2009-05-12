@@ -17,40 +17,40 @@ public class Parser {
 			Tokenizer t = new Tokenizer();
 			Parser p = new Parser();
 			
-//			int lineNo = 1;
-//			Scanner s = new Scanner(System.in);
-//			while(true) {
-//				System.out.print(lineNo + ":");
-//				if(t.isReady())
-//					System.out.print(">> ");
-//				else
-//					System.out.print(t.getLastOpener() + "> ");
-//				String line = null;
-//				try {
-//					line = s.nextLine();
-//				} catch(NoSuchElementException e) {
-//					System.out.println();
-//				}
-//				try {
-//					t.addLine(new SourceLine(line,lineNo));
-//					if(t.isReady() && t.numTokens() > 0)
-//						System.out.println(p.parse(t.getTokens()));
-//				} catch (SyntaxError e) {
-//					System.err.println(e.getMessage());
-//					System.err.println(e.getLocation().show());
-//					p.reset();
-//					t.reset();
-//				}
-//				lineNo++;			
-//			}
-			
-			try {
-				t.addLine(new SourceLine("|x:Int=2 to 10|{x/5}",1));
-				System.out.println(p.parse(t.getTokens()));
-			} catch (SyntaxError e) {
-				System.err.println(e.getMessage());
-				System.err.println(e.getLocation().show());
+			int lineNo = 1;
+			Scanner s = new Scanner(System.in);
+			while(true) {
+				System.out.print(lineNo + ":");
+				if(t.isReady())
+					System.out.print(">> ");
+				else
+					System.out.print(t.getLastOpener() + "> ");
+				String line = null;
+				try {
+					line = s.nextLine();
+				} catch(NoSuchElementException e) {
+					System.out.println();
+				}
+				try {
+					t.addLine(new SourceLine(line,lineNo));
+					if(t.isReady() && t.numTokens() > 0)
+						System.out.println(p.parse(t.getTokens()));
+				} catch (SyntaxError e) {
+					System.err.println(e.getMessage());
+					System.err.println(e.getLocation().show());
+					p.reset();
+					t.reset();
+				}
+				lineNo++;			
 			}
+			
+//			try {
+//				t.addLine(new SourceLine("|x:Int=2 to 10|{x/5}",1));
+//				System.out.println(p.parse(t.getTokens()));
+//			} catch (SyntaxError e) {
+//				System.err.println(e.getMessage());
+//				System.err.println(e.getLocation().show());
+//			}
 			
 		}
 
@@ -204,6 +204,35 @@ public class Parser {
 		if(!to())
 			if(!parenthesizedExpression())
 				return false;
+		if(word("not")) {
+			if(word("in")) {
+				if(test()) {
+					ExpressionNode right = (ExpressionNode)stack.pop();
+					Token theIn = ((TempNode)stack.pop()).getToken();
+					stack.pop(); // the "not"
+					ExpressionNode left = (ExpressionNode)stack.pop();
+					makeOperation(left,theIn,right);
+					stack.push(new NotNode((ExpressionNode)stack.pop()));
+					return true;
+				} else
+					throw getSyntaxError("No expression after \"not in\"");
+			} else
+				tokens.addFirst(((TempNode)stack.pop()).getToken());
+		} else if(word("is")) {
+			if(word("not")) {
+				if(test()) {
+					ExpressionNode right = (ExpressionNode)stack.pop();
+					stack.pop(); // the "not"
+					Token theIs = ((TempNode)stack.pop()).getToken();
+					ExpressionNode left = (ExpressionNode)stack.pop();
+					makeOperation(left,theIs,right);
+					stack.push(new NotNode((ExpressionNode)stack.pop()));
+					return true;
+				} else
+					throw getSyntaxError("no expression after \"is not\"");
+			} else
+				tokens.addFirst(((TempNode)stack.pop()).getToken());
+		}
 		if(testOp()) {
 			if(test()) {
 				makeOperation();
@@ -779,16 +808,17 @@ public class Parser {
 	}
 	
 	private void makeOperation() {
-		// get arg
-		ExpressionNode arg = (ExpressionNode)stack.pop();
-		// put attribute on stack
-		Token methodName = ((TempNode)stack.pop()).getToken();
-		ExpressionNode rec = (ExpressionNode)stack.pop();
-		stack.push(new AttributeNode(arg,methodName));
-		// call method with arg
+		ExpressionNode right = (ExpressionNode)stack.pop();
+		Token operator = ((TempNode)stack.pop()).getToken();
+		ExpressionNode left = (ExpressionNode)stack.pop();
+		makeOperation(left,operator,right);
+	}
+	
+	private void makeOperation(ExpressionNode left, Token operator, ExpressionNode right) {
+		stack.push(new AttributeNode(left,operator));
 		AttributeNode method = (AttributeNode)stack.pop();
 		ArrayList<ExpressionNode> args = new ArrayList<ExpressionNode>();
-		args.add(arg);
+		args.add(right);
 		stack.push(new CallNode(method,args));
 	}
 	
