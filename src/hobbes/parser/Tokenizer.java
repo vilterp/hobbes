@@ -223,7 +223,6 @@ public class Tokenizer {
 	}
 
 	private void getString() throws SyntaxError {
-		// TODO unicode stuff: \u4564 or whatever
 		while(true) {
 			if(!moreCode()) {
 				buffer += "\n";
@@ -263,7 +262,6 @@ public class Tokenizer {
 	}
 	
 	private void getChar() throws SyntaxError {
-		// TODO unicode stuff: \u4564 or whatever
 		if(peek() == '\'')
 			throw new SyntaxError("empty character literal",pos.next());
 		else if(peek() == '\\') {
