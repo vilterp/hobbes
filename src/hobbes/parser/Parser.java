@@ -338,9 +338,7 @@ public class Parser {
 			if(!parenthesizedExpression())
 				return false;
 		while(true) {
-			if(attribute())
-				continue;
-			else if(call())
+			if(call())
 				continue;
 			else if(subscript())
 				continue;
@@ -348,23 +346,6 @@ public class Parser {
 				break;
 		}
 		return true;
-	}
-	
-	private boolean attribute() throws SyntaxError {
-		Token dot = null;
-		if(!symbol("."))
-			return false;
-		else
-			dot = ((TempNode)stack.pop()).getToken();
-		// FIXME: a methodname rule would be better here,
-			//but it wouldn't put TempNodes on the stack
-		if(wordWithPattern(variablePattern)) {
-			Token attr = ((TempNode)stack.pop()).getToken();
-			ExpressionNode expr = (ExpressionNode)stack.pop();
-			stack.push(new AttributeNode(expr,attr));
-			return true;
-		} else
-			throw new SyntaxError("no attribute name after \".\"",dot.getEnd());
 	}
 	
 	private boolean subscript() throws SyntaxError {
@@ -385,16 +366,29 @@ public class Parser {
 	}
 	
 	private boolean call() throws SyntaxError {
-		if(!symbol("("))
+		ExpressionNode receiver = (ExpressionNode)stack.pop();
+		// get dot
+		Token dot = null;
+		if(!symbol("."))
 			return false;
 		else
+			dot = ((TempNode)stack.pop()).getToken();
+		// get attribute name
+		Token attr = null;
+		if(wordWithPattern(variablePattern)) {
+			attr = ((TempNode)stack.pop()).getToken();
+		} else
+			throw new SyntaxError("no attribute name after \".\"",dot.getEnd());
+		if(!symbol("("))
+			stack.push(new CallNode(receiver,attr));
+		else
 			stack.pop();
+		ArrayList<ExpressionNode> args = new ArrayList<ExpressionNode>();
 		if(symbol(")")) {
 			stack.pop();
-			stack.push(new CallNode((ExpressionNode)stack.pop()));
+			stack.push(new CallNode(receiver,attr,args));
 			return true;
 		}
-		ArrayList<ExpressionNode> args = new ArrayList<ExpressionNode>();
 		while(true) {
 			if(expression())
 				args.add((ExpressionNode)stack.pop());
@@ -409,12 +403,18 @@ public class Parser {
 			} else {
 				if(symbol(")")) {
 					stack.pop();
-					stack.push(new CallNode((ExpressionNode)stack.pop(),args));
+					stack.push(new CallNode(receiver,attr,args));
 					return true;
 				} else
-					throw new SyntaxError("missing comma",tokens.peek().getStart().next());
+					throw new SyntaxError("missing comma",tokens.peek().getStart());
 			}
 		}
+	}
+	
+	private boolean argument() throws SyntaxError {
+		// name=expr
+		// *expr
+		// **expr
 	}
 	
 	private boolean atom() throws SyntaxError {

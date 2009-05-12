@@ -1,6 +1,6 @@
 package hobbes.ast;
 
-public enum ArgSpecType {
+public enum ArgType {
 	KEYWORDS,
 	SPLAT,
 	NORMAL

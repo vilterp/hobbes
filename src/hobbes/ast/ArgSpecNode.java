@@ -4,12 +4,12 @@ import hobbes.parser.Token;
 
 public class ArgSpecNode implements SyntaxNode {
 	
-	private ArgSpecType type;
+	private ArgType type;
 	private Token name;
 	private Token className;
 	private AtomNode defaultValue;
 	
-	public ArgSpecNode(Token n, ArgSpecType t, Token cn, AtomNode d) {
+	public ArgSpecNode(Token n, ArgType t, Token cn, AtomNode d) {
 		name = n;
 		className = cn;
 		defaultValue = d;
@@ -18,9 +18,9 @@ public class ArgSpecNode implements SyntaxNode {
 	
 	public String toString() {
 		String ans = "";
-		if(type == ArgSpecType.KEYWORDS)
+		if(type == ArgType.KEYWORDS)
 			ans += "**";
-		else if(type == ArgSpecType.SPLAT)
+		else if(type == ArgType.SPLAT)
 			ans += "*";
 		ans += name.getValue();
 		if(classNameSpecified())
