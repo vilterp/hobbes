@@ -23,7 +23,7 @@ public class CallNode implements ObjectNode {
 	}
 	
 	public String toString() {
-		String ans = "call(" + receiver + "," + attr;
+		String ans = "call(" + receiver + "," + attr.getValue();
 		if(args != null)
 			ans += "," + args;
 		ans += ")";
