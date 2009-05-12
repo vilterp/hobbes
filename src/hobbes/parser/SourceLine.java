@@ -13,7 +13,7 @@ public class SourceLine {
 	}
 	
 	public String toString() {
-		return "SourceLine[" + lineNo + ":" + code + "]";
+		return "SourceLine[" + lineNo + ":" + code + "@" + hashCode() +"]";
 	}
 	
 	public boolean equals(SourceLine other) {

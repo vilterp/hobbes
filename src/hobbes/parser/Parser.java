@@ -105,10 +105,7 @@ public class Parser {
 	}
 	
 	private boolean expression() throws SyntaxError {
-		if(!inlineIfStatement())
-			if(!parenthesizedExpression())
-				return false;
-		return true;
+		return inlineIfStatement() || parenthesizedExpression();
 	}
 	
 	private boolean parenthesizedExpression() throws SyntaxError {
