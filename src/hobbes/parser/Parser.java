@@ -138,10 +138,12 @@ public class Parser {
 						ExpressionNode theElse = getLastExpression();
 						BlockNode ifBlock = new BlockNode(theIf);
 						BlockNode elseBlock = new BlockNode(theElse);
-						stack.push(new IfStatementNode(ifOrUnless,condition,ifBlock,elseBlock));
+						stack.push(new IfStatementNode(
+										ifOrUnless,condition,ifBlock,elseBlock));
 						return true;
 					} else
-						throw new SyntaxError("No expression after \"else\"",elseWord.getEnd());
+						throw new SyntaxError("No expression after \"else\"",
+												elseWord.getEnd());
 				} else {
 					BlockNode ifBlock = new BlockNode(theIf);
 					stack.push(new IfStatementNode(ifOrUnless,condition,ifBlock));
@@ -352,14 +354,19 @@ public class Parser {
 		else
 			opener = getLastToken();
 		if(expression()) {
-			symbol("]");
-			stack.pop();
-			ExpressionNode subscr = getLastExpression();
-			ExpressionNode obj = getLastExpression();
-			stack.push(new SubscriptNode(obj,subscr));
-			return true;
+			if(symbol("]")) {
+				stack.pop();
+				ExpressionNode subscr = getLastExpression();
+				ExpressionNode obj = getLastExpression();
+				ArrayList<ArgNode> args = new ArrayList<ArgNode>();
+				args.add(new ArgNode(subscr,ArgType.NORMAL));
+				stack.push(new CallNode(obj,opener,"[]",args));
+				return true;
+			} else
+				throw new SyntaxError("Only one expression should be in the []'s",
+										tokens.peek().getStart());
 		} else
-			throw new SyntaxError("no expression in []'s",opener.getEnd());
+			throw new SyntaxError("No expression in []'s",opener.getEnd());
 	}
 	
 	private boolean call() throws SyntaxError {
@@ -403,7 +410,8 @@ public class Parser {
 					stack.push(new CallNode(getLastExpression(),attr,args));
 					return true;
 				} else
-					throw new SyntaxError("Missing comma",tokens.peek().getStart());
+					throw new SyntaxError("Missing comma",
+											tokens.peek().getStart());
 			}
 		}
 	}
@@ -419,7 +427,8 @@ public class Parser {
 					stack.push(new ArgNode(name.getValue(),expr));
 					return true;
 				} else
-					throw new SyntaxError("No expression after \"=\"",equals.getEnd());
+					throw new SyntaxError("No expression after \"=\"",
+											equals.getEnd());
 			} else
 				tokens.addFirst(name);
 		} else {
@@ -434,7 +443,8 @@ public class Parser {
 						stack.push(new ArgNode(expr,type));
 						return true;
 					} else
-						throw new SyntaxError("No expression after \"**\"",starTwo.getEnd());
+						throw new SyntaxError("No expression after \"**\"",
+												starTwo.getEnd());
 				} else {
 					ArgType type = ArgType.SPLAT;
 					if(expression()) {
@@ -442,7 +452,8 @@ public class Parser {
 						stack.push(new ArgNode(expr,type));
 						return true;
 					} else
-						throw new SyntaxError("No expression after \"*\"",starOne.getEnd());
+						throw new SyntaxError("No expression after \"*\"",
+												starOne.getEnd());
 				}
 			} else if(expression()) {
 				ArgType type = ArgType.NORMAL;
@@ -456,8 +467,8 @@ public class Parser {
 	}
 	
 	private boolean atom() throws SyntaxError {
-		return variable() || number() || string() || regex() || list() || dictOrSet() ||
-			   character() || anonymousFunction();
+		return variable() || number() || string() || regex() || list() ||
+			   dictOrSet() || character() || anonymousFunction();
 	}
 
 	private boolean character() {
@@ -510,7 +521,8 @@ public class Parser {
 					stack.push(new ListNode(elements));
 					return true;
 				} else
-					throw new SyntaxError("Missing comma",tokens.peek().getStart().next());
+					throw new SyntaxError("Missing comma",
+											tokens.peek().getStart().next());
 			}
 		}
 	}
@@ -557,7 +569,8 @@ public class Parser {
 					stack.push(new DictNode(elements));
 					return true;
 				} else
-					throw new SyntaxError("Missing comma",tokens.peek().getStart().next());
+					throw new SyntaxError("Missing comma",
+											tokens.peek().getStart().next());
 			}
 		}
 	}
@@ -593,7 +606,8 @@ public class Parser {
 					stack.push(new SetNode(elements));
 					return true;
 				} else
-					throw new SyntaxError("Missing comma",tokens.peek().getStart().next());
+					throw new SyntaxError("Missing comma",
+											tokens.peek().getStart().next());
 			}
 		}
 	}
@@ -676,7 +690,8 @@ public class Parser {
 						stack.pop();
 				} else {
 					Token unexpected = tokens.peek();
-					throw new SyntaxError("Unexpected \""+unexpected.getValue()+"\"",
+					throw new SyntaxError("Unexpected \""+
+											unexpected.getValue()+"\"",
 											unexpected.getStart());
 				}
 			} else {
@@ -856,7 +871,8 @@ public class Parser {
 		makeOperation(left,operator,right);
 	}
 	
-	private void makeOperation(ExpressionNode left, Token operator, ExpressionNode right) {
+	private void makeOperation(ExpressionNode left, Token operator,
+									ExpressionNode right) {
 		ArrayList<ArgNode> args = new ArrayList<ArgNode>();
 		args.add(new ArgNode(right,ArgType.NORMAL));
 		stack.push(new CallNode(left,operator,args));
