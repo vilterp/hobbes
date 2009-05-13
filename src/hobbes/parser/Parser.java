@@ -63,15 +63,19 @@ public class Parser {
 	static {
 		reservedWords.add("or");
 		reservedWords.add("and");
+		reservedWords.add("not");
 		reservedWords.add("to");
+		reservedWords.add("in");
+		reservedWords.add("is");
 		reservedWords.add("class");
+		reservedWords.add("trait");
 		reservedWords.add("def");
 		reservedWords.add("while");
 		reservedWords.add("until");
 		reservedWords.add("for");
 		reservedWords.add("if");
 		reservedWords.add("unless");
-		reservedWords.add("end");
+		reservedWords.add("return");
 	}
 	
 	private Stack<SyntaxNode> stack;
