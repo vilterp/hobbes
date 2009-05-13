@@ -17,42 +17,44 @@ public class Parser {
 			Tokenizer t = new Tokenizer();
 			Parser p = new Parser();
 			
-//			int lineNo = 1;
-//			Scanner s = new Scanner(System.in);
-//			while(true) {
-//				System.out.print(lineNo + ":");
-//				if(t.isReady())
-//					System.out.print(">> ");
-//				else
-//					System.out.print(t.getLastOpener() + "> ");
-//				String line = null;
-//				try {
-//					line = s.nextLine();
-//				} catch(NoSuchElementException e) {
-//					System.out.println();
-//				}
-//				try {
-//					t.addLine(new SourceLine(line,lineNo));
-//					if(t.isReady() && t.numTokens() > 0)
-//						System.out.println(p.parse(t.getTokens()));
-//				} catch (SyntaxError e) {
-//					System.err.println(e.getMessage());
-//					System.err.println(e.getLocation().show());
-//					p.reset();
-//					t.reset();
-//				}
-//				lineNo++;			
-//			}
-			
-			try {
-				t.addLine(new SourceLine("|a,b,c|{",1));
-				t.addLine(new SourceLine("  print(bla)",1));
-				t.addLine(new SourceLine("}",1));
-				System.out.println(p.parse(t.getTokens()));
-			} catch (SyntaxError e) {
-				System.err.println(e.getMessage());
-				System.err.println(e.getLocation().show());
+			int lineNo = 1;
+			Scanner s = new Scanner(System.in);
+			while(true) {
+				System.out.print(lineNo + ":");
+				if(t.isReady())
+					System.out.print(">> ");
+				else
+					System.out.print(t.getLastOpener() + "> ");
+				String line = null;
+				try {
+					line = s.nextLine();
+				} catch(NoSuchElementException e) {
+					System.out.println();
+				}
+				try {
+					t.addLine(new SourceLine(line,lineNo));
+					if(t.isReady() && t.numTokens() > 0)
+						System.out.println(p.parse(t.getTokens()));
+				} catch (SyntaxError e) {
+					System.err.println(e.getMessage());
+					System.err.println(e.getLocation().show());
+					p.reset();
+					t.reset();
+				}
+				lineNo++;			
 			}
+			
+//			try {
+////				t.addLine(new SourceLine("|a,b,c|{",1));
+////				t.addLine(new SourceLine("  print(bla)",2));
+////				t.addLine(new SourceLine("}",3));
+//				t.addLine(new SourceLine("print(bla)",1));
+//				System.out.println(p.parse(t.getTokens()));
+//			} catch (SyntaxError e) {
+//				System.err.println(e.getMessage());
+//				System.err.println(e.getLocation().show());
+//				e.printStackTrace();
+//			}
 			
 		}
 
@@ -343,7 +345,9 @@ public class Parser {
 			if(!parenthesizedExpression())
 				return false;
 		while(true) {
-			if(call())
+			if(functionCall())
+				continue;
+			else if(methodCall())
 				continue;
 			else if(subscript())
 				continue;
@@ -366,7 +370,7 @@ public class Parser {
 				ExpressionNode obj = getLastExpression();
 				ArrayList<ArgNode> args = new ArrayList<ArgNode>();
 				args.add(new ArgNode(subscr,ArgType.NORMAL));
-				stack.push(new CallNode(obj,opener,"[]",args));
+				stack.push(new MethodCallNode(obj,opener,"[]",args));
 				return true;
 			} else
 				throw new SyntaxError("Only one expression should be in the []'s",
@@ -375,7 +379,7 @@ public class Parser {
 			throw new SyntaxError("No expression in []'s",opener.getEnd());
 	}
 	
-	private boolean call() throws SyntaxError {
+	private boolean methodCall() throws SyntaxError {
 		// get dot
 		Token dot = null;
 		if(!symbol("."))
@@ -389,14 +393,14 @@ public class Parser {
 		} else
 			throw new SyntaxError("no attribute name after \".\"",dot.getEnd());
 		if(!symbol("(")) {
-			stack.push(new CallNode(getLastExpression(),attr));
+			stack.push(new MethodCallNode(getLastExpression(),attr));
 			return true;
 		} else
 			stack.pop();
 		ArrayList<ArgNode> args = new ArrayList<ArgNode>();
 		if(symbol(")")) {
 			stack.pop();
-			stack.push(new CallNode(getLastExpression(),attr,args));
+			stack.push(new MethodCallNode(getLastExpression(),attr,args));
 			return true;
 		}
 		while(true) {
@@ -407,13 +411,13 @@ public class Parser {
 					throw getSyntaxError("Double comma");
 				else if(symbol(")")) {
 					stack.pop();
-					throw getSyntaxError("trailing comma");
+					throw getSyntaxError("Trailing comma");
 				} else
 					stack.pop();
 			} else {
 				if(symbol(")")) {
 					stack.pop();
-					stack.push(new CallNode(getLastExpression(),attr,args));
+					stack.push(new MethodCallNode(getLastExpression(),attr,args));
 					return true;
 				} else
 					throw new SyntaxError("Missing comma",
@@ -422,10 +426,37 @@ public class Parser {
 		}
 	}
 	
+	private boolean functionCall() throws SyntaxError {
+		if(symbol("(")) {
+			stack.pop();
+			ExpressionNode function = getLastExpression();
+			ArrayList<ArgNode> args = new ArrayList<ArgNode>();
+			while(true) {
+				if(argument())
+					args.add((ArgNode)stack.pop());
+				if(symbol(",")) {
+					if(symbol(","))
+						throw getSyntaxError("Double comma");
+					if(symbol(")"))
+						throw getSyntaxError("Trailing comma");
+					else
+						stack.pop();
+				} else if(symbol(")")) {
+					stack.pop();
+					stack.push(new FunctionCallNode(function,args));
+					return true;
+				} else
+					throw new SyntaxError("Missing comma",
+											tokens.peek().getStart());
+			}
+		} else
+			return false;
+	}
+
 	private boolean argument() throws SyntaxError {
 		// named arg
 		if(variable()) {
-			Token name = getLastToken();
+			Token name = ((VariableNode)stack.pop()).getOrigin();
 			if(symbol("=")) {
 				Token equals = getLastToken();
 				if(expression()) {
@@ -437,44 +468,42 @@ public class Parser {
 											equals.getEnd());
 			} else
 				tokens.addFirst(name);
-		} else {
-			// *arg and **arg
-			if(symbol("*")) {
-				Token starOne = getLastToken();
-				if(symbol("*")) {
-					Token starTwo = getLastToken();
-					ArgType type = ArgType.KEYWORDS;
-					if(expression()) {
-						ExpressionNode expr = getLastExpression();
-						stack.push(new ArgNode(expr,type));
-						return true;
-					} else
-						throw new SyntaxError("No expression after \"**\"",
-												starTwo.getEnd());
-				} else {
-					ArgType type = ArgType.SPLAT;
-					if(expression()) {
-						ExpressionNode expr = getLastExpression();
-						stack.push(new ArgNode(expr,type));
-						return true;
-					} else
-						throw new SyntaxError("No expression after \"*\"",
-												starOne.getEnd());
-				}
-			} else if(expression()) {
-				ArgType type = ArgType.NORMAL;
-				ExpressionNode expr = getLastExpression();
-				stack.push(new ArgNode(expr,type));
-				return true;
-			} else
-				return false;
 		}
-		return false; // Eclipse wants this...
+		// *arg and **arg
+		if(symbol("*")) {
+			Token starOne = getLastToken();
+			if(symbol("*")) {
+				Token starTwo = getLastToken();
+				ArgType type = ArgType.KEYWORDS;
+				if(expression()) {
+					ExpressionNode expr = getLastExpression();
+					stack.push(new ArgNode(expr,type));
+					return true;
+				} else
+					throw new SyntaxError("No expression after \"**\"",
+											starTwo.getEnd());
+			} else {
+				ArgType type = ArgType.SPLAT;
+				if(expression()) {
+					ExpressionNode expr = getLastExpression();
+					stack.push(new ArgNode(expr,type));
+					return true;
+				} else
+					throw new SyntaxError("No expression after \"*\"",
+											starOne.getEnd());
+			}
+		} else if(expression()) {
+			ArgType type = ArgType.NORMAL;
+			ExpressionNode expr = getLastExpression();
+			stack.push(new ArgNode(expr,type));
+			return true;
+		} else
+			return false;
 	}
 	
 	private boolean atom() throws SyntaxError {
 		return variable() || number() || string() || regex() || list() ||
-			   dictOrSet() || character() || anonymousFunction();
+				dictOrSet() || character() || anonymousFunction();
 	}
 
 	private boolean character() {
@@ -518,7 +547,7 @@ public class Parser {
 					throw getSyntaxError("Double comma");
 				else if(symbol("]")) {
 					stack.pop();
-					throw getSyntaxError("trailing comma");
+					throw getSyntaxError("Trailing comma");
 				} else
 					stack.pop();
 			} else {
@@ -566,7 +595,7 @@ public class Parser {
 					throw getSyntaxError("Double comma");
 				else if(symbol("}")) {
 					stack.pop();
-					throw getSyntaxError("trailing comma");
+					throw getSyntaxError("Trailing comma");
 				} else
 					stack.pop();
 			} else {
@@ -589,7 +618,7 @@ public class Parser {
 				throw getSyntaxError("Double comma");
 			else if(symbol("}")) {
 				stack.pop();
-				throw getSyntaxError("trailing comma");
+				throw getSyntaxError("Trailing comma");
 			} else
 				stack.pop();
 		} else
@@ -603,7 +632,7 @@ public class Parser {
 					throw getSyntaxError("Double comma");
 				else if(symbol("}")) {
 					stack.pop();
-					throw getSyntaxError("trailing comma");
+					throw getSyntaxError("Trailing comma");
 				} else
 					stack.pop();
 			} else {
@@ -715,17 +744,17 @@ public class Parser {
 						throw getSyntaxError("Trailing comma");
 					else
 						stack.pop();
+				} else if(symbol(close)) {
+					symbol(close);
+					Token closingToken = getLastToken();
+					stack.push(new ArgsSpecNode(args,closingToken));
+					return true;
 				} else {
 					Token unexpected = tokens.peek();
 					throw new SyntaxError("Unexpected \""+
 											unexpected.getValue()+"\"",
 											unexpected.getStart());
 				}
-			} else {
-				symbol(close);
-				Token closingToken = getLastToken();
-				stack.push(new ArgsSpecNode(args,closingToken));
-				return true;
 			}
 		}
 	}
@@ -902,7 +931,7 @@ public class Parser {
 									ExpressionNode right) {
 		ArrayList<ArgNode> args = new ArrayList<ArgNode>();
 		args.add(new ArgNode(right,ArgType.NORMAL));
-		stack.push(new CallNode(left,operator,args));
+		stack.push(new MethodCallNode(left,operator,args));
 	}
 	
 	private SyntaxError getSyntaxError(String message) {
