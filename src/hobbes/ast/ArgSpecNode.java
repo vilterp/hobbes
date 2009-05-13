@@ -38,4 +38,12 @@ public class ArgSpecNode implements SyntaxNode {
 		return defaultValue != null;
 	}
 	
+	public ArgType getType() {
+		return type;
+	}
+	
+	public Token getNameToken()	{
+		return name;
+	}
+	
 }

@@ -17,45 +17,47 @@ public class Parser {
 			Tokenizer t = new Tokenizer();
 			Parser p = new Parser();
 			
-			int lineNo = 1;
-			Scanner s = new Scanner(System.in);
-			while(true) {
-				System.out.print(lineNo + ":");
-				if(t.isReady())
-					System.out.print(">> ");
-				else
-					System.out.print(t.getLastOpener() + "> ");
-				String line = null;
-				try {
-					line = s.nextLine();
-				} catch(NoSuchElementException e) {
-					System.out.println();
-				}
-				try {
-					t.addLine(new SourceLine(line,lineNo));
-					if(t.isReady() && t.numTokens() > 0)
-						System.out.println(p.parse(t.getTokens()));
-				} catch (SyntaxError e) {
-					System.err.println(e.getMessage());
-					System.err.println(e.getLocation().show());
-					p.reset();
-					t.reset();
-				}
-				lineNo++;			
-			}
-			
-//			try {
-//				t.addLine(new SourceLine("foo.bar",1));
-//				System.out.println(p.parse(t.getTokens()));
-//			} catch (SyntaxError e) {
-//				System.err.println(e.getMessage());
-//				System.err.println(e.getLocation().show());
+//			int lineNo = 1;
+//			Scanner s = new Scanner(System.in);
+//			while(true) {
+//				System.out.print(lineNo + ":");
+//				if(t.isReady())
+//					System.out.print(">> ");
+//				else
+//					System.out.print(t.getLastOpener() + "> ");
+//				String line = null;
+//				try {
+//					line = s.nextLine();
+//				} catch(NoSuchElementException e) {
+//					System.out.println();
+//				}
+//				try {
+//					t.addLine(new SourceLine(line,lineNo));
+//					if(t.isReady() && t.numTokens() > 0)
+//						System.out.println(p.parse(t.getTokens()));
+//				} catch (SyntaxError e) {
+//					System.err.println(e.getMessage());
+//					System.err.println(e.getLocation().show());
+//					p.reset();
+//					t.reset();
+//				}
+//				lineNo++;			
 //			}
+			
+			try {
+				t.addLine(new SourceLine("|a,b,c|{",1));
+				t.addLine(new SourceLine("  print(bla)",1));
+				t.addLine(new SourceLine("}",1));
+				System.out.println(p.parse(t.getTokens()));
+			} catch (SyntaxError e) {
+				System.err.println(e.getMessage());
+				System.err.println(e.getLocation().show());
+			}
 			
 		}
 
 	private static final Pattern variablePattern =
-					Pattern.compile("(_?[a-zA-Z0-9]|[a-zA-Z][a-zA-Z0-9]*(\\?|!)?)");
+					Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*(\\?|!)?");
 	private static final Pattern classNamePattern = 
 					Pattern.compile("[A-Z][a-zA-Z0-9]*");
 	
@@ -681,10 +683,31 @@ public class Parser {
 			return false;
 		else
 			stack.pop();
+		boolean splatAlready = false;
+		boolean kwargsAlready = false;
 		ArrayList<ArgSpecNode> args = new ArrayList<ArgSpecNode>();
 		while(true) {
 			if(argSpec()) {
-				args.add((ArgSpecNode)stack.pop());
+				ArgSpecNode arg = (ArgSpecNode)stack.pop();
+				if(arg.getType() == ArgType.SPLAT) {
+					if(splatAlready)
+						throw new SyntaxError(
+								"There can only be one splat argument",
+								arg.getNameToken().getStart());								
+					else
+						splatAlready = true;
+				} else if(arg.getType() == ArgType.KEYWORDS) {
+					if(kwargsAlready)
+						throw new SyntaxError(
+								"There can only be one keyword argument",
+								arg.getNameToken().getStart());
+					else
+						kwargsAlready = true;
+				} else if(splatAlready)
+					throw new SyntaxError("There can't be normal " +
+											"arguments after splat arguments",
+											arg.getNameToken().getStart());
+				args.add(arg);
 				if(symbol(",")) {
 					if(symbol(","))
 						throw getSyntaxError("Double comma");

@@ -37,7 +37,7 @@ public class Tokenizer {
 //		}
 		
 		try {
-			t.addLine(new SourceLine("a = 2+2.b(/oh yeah/)",1));
+			t.addLine(new SourceLine("2+2",1));
 		} catch (SyntaxError e) {
 			System.err.println(e.getMessage());
 			System.err.println(e.getLocation().show());
