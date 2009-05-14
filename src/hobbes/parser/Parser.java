@@ -57,9 +57,10 @@ public class Parser {
 
 	private static final Pattern variablePattern =
 					Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*(\\?|!)?");
+	private static final Pattern instanceVarPattern = 
+					Pattern.compile("@[a-zA-Z_][a-zA-Z0-9_]*");
 	private static final Pattern classNamePattern = 
 					Pattern.compile("[A-Z][a-zA-Z0-9]*");
-	
 	private static final HashSet<String> reservedWords = new HashSet<String>();
 	static {
 		reservedWords.add("or");
@@ -119,27 +120,23 @@ public class Parser {
 	}
 	
 	private boolean assignment() throws SyntaxError {
-		ArrayList<VariableNode> vars = new ArrayList<VariableNode>();
-		while(variable()) {
-			vars.add((VariableNode)stack.pop());
-			if(symbol(",")) {
-				if(symbol(","))
-					throw getSyntaxError("Double comma");
-				else if(symbol("="))
-					throw getSyntaxError("Trailing comma");
-			} else if(symbol("=")) {
+		if(instanceVar()) {
+			InstanceVarNode var = (InstanceVarNode)stack.pop();
+			if(symbol("=")) {
 				Token equals = getLastToken();
 				if(expression()) {
-					stack.push(new AssignmentNode(vars,getLastExpression()));
+					ExpressionNode expr = getLastExpression();
+					stack.push(new AssignmentNode(var,expr));
 					return true;
 				} else
-					throw new SyntaxError("No expression after =",equals.getStart());
+					throw new SyntaxError("No expression after =",
+											equals.getEnd());
+			} else {
+				tokens.addFirst(var.getOrigin());
+				return false;
 			}
-		}
-		if(vars.size() > 0)
-			for(int i=vars.size()-1; i >= 0; i--)
-				tokens.addFirst(vars.get(i).getOrigin());
-		return false;
+		} else
+			return false;
 	}
 	
 	private boolean expression() throws SyntaxError {
@@ -486,7 +483,7 @@ public class Parser {
 	private boolean argument() throws SyntaxError {
 		// named arg
 		if(variable()) {
-			Token name = ((VariableNode)stack.pop()).getOrigin();
+			Token name = ((InstanceVarNode)stack.pop()).getOrigin();
 			if(symbol("=")) {
 				Token equals = getLastToken();
 				if(expression()) {
@@ -532,8 +529,23 @@ public class Parser {
 	}
 	
 	private boolean atom() throws SyntaxError {
-		return variable() || number() || string() || regex() || list() ||
-				dictOrSet() || character() || anonymousFunction();
+		return variable() || instanceVar() || number() || string() ||
+				regex() || list() || dictOrSet() || character() ||
+				anonymousFunction();
+	}
+
+	private boolean variable() {
+		if(wordWithPattern(variablePattern)) {
+			Token variableToken = getLastToken();
+			if(reservedWords.contains(variableToken.getValue())) {
+				tokens.addFirst(variableToken);
+				return false;
+			} else {
+				stack.push(new CallNode(variableToken));
+				return true;
+			}
+		} else
+			return false;
 	}
 
 	private boolean character() {
@@ -545,16 +557,10 @@ public class Parser {
 			return false;
 	}
 
-	private boolean variable() {
-		if(wordWithPattern(variablePattern)) {
-			Token variableToken = getLastToken();
-			if(reservedWords.contains(variableToken.getValue())) {
-				tokens.addFirst(variableToken);
-				return false;
-			} else {
-				stack.push(new VariableNode(variableToken));
-				return true;
-			}
+	private boolean instanceVar() {
+		if(wordWithPattern(instanceVarPattern)) {
+			stack.push(new InstanceVarNode(getLastToken()));
+			return true;
 		} else
 			return false;
 	}
@@ -710,9 +716,9 @@ public class Parser {
 		if(!argsSpec("|","|"))
 			return false;
 		args = (ArgsSpecNode)stack.pop();
-		VariableNode returnType = null;
+		InstanceVarNode returnType = null;
 		if(classSpec())
-			returnType = (VariableNode)stack.pop();
+			returnType = (InstanceVarNode)stack.pop();
 		if(!symbol("{"))
 			throw new SyntaxError("no block after anonymous function " +
 									"argument specification",
@@ -801,10 +807,10 @@ public class Parser {
 				type = ArgType.SPLAT;
 		}
 		if(variable()) {
-			Token argName = ((VariableNode)stack.pop()).getOrigin();
+			Token argName = ((InstanceVarNode)stack.pop()).getOrigin();
 			Token className = null;
 			if(classSpec())
-				className = ((VariableNode)stack.pop()).getOrigin();
+				className = ((InstanceVarNode)stack.pop()).getOrigin();
 			AtomNode defaultValue = null;
 			if(defaultSpec())
 				defaultValue = (AtomNode)stack.pop();
@@ -822,7 +828,7 @@ public class Parser {
 			if(className())
 				return true;
 			else if(word("nil")) {
-				stack.push(new VariableNode(getLastToken()));
+				stack.push(new InstanceVarNode(getLastToken()));
 				return true;
 			} else
 				throw new SyntaxError("no class name after \":\"",
@@ -846,7 +852,7 @@ public class Parser {
 	private boolean className() {
 		if(wordWithPattern(classNamePattern)) {
 			Token classNameToken = getLastToken();
-			stack.push(new VariableNode(classNameToken));
+			stack.push(new InstanceVarNode(classNameToken));
 			return true;
 		} else
 			return false;

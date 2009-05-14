@@ -3,10 +3,10 @@ package hobbes.ast;
 public class AnonymousFunctionNode implements AtomNode {
 	
 	private ArgsSpecNode args;
-	private VariableNode returnType;
+	private InstanceVarNode returnType;
 	private BlockNode block;
 	
-	public AnonymousFunctionNode(ArgsSpecNode a, VariableNode r, BlockNode b) {
+	public AnonymousFunctionNode(ArgsSpecNode a, InstanceVarNode r, BlockNode b) {
 		args = a;
 		returnType = r;
 		block = b;

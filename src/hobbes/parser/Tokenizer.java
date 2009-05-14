@@ -13,42 +13,42 @@ public class Tokenizer {
 		Tokenizer t = new Tokenizer();
 		Scanner s = new Scanner(System.in);
 		
-//		int lineNo = 1;
-//		while(true) {
-//			System.out.print(lineNo + ":");
-//			if(t.isReady())
-//				System.out.print(">> ");
-//			else
-//				System.out.print(t.getLastOpener()+"> ");
-//			try {
-//				t.addLine(new SourceLine(s.nextLine(),lineNo));
-//				if(t.isReady()) {
-//					ArrayList<Token> tokens = t.getTokens();
-//					System.out.println(tokens);
-//					for(Token token: tokens)
-//						System.out.println(token.getSourceSpan().show());
-//				}
-//			} catch(SyntaxError e) {
-//				t.reset();
-//				System.err.println(e.getMessage());
-//				System.err.println(e.getLocation().show());
-//			}
-//			lineNo++;
-//		}
-		
-		try {
-			t.addLine(new SourceLine("2+2",1));
-		} catch (SyntaxError e) {
-			System.err.println(e.getMessage());
-			System.err.println(e.getLocation().show());
+		int lineNo = 1;
+		while(true) {
+			System.out.print(lineNo + ":");
+			if(t.isReady())
+				System.out.print(">> ");
+			else
+				System.out.print(t.getLastOpener()+"> ");
+			try {
+				t.addLine(new SourceLine(s.nextLine(),lineNo));
+				if(t.isReady()) {
+					ArrayList<Token> tokens = t.getTokens();
+					System.out.println(tokens);
+					for(Token token: tokens)
+						System.out.println(token.getSourceSpan().show());
+				}
+			} catch(SyntaxError e) {
+				t.reset();
+				System.err.println(e.getMessage());
+				System.err.println(e.getLocation().show());
+			}
+			lineNo++;
 		}
-		if(t.isReady()) {
-			ArrayList<Token> tokens = t.getTokens();
-			System.out.println(tokens);
-			for(Token token: tokens)
-				System.out.println(token.getSourceSpan().show());
-		} else
-			System.out.println("waiting to close "+t.getLastOpener());
+		
+//		try {
+//			t.addLine(new SourceLine("@something",1));
+//		} catch (SyntaxError e) {
+//			System.err.println(e.getMessage());
+//			System.err.println(e.getLocation().show());
+//		}
+//		if(t.isReady()) {
+//			ArrayList<Token> tokens = t.getTokens();
+//			System.out.println(tokens);
+//			for(Token token: tokens)
+//				System.out.println(token.getSourceSpan().show());
+//		} else
+//			System.out.println("waiting to close "+t.getLastOpener());
 		
 	}
 	
@@ -180,7 +180,7 @@ public class Tokenizer {
 					advance();
 					advanceStart();
 				}
-			} else if(Character.isLetter(peek()) || peek() == '_')
+			} else if(Character.isLetter(peek()) || peek() == '_' || peek() == '@')
 				getWord();
 			else if(peek() == '"') {
 				read();

@@ -2,11 +2,11 @@ package hobbes.ast;
 
 import hobbes.parser.Token;
 
-public class VariableNode implements AtomNode {
+public class InstanceVarNode implements AtomNode {
 	
 	private Token origin;
 	
-	public VariableNode(Token t) {
+	public InstanceVarNode(Token t) {
 		origin = t;
 	}
 	

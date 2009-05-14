@@ -4,17 +4,16 @@ import java.util.ArrayList;
 
 public class AssignmentNode implements SyntaxNode {
 	
-	private ArrayList<VariableNode> vars;
+	private InstanceVarNode var;
 	private ExpressionNode expr;
 	
-	public AssignmentNode(ArrayList<VariableNode> v, ExpressionNode e) {
-		vars = v;
+	public AssignmentNode(InstanceVarNode v, ExpressionNode e) {
+		var = v;
 		expr = e;
 	}
 	
 	public String toString() {
-		return "=(" + (vars.size() == 1 ? vars.get(0).toString() : vars.toString())
-				+ "," + expr + ")"; 
+		return "=(" + var + "," + expr + ")";
 	}
 	
 }
