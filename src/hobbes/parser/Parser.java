@@ -749,9 +749,9 @@ public class Parser {
 		if(!argsSpec("|","|"))
 			return false;
 		args = (ArgsSpecNode)stack.pop();
-		InstanceVarNode returnType = null;
+		CallNode returnType = null;
 		if(classSpec())
-			returnType = (InstanceVarNode)stack.pop();
+			returnType = (CallNode)stack.pop();
 		if(!symbol("{"))
 			throw new SyntaxError("no block after anonymous function " +
 									"argument specification",
@@ -821,10 +821,7 @@ public class Parser {
 					stack.push(new ArgsSpecNode(args,closingToken));
 					return true;
 				} else {
-					Token unexpected = tokens.peek();
-					throw new SyntaxError("Unexpected \""+
-											unexpected.getValue()+"\"",
-											unexpected.getStart());
+					throw new SyntaxError("Missing comma",tokens.peek().getStart());
 				}
 			}
 		}
@@ -841,10 +838,10 @@ public class Parser {
 				type = ArgType.SPLAT;
 		}
 		if(variable()) {
-			Token argName = ((InstanceVarNode)stack.pop()).getOrigin();
+			Token argName = ((CallNode)stack.pop()).getOrigin();
 			Token className = null;
 			if(classSpec())
-				className = ((InstanceVarNode)stack.pop()).getOrigin();
+				className = ((CallNode)stack.pop()).getOrigin();
 			AtomNode defaultValue = null;
 			if(defaultSpec())
 				defaultValue = (AtomNode)stack.pop();
@@ -859,12 +856,9 @@ public class Parser {
 			return false;
 		else {
 			Token colon = getLastToken();
-			if(className())
+			if(object())
 				return true;
-			else if(word("nil")) {
-				stack.push(new InstanceVarNode(getLastToken()));
-				return true;
-			} else
+			else
 				throw new SyntaxError("no class name after \":\"",
 											colon.getEnd());
 		}
