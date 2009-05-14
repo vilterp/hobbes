@@ -17,41 +17,41 @@ public class Parser {
 			Tokenizer t = new Tokenizer();
 			Parser p = new Parser();
 			
-//			int lineNo = 1;
-//			Scanner s = new Scanner(System.in);
-//			while(true) {
-//				System.out.print(lineNo + ":");
-//				if(t.isReady())
-//					System.out.print(">> ");
-//				else
-//					System.out.print(t.getLastOpener() + "> ");
-//				String line = null;
-//				try {
-//					line = s.nextLine();
-//				} catch(NoSuchElementException e) {
-//					System.out.println();
-//				}
-//				try {
-//					t.addLine(new SourceLine(line,lineNo));
-//					if(t.isReady() && t.numTokens() > 0)
-//						System.out.println(p.parse(t.getTokens()));
-//				} catch (SyntaxError e) {
-//					System.err.println(e.getMessage());
-//					System.err.println(e.getLocation().show());
-//					p.reset();
-//					t.reset();
-//				}
-//				lineNo++;
-//			}
-			
-			try {
-				t.addLine(new SourceLine("a is 2",1));
-				System.out.println(p.parse(t.getTokens()));
-			} catch (SyntaxError e) {
-				System.err.println(e.getMessage());
-				System.err.println(e.getLocation().show());
-				e.printStackTrace();
+			int lineNo = 1;
+			Scanner s = new Scanner(System.in);
+			while(true) {
+				System.out.print(lineNo + ":");
+				if(t.isReady())
+					System.out.print(">> ");
+				else
+					System.out.print(t.getLastOpener() + "> ");
+				String line = null;
+				try {
+					line = s.nextLine();
+				} catch(NoSuchElementException e) {
+					System.out.println();
+				}
+				try {
+					t.addLine(new SourceLine(line,lineNo));
+					if(t.isReady() && t.numTokens() > 0)
+						System.out.println(p.parse(t.getTokens()));
+				} catch (SyntaxError e) {
+					System.err.println(e.getMessage());
+					System.err.println(e.getLocation().show());
+					p.reset();
+					t.reset();
+				}
+				lineNo++;
 			}
+			
+//			try {
+//				t.addLine(new SourceLine("a is 2",1));
+//				System.out.println(p.parse(t.getTokens()));
+//			} catch (SyntaxError e) {
+//				System.err.println(e.getMessage());
+//				System.err.println(e.getLocation().show());
+//				e.printStackTrace();
+//			}
 			
 	}
 
@@ -75,6 +75,11 @@ public class Parser {
 		reservedWords.add("until");
 		reservedWords.add("for");
 		reservedWords.add("if");
+		reservedWords.add("match");
+		reservedWords.add("case");
+		reservedWords.add("try");
+		reservedWords.add("catch");
+		reservedWords.add("finally");
 		reservedWords.add("unless");
 		reservedWords.add("return");
 	}
