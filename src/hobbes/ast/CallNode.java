@@ -50,4 +50,8 @@ public class CallNode implements ObjectNode {
 		return ans;
 	}
 	
+	public Token getOrigin() {
+		return origin;
+	}
+	
 }

@@ -466,9 +466,10 @@ public class Parser {
 				if(symbol(",")) {
 					if(symbol(","))
 						throw getSyntaxError("Double comma");
-					if(symbol(")"))
+					if(symbol(")")) {
+						stack.pop();
 						throw getSyntaxError("Trailing comma");
-					else
+					} else
 						stack.pop();
 				} else if(symbol(")")) {
 					stack.pop();
@@ -491,21 +492,22 @@ public class Parser {
 			ExpressionNode object = getLastExpression();
 			ArrayList<ObjectNode> generics = new ArrayList<ObjectNode>();
 			while(true) {
-				if(object()) {
+				if(object())
 					generics.add((ObjectNode)stack.pop());
-					if(symbol(",")) {
-						if(symbol(","))
-							throw getSyntaxError("Double comma");
-						else if(symbol(">"))
-							throw getSyntaxError("Trailing comma");
-						else
-							stack.pop();
-					}
+				if(symbol(",")) {
+					if(symbol(","))
+						throw getSyntaxError("Double comma");
+					else if(symbol(">")) {
+						stack.pop();
+						throw getSyntaxError("Trailing comma");
+					} else
+						stack.pop();
 				} else if(symbol(">")) {
 					stack.pop();
 					stack.push(new GenericNode(object,generics));
 					return true;
-				}
+				} else
+					throw new SyntaxError("Missing comma",tokens.peek().getStart());
 			}
 		} else
 			return false;
@@ -514,7 +516,7 @@ public class Parser {
 	private boolean argument() throws SyntaxError {
 		// named arg
 		if(variable()) {
-			Token name = ((InstanceVarNode)stack.pop()).getOrigin();
+			Token name = ((CallNode)stack.pop()).getOrigin();
 			if(symbol("=")) {
 				Token equals = getLastToken();
 				if(expression()) {
@@ -808,9 +810,10 @@ public class Parser {
 				if(symbol(",")) {
 					if(symbol(","))
 						throw getSyntaxError("Double comma");
-					else if(symbol(close))
+					else if(symbol(close)) {
+						stack.pop();
 						throw getSyntaxError("Trailing comma");
-					else
+					} else
 						stack.pop();
 				} else if(symbol(close)) {
 					symbol(close);
@@ -1003,7 +1006,7 @@ public class Parser {
 	}
 	
 	private SyntaxError getSyntaxError(String message) {
-		return new SyntaxError(message,lastToken().getEnd());
+		return new SyntaxError(message,lastToken().getStart());
 	}
 	
 }
