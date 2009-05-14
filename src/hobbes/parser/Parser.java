@@ -45,7 +45,7 @@ public class Parser {
 			}
 			
 //			try {
-//				t.addLine(new SourceLine("a is 2",1));
+//				t.addLine(new SourceLine("List<>",1));
 //				System.out.println(p.parse(t.getTokens()));
 //			} catch (SyntaxError e) {
 //				System.err.println(e.getMessage());
@@ -378,6 +378,8 @@ public class Parser {
 				continue;
 			else if(subscript())
 				continue;
+			else if(genericSpec())
+				continue;
 			else
 				break;
 		}
@@ -475,6 +477,35 @@ public class Parser {
 				} else
 					throw new SyntaxError("Missing comma",
 											tokens.peek().getStart());
+			}
+		} else
+			return false;
+	}
+	
+	private boolean genericSpec() throws SyntaxError {
+		if(symbol("<")) {
+			Token opener = getLastToken();
+			if(symbol(">"))
+				throw new SyntaxError("Nothing inside <>'s",
+										opener.getEnd());
+			ExpressionNode object = getLastExpression();
+			ArrayList<ObjectNode> generics = new ArrayList<ObjectNode>();
+			while(true) {
+				if(object()) {
+					generics.add((ObjectNode)stack.pop());
+					if(symbol(",")) {
+						if(symbol(","))
+							throw getSyntaxError("Double comma");
+						else if(symbol(">"))
+							throw getSyntaxError("Trailing comma");
+						else
+							stack.pop();
+					}
+				} else if(symbol(">")) {
+					stack.pop();
+					stack.push(new GenericNode(object,generics));
+					return true;
+				}
 			}
 		} else
 			return false;
