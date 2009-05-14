@@ -17,46 +17,43 @@ public class Parser {
 			Tokenizer t = new Tokenizer();
 			Parser p = new Parser();
 			
-			int lineNo = 1;
-			Scanner s = new Scanner(System.in);
-			while(true) {
-				System.out.print(lineNo + ":");
-				if(t.isReady())
-					System.out.print(">> ");
-				else
-					System.out.print(t.getLastOpener() + "> ");
-				String line = null;
-				try {
-					line = s.nextLine();
-				} catch(NoSuchElementException e) {
-					System.out.println();
-				}
-				try {
-					t.addLine(new SourceLine(line,lineNo));
-					if(t.isReady() && t.numTokens() > 0)
-						System.out.println(p.parse(t.getTokens()));
-				} catch (SyntaxError e) {
-					System.err.println(e.getMessage());
-					System.err.println(e.getLocation().show());
-					p.reset();
-					t.reset();
-				}
-				lineNo++;			
-			}
-			
-//			try {
-////				t.addLine(new SourceLine("|a,b,c|{",1));
-////				t.addLine(new SourceLine("  print(bla)",2));
-////				t.addLine(new SourceLine("}",3));
-//				t.addLine(new SourceLine("print(bla)",1));
-//				System.out.println(p.parse(t.getTokens()));
-//			} catch (SyntaxError e) {
-//				System.err.println(e.getMessage());
-//				System.err.println(e.getLocation().show());
-//				e.printStackTrace();
+//			int lineNo = 1;
+//			Scanner s = new Scanner(System.in);
+//			while(true) {
+//				System.out.print(lineNo + ":");
+//				if(t.isReady())
+//					System.out.print(">> ");
+//				else
+//					System.out.print(t.getLastOpener() + "> ");
+//				String line = null;
+//				try {
+//					line = s.nextLine();
+//				} catch(NoSuchElementException e) {
+//					System.out.println();
+//				}
+//				try {
+//					t.addLine(new SourceLine(line,lineNo));
+//					if(t.isReady() && t.numTokens() > 0)
+//						System.out.println(p.parse(t.getTokens()));
+//				} catch (SyntaxError e) {
+//					System.err.println(e.getMessage());
+//					System.err.println(e.getLocation().show());
+//					p.reset();
+//					t.reset();
+//				}
+//				lineNo++;
 //			}
 			
-		}
+			try {
+				t.addLine(new SourceLine("a is 2",1));
+				System.out.println(p.parse(t.getTokens()));
+			} catch (SyntaxError e) {
+				System.err.println(e.getMessage());
+				System.err.println(e.getLocation().show());
+				e.printStackTrace();
+			}
+			
+	}
 
 	private static final Pattern variablePattern =
 					Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*(\\?|!)?");
@@ -96,13 +93,13 @@ public class Parser {
 		Token firstToken = tokenList.get(0);
 		for(Token t: tokenList)
 			tokens.add(t);
-		if(expression()) {
+		if(statement() || expression()) {
 			if(tokens.isEmpty() && stack.size() == 1)
 				return stack.pop();
 			else
-				throw new SyntaxError("invalid syntax",tokens.peek().getEnd());
+				throw new SyntaxError("invalid syntax",tokens.peek().getStart());
 		} else if(!tokens.isEmpty())
-			throw new SyntaxError("invalid syntax",tokens.peek().getEnd());
+			throw new SyntaxError("invalid syntax",tokens.peek().getStart());
 		else
 			throw new SyntaxError("invalid syntax",firstToken.getStart());
 	}
@@ -110,6 +107,34 @@ public class Parser {
 	public void reset() {
 		stack.clear();
 		tokens.clear();
+	}
+	
+	private boolean statement() throws SyntaxError {
+		return assignment(); // later, +=, etc
+	}
+	
+	private boolean assignment() throws SyntaxError {
+		ArrayList<VariableNode> vars = new ArrayList<VariableNode>();
+		while(variable()) {
+			vars.add((VariableNode)stack.pop());
+			if(symbol(",")) {
+				if(symbol(","))
+					throw getSyntaxError("Double comma");
+				else if(symbol("="))
+					throw getSyntaxError("Trailing comma");
+			} else if(symbol("=")) {
+				Token equals = getLastToken();
+				if(expression()) {
+					stack.push(new AssignmentNode(vars,getLastExpression()));
+					return true;
+				} else
+					throw new SyntaxError("No expression after =",equals.getStart());
+			}
+		}
+		if(vars.size() > 0)
+			for(int i=vars.size()-1; i >= 0; i--)
+				tokens.addFirst(vars.get(i).getOrigin());
+		return false;
 	}
 	
 	private boolean expression() throws SyntaxError {
@@ -518,9 +543,10 @@ public class Parser {
 	private boolean variable() {
 		if(wordWithPattern(variablePattern)) {
 			Token variableToken = getLastToken();
-			if(reservedWords.contains(variableToken.getValue()))
+			if(reservedWords.contains(variableToken.getValue())) {
+				tokens.addFirst(variableToken);
 				return false;
-			else {
+			} else {
 				stack.push(new VariableNode(variableToken));
 				return true;
 			}
@@ -557,7 +583,7 @@ public class Parser {
 					return true;
 				} else
 					throw new SyntaxError("Missing comma",
-											tokens.peek().getStart().next());
+											tokens.peek().getStart());
 			}
 		}
 	}
@@ -605,7 +631,7 @@ public class Parser {
 					return true;
 				} else
 					throw new SyntaxError("Missing comma",
-											tokens.peek().getStart().next());
+											tokens.peek().getStart());
 			}
 		}
 	}
@@ -622,7 +648,7 @@ public class Parser {
 			} else
 				stack.pop();
 		} else
-			throw new SyntaxError("Missing comma",tokens.peek().getStart().next());
+			throw new SyntaxError("Missing comma",tokens.peek().getStart());
 		while(true) {
 			if(expression())
 				elements.add(getLastExpression());
@@ -642,7 +668,7 @@ public class Parser {
 					return true;
 				} else
 					throw new SyntaxError("Missing comma",
-											tokens.peek().getStart().next());
+											tokens.peek().getStart());
 			}
 		}
 	}
