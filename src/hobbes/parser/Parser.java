@@ -83,6 +83,8 @@ public class Parser {
 		reservedWords.add("finally");
 		reservedWords.add("unless");
 		reservedWords.add("return");
+		reservedWords.add("del");
+		reservedWords.add("import");
 	}
 	
 	private Stack<SyntaxNode> stack;
@@ -116,7 +118,8 @@ public class Parser {
 	}
 	
 	private boolean statement() throws SyntaxError {
-		return instanceVarAssignment() || assignment();
+		return instanceVarAssignment() || assignment() ||
+				deletion();
 	}
 	
 	private boolean expression() throws SyntaxError {
@@ -133,7 +136,7 @@ public class Parser {
 					stack.push(new AssignmentNode(var,expr));
 					return true;
 				} else
-					throw new SyntaxError("No expression after =",
+					throw new SyntaxError("No object after =",
 											equals.getEnd());
 			} else {
 				tokens.addFirst(var.getOrigin());
@@ -191,11 +194,59 @@ public class Parser {
 						return true;
 					}
 				} else
-					throw new SyntaxError("No expression after =",
+					throw new SyntaxError("No object after =",
 											equals.getEnd());
 			} else {
 				return true; // FIXME: can't put result of object() back on stack
 			}
+		} else
+			return false;
+	}
+	
+	private boolean deletion() throws SyntaxError {
+		if(word("del")) {
+			Token delWord = getLastToken();
+			if(object()) {
+				ObjectNode delObj = (ObjectNode)stack.pop();
+				if(delObj instanceof AtomNode) {
+					if(delObj instanceof VarNode) {
+						stack.push(new DeletionNode((VarNode)delObj));
+						return true;
+					} else
+						throw new SyntaxError("Can't delete an atom",
+												delWord.getEnd());
+				} else if(delObj instanceof FunctionCallNode)
+					throw new SyntaxError("Can't delete the result " +
+											"of a function call",
+											delWord.getEnd());
+				else if(delObj instanceof GenericNode)
+					throw new SyntaxError("Can't delete a generic class, " +
+											"only the actual class variable",
+											delWord.getEnd());
+				else { // it's a MethodCallNode
+					MethodCallNode obj = (MethodCallNode)delObj;
+					if(obj.hasArgs())
+						throw new SyntaxError("Can't delete the result of " +
+												"a method call with arguments",
+												delWord.getEnd());
+					else if(obj.getMethodName().equals("[]")) {
+						ArrayList<ArgNode> args = new ArrayList<ArgNode>();
+						args.add(obj.getArgs().get(0));
+						stack.push(new MethodCallNode(obj.getReceiver(),
+														delWord,"[]del",args));
+						return true;
+					} else {
+						ArrayList<ArgNode> args = new ArrayList<ArgNode>();
+						args.add(new ArgNode(new StringNode(obj.getOrigin()),
+												ArgType.NORMAL));
+						stack.push(new MethodCallNode(obj.getReceiver(),
+														delWord,"delattr",args));
+						return true;
+					}
+				}
+			} else
+				throw new SyntaxError("No object after \"del\"",
+										delWord.getEnd());
 		} else
 			return false;
 	}
