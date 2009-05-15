@@ -33,16 +33,9 @@ public class MethodCallNode implements ObjectNode {
 		args = a;
 	}
 	
-	public MethodCallNode(Token t) {
-		receiver = null;
-		origin = t;
-		methodName = t.getValue();
-		args = null;
-	}
-	
 	public String toString() {
 		String ans = "call(" + 
-		(receiver == null ? "themodule" : receiver) + "," 
+		receiver + "," 
 		+ methodName;
 		if(args != null)
 			ans += "," + args;

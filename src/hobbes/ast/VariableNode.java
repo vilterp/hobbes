@@ -2,20 +2,20 @@ package hobbes.ast;
 
 import hobbes.parser.Token;
 
-public class InstanceVarNode implements VarNode {
+public class VariableNode implements VarNode {
 	
 	private Token origin;
 	
-	public InstanceVarNode(Token t) {
+	public VariableNode(Token t) {
 		origin = t;
-	}
-	
-	public Token getOrigin() {
-		return origin;
 	}
 	
 	public String toString() {
 		return origin.getValue();
+	}
+	
+	public Token getOrigin() {
+		return origin;
 	}
 	
 }

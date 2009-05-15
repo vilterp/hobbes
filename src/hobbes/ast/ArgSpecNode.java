@@ -6,12 +6,12 @@ public class ArgSpecNode implements SyntaxNode {
 	
 	private ArgType type;
 	private Token name;
-	private Token className;
+	private ObjectNode typeSpec;
 	private AtomNode defaultValue;
 	
-	public ArgSpecNode(Token n, ArgType t, Token cn, AtomNode d) {
+	public ArgSpecNode(Token n, ArgType t, ObjectNode ts, AtomNode d) {
 		name = n;
-		className = cn;
+		typeSpec = ts;
 		defaultValue = d;
 		type = t;
 	}
@@ -24,14 +24,14 @@ public class ArgSpecNode implements SyntaxNode {
 			ans += "*";
 		ans += name.getValue();
 		if(classNameSpecified())
-			ans += ":" + className.getValue();
+			ans += ":" + typeSpec;
 		if(defaultSpecified())
 			ans += "=" + defaultValue;
 		return ans;
 	}
 	
 	private boolean classNameSpecified() {
-		return className != null;
+		return typeSpec != null;
 	}
 	
 	private boolean defaultSpecified() {

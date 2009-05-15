@@ -150,6 +150,11 @@ public class Parser {
 				Token equals = getLastToken();
 				if(expression()) {
 					ExpressionNode rightExpr = getLastExpression();
+					if(leftObj instanceof VariableNode) {
+						stack.push(new AssignmentNode(
+											(VariableNode)leftObj,rightExpr));
+						return true;
+					}
 					// make sure it's assignable
 					if(leftObj instanceof AtomNode)
 						throw new SyntaxError("Can't assign to an atom",
@@ -178,7 +183,8 @@ public class Parser {
 												equals.getStart());
 					else {
 						ArrayList<ArgNode> args  = new ArrayList<ArgNode>();
-						args.add(new ArgNode(new StringNode(left.getOrigin()),ArgType.NORMAL));
+						args.add(new ArgNode(
+								new StringNode(left.getOrigin()),ArgType.NORMAL));
 						args.add(new ArgNode(rightExpr,ArgType.NORMAL));
 						stack.push(new MethodCallNode(left.getReceiver(),
 														equals,"setattr",args));
@@ -567,7 +573,7 @@ public class Parser {
 	private boolean argument() throws SyntaxError {
 		// named arg
 		if(variable()) {
-			Token name = ((MethodCallNode)stack.pop()).getOrigin();
+			Token name = ((VariableNode)stack.pop()).getOrigin();
 			if(symbol("=")) {
 				Token equals = getLastToken();
 				if(expression()) {
@@ -625,7 +631,7 @@ public class Parser {
 				tokens.addFirst(variableToken);
 				return false;
 			} else {
-				stack.push(new MethodCallNode(variableToken));
+				stack.push(new VariableNode(variableToken));
 				return true;
 			}
 		} else
@@ -800,9 +806,9 @@ public class Parser {
 		if(!argsSpec("|","|"))
 			return false;
 		args = (ArgsSpecNode)stack.pop();
-		MethodCallNode returnType = null;
+		ObjectNode returnType = null;
 		if(classSpec())
-			returnType = (MethodCallNode)stack.pop();
+			returnType = (ObjectNode)stack.pop();
 		if(!symbol("{"))
 			throw new SyntaxError("no block after anonymous function " +
 									"argument specification",
@@ -889,14 +895,14 @@ public class Parser {
 				type = ArgType.SPLAT;
 		}
 		if(variable()) {
-			Token argName = ((MethodCallNode)stack.pop()).getOrigin();
-			Token className = null;
+			Token argName = ((VariableNode)stack.pop()).getOrigin();
+			ObjectNode argType = null;
 			if(classSpec())
-				className = ((MethodCallNode)stack.pop()).getOrigin();
+				argType = (ObjectNode)stack.pop();
 			AtomNode defaultValue = null;
 			if(defaultSpec())
 				defaultValue = (AtomNode)stack.pop();
-			stack.push(new ArgSpecNode(argName,type,className,defaultValue));
+			stack.push(new ArgSpecNode(argName,type,argType,defaultValue));
 			return true;
 		} else
 			return false;
