@@ -18,4 +18,8 @@ public class InstanceVarNode implements VarNode {
 		return origin.getValue();
 	}
 	
+	public String getValue() {
+		return origin.getValue().substring(1);
+	}
+	
 }

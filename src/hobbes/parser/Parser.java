@@ -45,7 +45,7 @@ public class Parser {
 			}
 			
 //			try {
-//				t.addLine(new SourceLine("foo[\"bar\"] = 2",1));
+//				t.addLine(new SourceLine("import foo{bar},",1));
 //				System.out.println(p.parse(t.getTokens()));
 //			} catch (SyntaxError e) {
 //				System.err.println(e.getMessage());
@@ -119,7 +119,7 @@ public class Parser {
 	
 	private boolean statement() throws SyntaxError {
 		return instanceVarAssignment() || assignment() ||
-				deletion();
+				deletion() || importStatement();
 	}
 	
 	private boolean expression() throws SyntaxError {
@@ -247,6 +247,62 @@ public class Parser {
 			} else
 				throw new SyntaxError("No object after \"del\"",
 										delWord.getEnd());
+		} else
+			return false;
+	}
+	
+	private boolean importStatement() throws SyntaxError {
+		if(word("import")) {
+			Token importWord = getLastToken();
+			ArrayList<VariableNode> path = new ArrayList<VariableNode>();
+			while(true) {
+				if(variable()) {
+					VariableNode var = (VariableNode)stack.pop();
+					path.add(var);
+					if(var.getValue().equals("_")) {
+						stack.push(new ImportNode(path));
+						return true;
+					}
+				} else if(symbol("{")) {
+					stack.pop();
+					if(symbol("}"))
+						throw getSyntaxError("Nothing inside {}s");
+					HashSet<VariableNode> names = new HashSet<VariableNode>();
+					while(true) {
+						if(variable())
+							names.add((VariableNode)stack.pop());
+						if(symbol(",")) {
+							if(symbol(","))
+								throw getSyntaxError("Double comma");
+							if(symbol("}"))
+								throw getSyntaxError("Trailing comma");
+							else
+								stack.pop();
+						} else if(symbol("}")) {
+							stack.pop();
+							stack.push(new ImportNode(path,names));
+							return true;
+						} else
+							throw new SyntaxError("Missing comma",tokens.peek().getStart());
+					}
+				}
+				if(symbol(".")) {
+					if(symbol("."))
+						throw getSyntaxError("Double dot");
+					else if(tokens.isEmpty())
+						throw getSyntaxError("Trailing dot");
+					else
+						stack.pop();
+				} else if(tokens.isEmpty()) {
+					if(path.isEmpty())
+						throw new SyntaxError("No name after \"import\"",
+												importWord.getEnd().next());
+					stack.push(new ImportNode(path));
+					return true;
+				} else
+					throw new SyntaxError("Unexpected " + tokens.peek().getValue(),
+											tokens.peek().getStart());
+			}
 		} else
 			return false;
 	}
