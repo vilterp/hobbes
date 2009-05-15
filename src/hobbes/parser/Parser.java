@@ -45,7 +45,7 @@ public class Parser {
 			}
 			
 //			try {
-//				t.addLine(new SourceLine("List<>",1));
+//				t.addLine(new SourceLine("foo[\"bar\"] = 2",1));
 //				System.out.println(p.parse(t.getTokens()));
 //			} catch (SyntaxError e) {
 //				System.err.println(e.getMessage());
@@ -116,11 +116,15 @@ public class Parser {
 	}
 	
 	private boolean statement() throws SyntaxError {
-		return assignment(); // later, +=, etc
+		return instanceVarAssignment() || assignment();
 	}
 	
-	private boolean assignment() throws SyntaxError {
-		if(instanceVar()) {
+	private boolean expression() throws SyntaxError {
+		return inlineIfStatement() || parenthesizedExpression();
+	}
+
+	private boolean instanceVarAssignment() throws SyntaxError {
+		if(tokenAhead(TokenType.SYMBOL,"=") && instanceVar()) {
 			InstanceVarNode var = (InstanceVarNode)stack.pop();
 			if(symbol("=")) {
 				Token equals = getLastToken();
@@ -139,10 +143,57 @@ public class Parser {
 			return false;
 	}
 	
-	private boolean expression() throws SyntaxError {
-		return inlineIfStatement() || parenthesizedExpression();
+	private boolean assignment() throws SyntaxError {
+		if(tokenAhead(TokenType.SYMBOL,"=") && object()) {
+			ObjectNode leftObj = (ObjectNode)stack.pop();
+			if(symbol("=")) {
+				Token equals = getLastToken();
+				if(expression()) {
+					ExpressionNode rightExpr = getLastExpression();
+					// make sure it's assignable
+					if(leftObj instanceof AtomNode)
+						throw new SyntaxError("Can't assign to an atom",
+												equals.getStart());
+					if(leftObj instanceof GenericNode)
+						throw new SyntaxError("Can't assign to a generic class, " +
+												"only the actual class variable",
+												equals.getStart());
+					if(leftObj instanceof FunctionCallNode)
+						throw new SyntaxError("Can't assign to the result of a " +
+												"function call",
+												equals.getStart());
+					// ok, it's a method call
+					MethodCallNode left = (MethodCallNode)leftObj;
+					// foo[bar] = baz
+					if(left.getMethodName().equals("[]")) {
+						ArrayList<ArgNode> args = new ArrayList<ArgNode>();
+						args.add(left.getArgs().get(0));
+						args.add(new ArgNode(rightExpr,ArgType.NORMAL));
+						stack.push(new MethodCallNode(left.getReceiver(),
+														equals,"[]=",args));
+						return true;
+					} else if(left.hasArgs())
+						throw new SyntaxError("Can't assign to the result of " +
+												"a method with arguments",
+												equals.getStart());
+					else {
+						ArrayList<ArgNode> args  = new ArrayList<ArgNode>();
+						args.add(new ArgNode(new StringNode(left.getOrigin()),ArgType.NORMAL));
+						args.add(new ArgNode(rightExpr,ArgType.NORMAL));
+						stack.push(new MethodCallNode(left.getReceiver(),
+														equals,"setattr",args));
+						return true;
+					}
+				} else
+					throw new SyntaxError("No expression after =",
+											equals.getEnd());
+			} else {
+				return true; // FIXME: can't put result of object() back on stack
+			}
+		} else
+			return false;
 	}
-	
+
 	private boolean parenthesizedExpression() throws SyntaxError {
 		if(symbol("("))
 			stack.pop();
@@ -516,7 +567,7 @@ public class Parser {
 	private boolean argument() throws SyntaxError {
 		// named arg
 		if(variable()) {
-			Token name = ((CallNode)stack.pop()).getOrigin();
+			Token name = ((MethodCallNode)stack.pop()).getOrigin();
 			if(symbol("=")) {
 				Token equals = getLastToken();
 				if(expression()) {
@@ -574,7 +625,7 @@ public class Parser {
 				tokens.addFirst(variableToken);
 				return false;
 			} else {
-				stack.push(new CallNode(variableToken));
+				stack.push(new MethodCallNode(variableToken));
 				return true;
 			}
 		} else
@@ -749,9 +800,9 @@ public class Parser {
 		if(!argsSpec("|","|"))
 			return false;
 		args = (ArgsSpecNode)stack.pop();
-		CallNode returnType = null;
+		MethodCallNode returnType = null;
 		if(classSpec())
-			returnType = (CallNode)stack.pop();
+			returnType = (MethodCallNode)stack.pop();
 		if(!symbol("{"))
 			throw new SyntaxError("no block after anonymous function " +
 									"argument specification",
@@ -838,10 +889,10 @@ public class Parser {
 				type = ArgType.SPLAT;
 		}
 		if(variable()) {
-			Token argName = ((CallNode)stack.pop()).getOrigin();
+			Token argName = ((MethodCallNode)stack.pop()).getOrigin();
 			Token className = null;
 			if(classSpec())
-				className = ((CallNode)stack.pop()).getOrigin();
+				className = ((MethodCallNode)stack.pop()).getOrigin();
 			AtomNode defaultValue = null;
 			if(defaultSpec())
 				defaultValue = (AtomNode)stack.pop();
@@ -950,6 +1001,13 @@ public class Parser {
 				return false;
 			}
 		}
+	}
+	
+	private boolean tokenAhead(TokenType type, String value) {
+		for(Token t: tokens)
+			if(t.getType() == type && value.equals(t.getValue()))
+				return true;
+		return false;
 	}
 	
 	private boolean token(TokenType type, String value) {
