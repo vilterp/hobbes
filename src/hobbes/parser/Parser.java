@@ -197,7 +197,7 @@ public class Parser {
 					throw new SyntaxError("No object after =",
 											equals.getEnd());
 			} else {
-				return true; // FIXME: can't put result of object() back on stack
+				return true;
 			}
 		} else
 			return false;
@@ -214,7 +214,7 @@ public class Parser {
 						return true;
 					} else
 						throw new SyntaxError("Can't delete an atom",
-												delWord.getEnd());
+												delWord.getEnd().next());
 				} else if(delObj instanceof FunctionCallNode)
 					throw new SyntaxError("Can't delete the result " +
 											"of a function call",
@@ -222,20 +222,20 @@ public class Parser {
 				else if(delObj instanceof GenericNode)
 					throw new SyntaxError("Can't delete a generic class, " +
 											"only the actual class variable",
-											delWord.getEnd());
+											delWord.getEnd().next());
 				else { // it's a MethodCallNode
 					MethodCallNode obj = (MethodCallNode)delObj;
-					if(obj.hasArgs())
-						throw new SyntaxError("Can't delete the result of " +
-												"a method call with arguments",
-												delWord.getEnd());
-					else if(obj.getMethodName().equals("[]")) {
+					if(obj.getMethodName().equals("[]")) {
 						ArrayList<ArgNode> args = new ArrayList<ArgNode>();
 						args.add(obj.getArgs().get(0));
 						stack.push(new MethodCallNode(obj.getReceiver(),
 														delWord,"[]del",args));
 						return true;
-					} else {
+					} else if(obj.hasArgs())
+						throw new SyntaxError("Can't delete the result of " +
+												"a method call with arguments",
+												obj.getOrigin().getEnd());
+					else {
 						ArrayList<ArgNode> args = new ArrayList<ArgNode>();
 						args.add(new ArgNode(new StringNode(obj.getOrigin()),
 												ArgType.NORMAL));
@@ -260,9 +260,12 @@ public class Parser {
 			throw getSyntaxError("nothing inside ()'s");
 		if(!expression())
 			throw getSyntaxError("No expression after (");
-		symbol(")"); // tokenizer makes sure it's there
-		stack.pop();
-		return true;
+		if(symbol(")")) {
+			stack.pop();
+			return true;
+		} else
+			throw new SyntaxError("Expected ), found " + tokens.peek().getValue(),
+									tokens.peek().getStart());
 	}
 	
 	private boolean inlineIfStatement() throws SyntaxError {
