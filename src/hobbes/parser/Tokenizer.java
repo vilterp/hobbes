@@ -3,7 +3,6 @@ package hobbes.parser;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.Stack;
 import java.util.Scanner;
 
@@ -13,47 +12,42 @@ public class Tokenizer {
 		Tokenizer t = new Tokenizer();
 		Scanner s = new Scanner(System.in);
 		
-//		int lineNo = 1;
-//		while(true) {
-//			System.out.print(lineNo + ":");
-//			if(t.isReady())
-//				System.out.print(">> ");
-//			else
-//				System.out.print(t.getLastOpener()+"> ");
-//			try {
-//				t.addLine(new SourceLine(s.nextLine(),lineNo));
-//				if(t.isReady()) {
-//					ArrayList<Token> tokens = t.getTokens();
-//					System.out.println(tokens);
-//					for(Token token: tokens)
-//						System.out.println(token.getSourceSpan().show());
-//				}
-//			} catch(SyntaxError e) {
-//				t.reset();
-//				System.err.println(e.getMessage());
-//				System.err.println(e.getLocation().show());
-//			}
-//			lineNo++;
-//		}
-		
-		try {
-			t.addLine(new SourceLine("\"",1));
-			t.addLine(new SourceLine("",1));
-			t.addLine(new SourceLine("",1));
-			t.addLine(new SourceLine("waa",1));
-			t.addLine(new SourceLine("",1));
-			t.addLine(new SourceLine("\"",1));
-		} catch (SyntaxError e) {
-			System.err.println(e.getMessage());
-			System.err.println(e.getLocation().show());
+		int lineNo = 1;
+		while(true) {
+			System.out.print(lineNo + ":");
+			if(t.isReady())
+				System.out.print(">> ");
+			else
+				System.out.print(t.getLastOpener()+"> ");
+			try {
+				t.addLine(new SourceLine(s.nextLine(),lineNo));
+				if(t.isReady()) {
+					ArrayList<Token> tokens = t.getTokens();
+					System.out.println(tokens);
+					for(Token token: tokens)
+						System.out.println(token.getSourceSpan().show());
+				}
+			} catch(SyntaxError e) {
+				t.reset();
+				System.err.println(e.getMessage());
+				System.err.println(e.getLocation().show());
+			}
+			lineNo++;
 		}
-		if(t.isReady()) {
-			ArrayList<Token> tokens = t.getTokens();
-			System.out.println(tokens);
-			for(Token token: tokens)
-				System.out.println(token.getSourceSpan().show());
-		} else
-			System.out.println("waiting to close "+t.getLastOpener());
+		
+//		try {
+//			t.addLine(new SourceLine("'\\x'",1));
+//		} catch (SyntaxError e) {
+//			System.err.println(e.getMessage());
+//			System.err.println(e.getLocation().show());
+//		}
+//		if(t.isReady()) {
+//			ArrayList<Token> tokens = t.getTokens();
+//			System.out.println(tokens);
+//			for(Token token: tokens)
+//				System.out.println(token.getSourceSpan().show());
+//		} else
+//			System.out.println("waiting to close "+t.getLastOpener());
 		
 	}
 	
@@ -82,7 +76,7 @@ public class Tokenizer {
 	private SourceLine line;
 	private String code;
 	private ArrayList<Token> tokens;
-	private String buffer;
+	private StringBuilder buffer;
 	private Stack<Token> depth;
 	private SourceLocation pos;
 	private SourceLocation startPos;
@@ -91,7 +85,7 @@ public class Tokenizer {
 		line = null;
 		code = "";
 		tokens = new ArrayList<Token>();
-		buffer = "";
+		buffer = new StringBuilder();
 		depth = new Stack<Token>();
 		pos = startPos = null;
 	}
@@ -99,6 +93,7 @@ public class Tokenizer {
 	public void reset() {
 		tokens.clear();
 		depth.clear();
+		buffer = new StringBuilder();
 		pos = startPos = null;
 	}
 
@@ -146,7 +141,7 @@ public class Tokenizer {
 	
 	private void tokenize() throws SyntaxError {
 		if(!moreCode() && "\"".equals(getLastOpener())) {
-			buffer += "\n";
+			buffer.append("\n");
 			return;
 		}
 		while(moreCode()) {
@@ -234,7 +229,7 @@ public class Tokenizer {
 	private void getString() throws SyntaxError {
 		while(true) {
 			if(!moreCode()) {
-				buffer += "\n";
+				buffer.append("\n");
 				return;
 			} else if(peek() == '"') {
 				advance();
@@ -244,25 +239,25 @@ public class Tokenizer {
 			} else if(peek() == '\\') {
 				if(peek(1) != null) {
 					if(peek(1) == 'n') {
-						buffer += "\n";
+						buffer.append("\n");
 						advance();
 						advance();
 					} else if(peek(1) == 't') {
-						buffer += "\t";
+						buffer.append("\t");
 						advance();
 						advance();
 					} else if(peek(1) == '"') {
-						buffer += '"';
+						buffer.append('"');
 						advance();
 						advance();
 					} else if(peek(1) == '\\') {
-						buffer += "\\";
+						buffer.append("\\");
 						advance();
 						advance();
 					} else
 						throw new SyntaxError("invalid escape sequence " +
 												"(only \\t, \\n, \\\" and \\\\)",
-												pos.next().next());
+												pos.next());
 				} else
 					read();
 			} else
@@ -272,34 +267,33 @@ public class Tokenizer {
 	
 	private void getChar() throws SyntaxError {
 		if(peek() == '\'')
-			throw new SyntaxError("empty character literal",pos.next());
+			throw new SyntaxError("Empty character literal",pos);
 		else if(peek() == '\\') {
 			if(peek(1) == 'n') {
-				buffer += "\n";
+				buffer.append("\n");
 				advance();
 				advance();
 			} else if(peek(1) == 't') {
-				buffer += "\t";
+				buffer.append("\t");
 				advance();
 				advance();
 			} else if(peek(1) == '\'') {
-				buffer += "'";
+				buffer.append("'");
 				advance();
 				advance();
 			} else if(peek(1) == '\\') {
-				buffer += "\\";
+				buffer.append("\\");
 				advance();
 				advance();
 			} else
-				throw new SyntaxError("not a valid escape sequence " +
+				throw new SyntaxError("Not a valid escape sequence " +
 										"(only \\t, \\n, \\' and \\\\)",
-										pos.next().next());
+										pos.next());
 		} else
 			read();
 		if(peek() != '\'')
-			throw new SyntaxError("can only put one character " +
-					"in a character literal (put strings in \"'s)",
-					pos.next());
+			throw new SyntaxError("Can only put one character " +
+					"in a character literal (put strings in \"s)",pos);
 		else {
 			advance();
 			tokens.add(makeToken(TokenType.CHAR));
@@ -310,7 +304,7 @@ public class Tokenizer {
 	private void getRegex() throws SyntaxError {
 		while(true) {
 			if(!moreCode()) {
-				buffer += "\n";
+				buffer.append("\n");
 				return;
 			} if(peek() == '/' && (lastChar() == null || lastChar() != '\\')) {
 				advance();
@@ -320,25 +314,25 @@ public class Tokenizer {
 			} else if(peek() == '\\') {
 				if(peek(1) != null) {
 					if(peek(1) == 'n') {
-						buffer += "\n";
+						buffer.append("\n");
 						advance();
 						advance();
 					} else if(peek(1) == 't') {
-						buffer += "\t";
+						buffer.append("\t");
 						advance();
 						advance();
 					} else if(peek(1) == '/') {
-						buffer += '/';
+						buffer.append('/');
 						advance();
 						advance();
 					} else if(peek(1) == '\\') {
-						buffer += "\\";
+						buffer.append("\\");
 						advance();
 						advance();
 					} else
-						throw new SyntaxError("not a valid escape sequence " +
+						throw new SyntaxError("Not a valid escape sequence " +
 												"(only \\n, \\t, \\/ and \\\\)",
-												pos.next().next());
+												pos.next());
 				} else
 					read();
 			} else
@@ -415,7 +409,7 @@ public class Tokenizer {
 	
 	private Character read() {
 		char next = nextChar();
-		buffer += next;
+		buffer.append(next);
 		return next;
 	}
 	
@@ -457,8 +451,8 @@ public class Tokenizer {
 	}
 	
 	private String flush() {
-		String temp = buffer;
-		buffer = "";
+		String temp = buffer.toString();
+		buffer = new StringBuilder();
 		startPos = pos;
 		return temp;
 	}
