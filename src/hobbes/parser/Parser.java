@@ -120,11 +120,8 @@ public class Parser {
 	
 	private boolean statement() throws SyntaxError {
 		return instanceVarAssignment() || assignment() ||
-				deletion() || importStatement();
-	}
-	
-	private boolean expression() throws SyntaxError {
-		return inlineIfStatement() || parenthesizedExpression();
+				deletionStatement() || importStatement() || returnStatement() ||
+				pass();
 	}
 
 	private boolean instanceVarAssignment() throws SyntaxError {
@@ -146,7 +143,7 @@ public class Parser {
 		} else
 			return false;
 	}
-	
+
 	private boolean assignment() throws SyntaxError {
 		if(tokenAhead(TokenType.SYMBOL,"=") && object()) {
 			ObjectNode leftObj = (ObjectNode)stack.pop();
@@ -203,8 +200,8 @@ public class Parser {
 		} else
 			return false;
 	}
-	
-	private boolean deletion() throws SyntaxError {
+
+	private boolean deletionStatement() throws SyntaxError {
 		if(word("del")) {
 			Token delWord = getLastToken();
 			if(object()) {
@@ -251,7 +248,7 @@ public class Parser {
 		} else
 			return false;
 	}
-	
+
 	private boolean importStatement() throws SyntaxError {
 		if(word("import")) {
 			Token importWord = getLastToken();
@@ -307,6 +304,23 @@ public class Parser {
 		} else
 			return false;
 	}
+	
+	private boolean returnStatement() throws SyntaxError {
+		if(word("return")) {
+			Token returnWord = getLastToken();
+			if(expression()) {
+				stack.push(new ReturnNode(getLastExpression()));
+				return true;
+			} else
+				throw new SyntaxError("No expression after \"return\"",
+										returnWord.getEnd().next());
+		} else
+			return false;
+	}
+
+	private boolean expression() throws SyntaxError {
+		return inlineIfStatement() || parenthesizedExpression() || ifStatement();
+	}
 
 	private boolean parenthesizedExpression() throws SyntaxError {
 		if(symbol("("))
@@ -323,6 +337,34 @@ public class Parser {
 		} else
 			throw new SyntaxError("Expected ), found " + tokens.peek().getValue(),
 									tokens.peek().getStart());
+	}
+	
+	private boolean ifStatement() throws SyntaxError {
+		if(word("if") || word("unless")) {
+			Token iou = getLastToken();
+			if(expression()) {
+				ExpressionNode cond = getLastExpression();
+				if(block()) {
+					BlockNode block = (BlockNode)stack.pop();
+					stack.push(new IfStatementNode(iou,cond,block));
+					return true;
+				} else
+					throw new SyntaxError("No block inside if statement",
+											iou.getStart());
+			} else
+				throw new SyntaxError("No condition after \"if\"",
+										iou.getEnd().next());
+		} else
+			return false;
+	}
+	
+	private boolean pass() {
+		if(word("pass")) {
+			stack.pop();
+			stack.push(new PassNode());
+			return true;
+		} else
+			return false;
 	}
 	
 	private boolean inlineIfStatement() throws SyntaxError {
@@ -936,11 +978,10 @@ public class Parser {
 	
 	private boolean block() throws SyntaxError {
 		ArrayList<SyntaxNode> lines = new ArrayList<SyntaxNode>();
-		// clear out tabs -- for now
-		while(token(TokenType.TAB))
-			stack.pop();
-		while(expression())
+		while(statement() || expression())
 			lines.add(stack.pop());
+		if(lines.isEmpty())
+			return false;
 		stack.push(new BlockNode(lines));
 		return true;
 	}

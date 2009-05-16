@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 
-public class ImportNode implements SyntaxNode {
+public class ImportNode implements StatementNode {
 	
 	private ArrayList<VariableNode> path;
 	private HashSet<VariableNode> names;

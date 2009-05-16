@@ -81,10 +81,12 @@ public class Tokenizer {
 		blockStartWords.add("trait");
 		blockStartWords.add("def");
 		blockStartWords.add("if");
+		blockStartWords.add("unless");
 		blockStartWords.add("else");
 		blockStartWords.add("elif");
 		blockStartWords.add("for");
 		blockStartWords.add("while");
+		blockStartWords.add("until");
 		blockStartWords.add("try");
 		blockStartWords.add("catch");
 		blockStartWords.add("match");
@@ -171,9 +173,12 @@ public class Tokenizer {
 		if(!moreCode()) {
 			if("\"".equals(getLastOpener()))
 				buffer.append("\n");
-			else if(!depth.isEmpty() && depth.peek().getType() == TokenType.WORD) {
-				depth.pop();
-				tabDepth = 0;
+			else {
+				while(!depth.isEmpty() &&
+						depth.peek().getType() == TokenType.WORD) {
+					depth.pop();
+					tabDepth--;
+				}
 			}
 			return;
 		}

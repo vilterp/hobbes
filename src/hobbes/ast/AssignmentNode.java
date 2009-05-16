@@ -1,6 +1,6 @@
 package hobbes.ast;
 
-public class AssignmentNode implements SyntaxNode {
+public class AssignmentNode implements StatementNode {
 	
 	private VarNode var;
 	private ExpressionNode expr;

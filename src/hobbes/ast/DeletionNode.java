@@ -1,6 +1,6 @@
 package hobbes.ast;
 
-public class DeletionNode implements SyntaxNode {
+public class DeletionNode implements StatementNode {
 	
 	private VarNode var;
 	
