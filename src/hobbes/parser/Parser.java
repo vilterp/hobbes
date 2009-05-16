@@ -121,7 +121,7 @@ public class Parser {
 	private boolean statement() throws SyntaxError {
 		return instanceVarAssignment() || assignment() ||
 				deletionStatement() || importStatement() || returnStatement() ||
-				pass();
+				pass() || whileLoop();
 	}
 
 	private boolean instanceVarAssignment() throws SyntaxError {
@@ -344,6 +344,8 @@ public class Parser {
 			Token iou = getLastToken();
 			if(expression()) {
 				ExpressionNode cond = getLastExpression();
+				if(iou.getValue().equals("unless"))
+					cond = new NotNode(cond);
 				if(block()) {
 					BlockNode block = (BlockNode)stack.pop();
 					stack.push(new IfStatementNode(iou,cond,block));
@@ -352,8 +354,28 @@ public class Parser {
 					throw new SyntaxError("No block inside if statement",
 											iou.getStart());
 			} else
-				throw new SyntaxError("No condition after \"if\"",
+				throw new SyntaxError("No condition after \"" + iou.getValue() + "\"",
 										iou.getEnd().next());
+		} else
+			return false;
+	}
+	
+	private boolean whileLoop() throws SyntaxError {
+		if(word("if") || word("until")) {
+			Token iou = getLastToken();
+			if(expression()) {
+				ExpressionNode cond = getLastExpression();
+				if(iou.getValue().equals("until"))
+					cond = new NotNode(cond);
+				if(block()) {
+					BlockNode block = (BlockNode)stack.pop();
+					stack.push(new WhileLoopNode(cond,block));
+					return true;
+				} else
+					throw new SyntaxError("No block inside while loop",iou.getStart());
+			} else
+				throw new SyntaxError("No expression after \"" + iou.getValue() + "\"",
+										iou.getEnd());
 		} else
 			return false;
 	}
@@ -978,8 +1000,15 @@ public class Parser {
 	
 	private boolean block() throws SyntaxError {
 		ArrayList<SyntaxNode> lines = new ArrayList<SyntaxNode>();
-		while(statement() || expression())
-			lines.add(stack.pop());
+		while(true) {
+			int depthBefore = stack.size();
+			if(expression() || statement()) {
+				lines.add(stack.pop());
+				if(stack.size() != depthBefore)
+					throw new SyntaxError("Invalid syntax",tokens.peek().getStart());
+			} else
+				break;
+		}
 		if(lines.isEmpty())
 			return false;
 		stack.push(new BlockNode(lines));
