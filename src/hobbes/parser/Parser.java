@@ -45,8 +45,9 @@ public class Parser {
 			}
 			
 //			try {
-//				t.addLine(new SourceLine("import foo{bar},",1));
+//				t.addLine(new SourceLine("\"",1));
 //				System.out.println(p.parse(t.getTokens()));
+//				System.out.println(t.getTokens());
 //			} catch (SyntaxError e) {
 //				System.err.println(e.getMessage());
 //				System.err.println(e.getLocation().show());
