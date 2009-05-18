@@ -318,6 +318,26 @@ public class Parser {
 			return false;
 	}
 
+	private boolean whileLoop() throws SyntaxError {
+		if(word("while") || word("until")) {
+			Token iou = getLastToken();
+			if(expression()) {
+				ExpressionNode cond = getLastExpression();
+				if(iou.getValue().equals("until"))
+					cond = new NotNode(cond);
+				if(block()) {
+					BlockNode block = (BlockNode)stack.pop();
+					stack.push(new WhileLoopNode(cond,block));
+					return true;
+				} else
+					throw new SyntaxError("No block inside while loop",iou.getStart());
+			} else
+				throw new SyntaxError("No expression after \"" + iou.getValue() + "\"",
+										iou.getEnd());
+		} else
+			return false;
+	}
+
 	private boolean expression() throws SyntaxError {
 		return inlineIfStatement() || parenthesizedExpression() || ifStatement();
 	}
@@ -356,26 +376,6 @@ public class Parser {
 			} else
 				throw new SyntaxError("No condition after \"" + iou.getValue() + "\"",
 										iou.getEnd().next());
-		} else
-			return false;
-	}
-	
-	private boolean whileLoop() throws SyntaxError {
-		if(word("if") || word("until")) {
-			Token iou = getLastToken();
-			if(expression()) {
-				ExpressionNode cond = getLastExpression();
-				if(iou.getValue().equals("until"))
-					cond = new NotNode(cond);
-				if(block()) {
-					BlockNode block = (BlockNode)stack.pop();
-					stack.push(new WhileLoopNode(cond,block));
-					return true;
-				} else
-					throw new SyntaxError("No block inside while loop",iou.getStart());
-			} else
-				throw new SyntaxError("No expression after \"" + iou.getValue() + "\"",
-										iou.getEnd());
 		} else
 			return false;
 	}
