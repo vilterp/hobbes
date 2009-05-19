@@ -7,5 +7,5 @@ public enum TokenType {
 	STRING,
 	CHAR,
 	REGEX,
-	TAB
+	EOL
 }

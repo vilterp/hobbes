@@ -45,9 +45,10 @@ public class Parser {
 			}
 			
 //			try {
-//				t.addLine(new SourceLine("\"",1));
+//				t.addLine(new SourceLine("while a < 10 {",1));
+//				t.addLine(new SourceLine("  a = a +1",2));
+//				t.addLine(new SourceLine("}",3));
 //				System.out.println(p.parse(t.getTokens()));
-//				System.out.println(t.getTokens());
 //			} catch (SyntaxError e) {
 //				System.err.println(e.getMessage());
 //				System.err.println(e.getLocation().show());
@@ -90,19 +91,20 @@ public class Parser {
 	
 	private Stack<SyntaxNode> stack;
 	private LinkedList<Token> tokens;
+	private int tabDepth;
 	
 	public Parser() {
 		stack = new Stack<SyntaxNode>();
 		tokens = new LinkedList<Token>();
+		tabDepth = 0;
 	}
 	
-	public SyntaxNode parse(ArrayList<Token> tokenList) throws SyntaxError {
+	public SyntaxNode parse(LinkedList<Token> tokenList) throws SyntaxError {
 		if(tokenList.isEmpty())
 			return null;
-		Token firstToken = tokenList.get(0);
-		for(Token t: tokenList)
-			tokens.add(t);
-		if(statement() || expression()) {
+		Token firstToken = tokenList.getFirst();
+		tokens = tokenList;
+		if(blockItem()) {
 			if(tokens.isEmpty() && stack.size() == 1)
 				return stack.pop();
 			else
@@ -118,30 +120,32 @@ public class Parser {
 		tokens.clear();
 	}
 	
-	private boolean statement() throws SyntaxError {
-		return instanceVarAssignment() || assignment() ||
-				deletionStatement() || importStatement() || returnStatement() ||
-				pass() || whileLoop();
-	}
-
-	private boolean instanceVarAssignment() throws SyntaxError {
-		if(tokenAhead(TokenType.SYMBOL,"=") && instanceVar()) {
-			InstanceVarNode var = (InstanceVarNode)stack.pop();
-			if(symbol("=")) {
-				Token equals = getLastToken();
-				if(expression()) {
-					ExpressionNode expr = getLastExpression();
-					stack.push(new AssignmentNode(var,expr));
-					return true;
-				} else
-					throw new SyntaxError("No object after =",
-											equals.getEnd());
-			} else {
-				tokens.addFirst(var.getOrigin());
-				return false;
+	private boolean blockItem() throws SyntaxError {
+		if(statement()) {
+			if(eol())
+				return true;
+			else {
+				Token unexpected = tokens.peek();
+				throw new SyntaxError("Expected end of line, found \""
+										+ unexpected.getValue() + "\"",
+										unexpected.getStart());
 			}
-		} else
-			return false;
+		}
+		if(whileLoop())
+			return true;
+		// TODO: for, try..catch, etc
+		if(expression()) {
+			if(eol())
+				return true;
+			else {
+			}
+		}
+		return false;
+	}
+	
+	private boolean statement() throws SyntaxError {
+		return assignment() || deletionStatement() || importStatement() ||
+				returnStatement() || whileLoop();
 	}
 
 	private boolean assignment() throws SyntaxError {
@@ -151,18 +155,14 @@ public class Parser {
 				Token equals = getLastToken();
 				if(expression()) {
 					ExpressionNode rightExpr = getLastExpression();
-					if(leftObj instanceof VariableNode) {
+					if(leftObj instanceof VarNode) {
 						stack.push(new AssignmentNode(
-											(VariableNode)leftObj,rightExpr));
+											(VarNode)leftObj,rightExpr));
 						return true;
 					}
 					// make sure it's assignable
 					if(leftObj instanceof AtomNode)
 						throw new SyntaxError("Can't assign to an atom",
-												equals.getStart());
-					if(leftObj instanceof GenericNode)
-						throw new SyntaxError("Can't assign to a generic class, " +
-												"only the actual class variable",
 												equals.getStart());
 					if(leftObj instanceof FunctionCallNode)
 						throw new SyntaxError("Can't assign to the result of a " +
@@ -217,10 +217,6 @@ public class Parser {
 					throw new SyntaxError("Can't delete the result " +
 											"of a function call",
 											delWord.getEnd());
-				else if(delObj instanceof GenericNode)
-					throw new SyntaxError("Can't delete a generic class, " +
-											"only the actual class variable",
-											delWord.getEnd().next());
 				else { // it's a MethodCallNode
 					MethodCallNode obj = (MethodCallNode)delObj;
 					if(obj.getMethodName().equals("[]")) {
@@ -330,9 +326,11 @@ public class Parser {
 					stack.push(new WhileLoopNode(cond,block));
 					return true;
 				} else
-					throw new SyntaxError("No block inside while loop",iou.getStart());
+					throw new SyntaxError("No block inside while loop",
+											iou.getStart());
 			} else
-				throw new SyntaxError("No expression after \"" + iou.getValue() + "\"",
+				throw new SyntaxError("No expression after \""
+										+ iou.getValue() + "\"",
 										iou.getEnd());
 		} else
 			return false;
@@ -376,15 +374,6 @@ public class Parser {
 			} else
 				throw new SyntaxError("No condition after \"" + iou.getValue() + "\"",
 										iou.getEnd().next());
-		} else
-			return false;
-	}
-	
-	private boolean pass() {
-		if(word("pass")) {
-			stack.pop();
-			stack.push(new PassNode());
-			return true;
 		} else
 			return false;
 	}
@@ -610,8 +599,6 @@ public class Parser {
 				continue;
 			else if(subscript())
 				continue;
-			else if(genericSpec())
-				continue;
 			else
 				break;
 		}
@@ -710,36 +697,6 @@ public class Parser {
 				} else
 					throw new SyntaxError("Missing comma",
 											tokens.peek().getStart());
-			}
-		} else
-			return false;
-	}
-	
-	private boolean genericSpec() throws SyntaxError {
-		if(symbol("<")) {
-			Token opener = getLastToken();
-			if(symbol(">"))
-				throw new SyntaxError("Nothing inside <>'s",
-										opener.getEnd());
-			ExpressionNode object = getLastExpression();
-			ArrayList<ObjectNode> generics = new ArrayList<ObjectNode>();
-			while(true) {
-				if(object())
-					generics.add((ObjectNode)stack.pop());
-				if(symbol(",")) {
-					if(symbol(","))
-						throw getSyntaxError("Double comma");
-					else if(symbol(">")) {
-						stack.pop();
-						throw getSyntaxError("Trailing comma");
-					} else
-						stack.pop();
-				} else if(symbol(">")) {
-					stack.pop();
-					stack.push(new GenericNode(object,generics));
-					return true;
-				} else
-					throw new SyntaxError("Missing comma",tokens.peek().getStart());
 			}
 		} else
 			return false;
@@ -981,38 +938,52 @@ public class Parser {
 		if(!argsSpec("|","|"))
 			return false;
 		args = (ArgsSpecNode)stack.pop();
-		ObjectNode returnType = null;
-		if(classSpec())
-			returnType = (ObjectNode)stack.pop();
-		if(!symbol("{"))
-			throw new SyntaxError("no block after anonymous function " +
-									"argument specification",
+		if(block()) {
+			BlockNode funcBlock = (BlockNode)stack.pop();
+			stack.push(new AnonymousFunctionNode(args,funcBlock));
+			return true;
+		} else
+			throw new SyntaxError("No block after anonymous function header",
 									args.getClosingToken().getEnd());
-		else
-			stack.pop();
-		block();
-		BlockNode funcBlock = (BlockNode)stack.pop();
-		symbol("}");
-		stack.pop();
-		stack.push(new AnonymousFunctionNode(args,returnType,funcBlock));
-		return true;
 	}
 	
 	private boolean block() throws SyntaxError {
-		ArrayList<SyntaxNode> lines = new ArrayList<SyntaxNode>();
-		while(true) {
-			int depthBefore = stack.size();
-			if(expression() || statement()) {
-				lines.add(stack.pop());
-				if(stack.size() != depthBefore)
-					throw new SyntaxError("Invalid syntax",tokens.peek().getStart());
-			} else
-				break;
-		}
-		if(lines.isEmpty())
+		if(!symbol("{"))
 			return false;
-		stack.push(new BlockNode(lines));
-		return true;
+		else
+			stack.pop();
+		ArrayList<SyntaxNode> lines = new ArrayList<SyntaxNode>();
+		if(eol()) {
+			while(true) {
+				if(blockItem()) {
+					lines.add(stack.pop());
+				} else
+					break;
+			}
+			if(symbol("}")) {
+				stack.pop();
+				stack.push(new BlockNode(lines));
+				return true;
+			} else {
+				Token theUnexpected = tokens.peek();
+				throw new SyntaxError("Expected }, found "
+										+ theUnexpected.getValue(),
+										theUnexpected.getStart());
+			}
+		} else {
+			if(blockItem())
+				lines.add(stack.pop());
+			if(symbol("}")) {
+				stack.pop();
+				stack.push(new BlockNode(lines));
+				return true;
+			} else {
+				Token theUnexpected = tokens.peek();
+				throw new SyntaxError("Expected }, found "
+										+ theUnexpected.getValue(),
+										theUnexpected.getStart());
+			}
+		}
 	}
 	
 	private boolean argsSpec(String open, String close) throws SyntaxError {
@@ -1167,6 +1138,14 @@ public class Parser {
 		else
 			return false;
 	}
+	
+	private boolean eol() {
+		if(token(TokenType.EOL)) {
+			stack.pop();
+			return true;
+		} else
+			return false;
+	}
 
 	private boolean symbol(String value) {
 		return token(TokenType.SYMBOL,value);
@@ -1195,6 +1174,13 @@ public class Parser {
 			if(t.getType() == type && value.equals(t.getValue()))
 				return true;
 		return false;
+	}
+	
+	private Token getNext(TokenType type, String value) {
+		for(Token t: tokens)
+			if(t.getType() == type && value.equals(t.getValue()))
+				return t;
+		return null;
 	}
 	
 	private boolean token(TokenType type, String value) {

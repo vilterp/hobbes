@@ -3,6 +3,7 @@ package hobbes.parser;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Stack;
 import java.util.Scanner;
 
@@ -22,7 +23,7 @@ public class Tokenizer {
 			try {
 				t.addLine(new SourceLine(s.nextLine(),lineNo));
 				if(t.isReady()) {
-					ArrayList<Token> tokens = t.getTokens();
+					LinkedList<Token> tokens = t.getTokens();
 					System.out.println(tokens);
 //					for(Token token: tokens)
 //						System.out.println(token.getSourceSpan().show());
@@ -75,42 +76,20 @@ public class Tokenizer {
 		pairs.put("|", "|");
 	}
 	
-	private final static HashSet<String> blockStartWords = new HashSet<String>();
-	static {
-		blockStartWords.add("class");
-		blockStartWords.add("trait");
-		blockStartWords.add("def");
-		blockStartWords.add("if");
-		blockStartWords.add("unless");
-		blockStartWords.add("else");
-		blockStartWords.add("elif");
-		blockStartWords.add("for");
-		blockStartWords.add("while");
-		blockStartWords.add("until");
-		blockStartWords.add("try");
-		blockStartWords.add("catch");
-		blockStartWords.add("match");
-		blockStartWords.add("case");
-	}
-	
 	private SourceLine line;
 	private String code;
-	private ArrayList<Token> tokens;
+	private LinkedList<Token> tokens;
 	private StringBuilder buffer;
 	private Stack<Token> depth;
-	private int tabDepth;
-	private boolean startingaBlock;
 	private SourceLocation pos;
 	private SourceLocation startPos;
 	
 	public Tokenizer() {
 		line = null;
 		code = "";
-		tokens = new ArrayList<Token>();
+		tokens = new LinkedList<Token>();
 		buffer = new StringBuilder();
 		depth = new Stack<Token>();
-		tabDepth = 0;
-		startingaBlock = false;
 		pos = startPos = null;
 	}
 	
@@ -118,8 +97,6 @@ public class Tokenizer {
 		tokens.clear();
 		depth.clear();
 		buffer = new StringBuilder();
-		tabDepth = 0;
-		startingaBlock = false;
 		pos = startPos = null;
 	}
 
@@ -127,17 +104,13 @@ public class Tokenizer {
 		code = l.getCode();
 		line = l;
 		pos = new SourceLocation(line,0);
-		if(isReady() || getLastOpener().equals("\\"))
+		if(isReady())
 			startPos = pos;
 		tokenize();
-		if(startingaBlock) {
-			tabDepth++;
-			startingaBlock = false;
-		}
 	}
 	
 	public boolean isReady() {
-		return depth.isEmpty() || (depth.peek().getValue() == "\\");
+		return depth.isEmpty();
 	}
 	
 	public String getLastOpener() {
@@ -155,9 +128,9 @@ public class Tokenizer {
 			return pairs.get(getLastOpener());
 	}
 	
-	public ArrayList<Token> getTokens() {
+	public LinkedList<Token> getTokens() {
 		if(isReady()) {
-			ArrayList<Token> temp = (ArrayList<Token>)tokens.clone();
+			LinkedList<Token> temp = (LinkedList<Token>)tokens.clone();
 			reset();
 			return temp;
 		} else
@@ -173,13 +146,6 @@ public class Tokenizer {
 		if(!moreCode()) {
 			if("\"".equals(getLastOpener()))
 				buffer.append("\n");
-			else {
-				while(!depth.isEmpty() &&
-						depth.peek().getType() == TokenType.WORD) {
-					depth.pop();
-					tabDepth--;
-				}
-			}
 			return;
 		}
 		while(moreCode()) {
@@ -193,78 +159,52 @@ public class Tokenizer {
 			} else
 				getToken();
 		}
+		tokens.add(new Token("",TokenType.EOL,new SourceSpan(pos,pos)));
 	}
 	
 	private void getToken() throws SyntaxError {
-		if(peek() == '\\') {
+		if(peek() == '#')
+			code = "";
+		else if(peek() == ' ' || peek() == '\t') {
+			advance();
+			startPos = pos;
+		} else if(Character.isLetter(peek()) || peek() == '_' || peek() == '@')
+				getWord();
+		else if(peek() == '"') {
 			read();
-			depth.push(makeToken(TokenType.SYMBOL));
-			if(moreCode())
-				throw getUnexpectedTokenError(depth.pop());
-		} else {
-			if(peek() == '#')
-				code = "";
-			else if(peek() == '\t') {
-				throw new SyntaxError("Use 2 or 4 spaces instead of tabs",pos);
-			} else if(peek() == ' ') {
-				if(moreCode(4) && peek(1) == ' ' && peek(2) == ' ' && peek(3) == ' ') {
-					read();
-					read();
-					read();
-					read();
-					getTab();
-				} else if(moreCode(2) && peek(1) == ' ') {
-					read();
-					read();
-					getTab();
-				} else {
-					advance();
-					advanceStart();
-				}
-			} else {
-				if(tabsInFront() < tabDepth)
-					tabDepth--;
-				if(Character.isLetter(peek()) || peek() == '_' || peek() == '@')
-					getWord();
-				else if(peek() == '"') {
-					read();
-					Token startingQuote = makeToken(TokenType.SYMBOL);
-					depth.push(startingQuote);
-					startPos = startingQuote.getStart();
-					getString();
-				} else if(peek() == '\'') {
-					advance();
-					getChar();
-				} else if(Character.isDigit(peek()))
-					getNumber();
-				else if(peek() == '.') {
-					if(peek(1) != null && Character.isDigit(peek(1))) {
-						// .5
-						read();
-						getNumber();
-					} else
-						getSymbol();
-				} else if(peek() == '/') {
-					Token lastToken = lastToken();
-					if(lastToken != null &&
-						(lastToken.getType() == TokenType.NUMBER || 
-						 lastToken.getType() == TokenType.WORD ||
-						 (lastToken.getType() == TokenType.SYMBOL &&
-							lastToken.getValue().equals(")"))))
-						getSymbol();
-					else {
-						read();
-						Token openingSlash = makeToken(TokenType.SYMBOL);
-						depth.push(openingSlash);
-						startPos = openingSlash.getStart();
-						getRegex();
-					}
-				} else
-					getSymbol();
-				if(!isReady() && getLastOpener().equals("\\"))
-					depth.pop();
+			Token startingQuote = makeToken(TokenType.SYMBOL);
+			depth.push(startingQuote);
+			startPos = startingQuote.getStart();
+			getString();
+		} else if(peek() == '\'') {
+			advance();
+			getChar();
+		} else if(Character.isDigit(peek()))
+			getNumber();
+		else if(peek() == '.') {
+			if(peek(1) != null && Character.isDigit(peek(1))) {
+				// .5
+				read();
+				getNumber();
+			} else
+				getSymbol();
+		} else if(peek() == '/') {
+			Token lastToken = lastToken();
+			if(lastToken != null &&
+				(lastToken.getType() == TokenType.NUMBER || 
+				 lastToken.getType() == TokenType.WORD ||
+				 (lastToken.getType() == TokenType.SYMBOL &&
+					lastToken.getValue().equals(")"))))
+				getSymbol();
+			else {
+				read();
+				Token openingSlash = makeToken(TokenType.SYMBOL);
+				depth.push(openingSlash);
+				startPos = openingSlash.getStart();
+				getRegex();
 			}
-		}
+		} else
+			getSymbol();
 	}
 
 	private void getString() throws SyntaxError {
@@ -388,10 +328,6 @@ public class Tokenizer {
 		if(moreCode() && (peek() == '?' || peek() == '!'))
 			read();
 		Token word = makeToken(TokenType.WORD);
-		if(!startingaBlock && blockStartWords.contains(word.getValue())) {
-			depth.push(word);
-			startingaBlock = true;
-		}
 		tokens.add(word);
 	}
 	
@@ -439,20 +375,6 @@ public class Tokenizer {
 				throw getMismatchError(symbol,pairs.get(getLastOpener()));
 		}
 		tokens.add(symbol);
-	}
-	
-	private void getTab() throws SyntaxError {
-		Token tab = makeToken(TokenType.TAB);
-		if(tabsInFront() > tabDepth)
-			throw new SyntaxError("Too many tabs",tab.getStart());
-	}
-	
-	private int tabsInFront() {
-		int ans = 0;
-		for(Token t: tokens)
-			if(t.getType() == TokenType.TAB)
-				ans++;
-		return ans;
 	}
 	
 	private Character peek() {

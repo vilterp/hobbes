@@ -13,8 +13,7 @@ public class Token {
 	}
 	
 	public String toString() {
-		return "["+ (type == TokenType.TAB ? "" : sanitizedValue() + ":")
-				+ type + "@" + location + "]";
+		return "["+ sanitizedValue() + ":" + type + "@" + location + "]";
 	}
 	
 	public String sanitizedValue() {
