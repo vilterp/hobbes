@@ -91,12 +91,10 @@ public class Parser {
 	
 	private Stack<SyntaxNode> stack;
 	private LinkedList<Token> tokens;
-	private int tabDepth;
 	
 	public Parser() {
 		stack = new Stack<SyntaxNode>();
 		tokens = new LinkedList<Token>();
-		tabDepth = 0;
 	}
 	
 	public SyntaxNode parse(LinkedList<Token> tokenList) throws SyntaxError {
@@ -277,7 +275,8 @@ public class Parser {
 							stack.push(new ImportNode(path,names));
 							return true;
 						} else
-							throw new SyntaxError("Missing comma",tokens.peek().getStart());
+							throw new SyntaxError("Missing comma",
+													tokens.peek().getStart());
 					}
 				}
 				if(symbol(".")) {
@@ -372,7 +371,8 @@ public class Parser {
 					throw new SyntaxError("No block inside if statement",
 											iou.getStart());
 			} else
-				throw new SyntaxError("No condition after \"" + iou.getValue() + "\"",
+				throw new SyntaxError("No condition after \""
+										+ iou.getValue() + "\"",
 										iou.getEnd().next());
 		} else
 			return false;
@@ -1085,15 +1085,6 @@ public class Parser {
 										equals.getStart());
 		}
 	}
-
-	private boolean className() {
-		if(wordWithPattern(classNamePattern)) {
-			Token classNameToken = getLastToken();
-			stack.push(new InstanceVarNode(classNameToken));
-			return true;
-		} else
-			return false;
-	}
 	
 	private boolean testOp() {
 		if(symbol("=="))
@@ -1174,13 +1165,6 @@ public class Parser {
 			if(t.getType() == type && value.equals(t.getValue()))
 				return true;
 		return false;
-	}
-	
-	private Token getNext(TokenType type, String value) {
-		for(Token t: tokens)
-			if(t.getType() == type && value.equals(t.getValue()))
-				return t;
-		return null;
 	}
 	
 	private boolean token(TokenType type, String value) {
