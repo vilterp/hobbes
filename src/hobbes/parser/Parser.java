@@ -124,7 +124,8 @@ public class Parser {
 	}
 	
 	private boolean blockItem() throws SyntaxError {
-		if(statement() || expression() || forLoop() || whileLoop()) {
+		if(statement() || expression() || forLoop() || whileLoop() ||
+				methodDef() || classDef()) {
 			if(eol())
 				return true;
 			else
@@ -409,6 +410,69 @@ public class Parser {
 				throw new SyntaxError("No condition after \""
 										+ iou.getValue() + "\"",
 										iou.getEnd().next());
+		} else
+			return false;
+	}
+	
+	private boolean methodDef() throws SyntaxError {
+		if(word("def")) {
+			Token defWord = getLastToken();
+			if(variable()) {
+				Token name = ((VariableNode)stack.pop()).getOrigin();
+				ArgsSpecNode args = null;
+				if(argsSpec("(",")"))
+					args = (ArgsSpecNode)stack.pop();
+				if(block()) {
+					BlockNode block = (BlockNode)stack.pop();
+					stack.push(new MethodDefNode(name,args,block));
+					return true;
+				} else
+					throw new SyntaxError("No block after method heading",
+							defWord.getSourceSpan().getEnd().getLine().getEnd());
+			} else
+				throw new SyntaxError("No method name after \"def\"",
+										defWord.getEnd().next());
+		} else
+			return false;
+	}
+	
+	private boolean classDef() throws SyntaxError {
+		if(word("class")) {
+			Token classWord = getLastToken();
+			if(wordWithPattern(classNamePattern)) {
+				Token name = getLastToken();
+				ArgsSpecNode args = null;
+				if(argsSpec("(",")"))
+					args = (ArgsSpecNode)stack.pop();
+				ObjectNode superclass = null;
+				if(superclassDef())
+					superclass = (ObjectNode)stack.pop();
+				BlockNode block = null;
+				if(block())
+					block = (BlockNode)stack.pop();
+				stack.push(new ClassNode(name,args,superclass,block));
+				return true;
+			} else
+				throw new SyntaxError("No class name after \"class\"",
+										classWord.getEnd().next());
+		} else
+			return false;
+	}
+	
+	private boolean superclassDef() throws SyntaxError {
+		if(symbol("[")) {
+			Token opener = getLastToken();
+			if(object()) {
+				if(symbol("]")) {
+					stack.pop();
+					return true;
+				} else
+					throw new SyntaxError("Expected ], found "
+											+ tokens.peek().getValue(),
+											tokens.peek().getStart());
+			} else
+				throw new SyntaxError("No class expression after [",
+										opener.getStart());
 		} else
 			return false;
 	}
