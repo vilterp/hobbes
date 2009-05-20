@@ -1,7 +1,5 @@
 package hobbes.ast;
 
-import hobbes.parser.Token;
-
 public class IfStatementNode implements ExpressionNode {
 	
 	private ExpressionNode condition;

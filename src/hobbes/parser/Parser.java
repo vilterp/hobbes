@@ -46,7 +46,11 @@ public class Parser {
 			}
 			
 //			try {
-//				t.addLine(new SourceLine("[] = 2",1));
+//				t.addLine(new SourceLine("try {",1));
+//				t.addLine(new SourceLine("  print(bla)",2));
+//				t.addLine(new SourceLine("} catch {",3));
+//				t.addLine(new SourceLine("  print(\"whoops!\")",4));
+//				t.addLine(new SourceLine("}",5));
 //				LinkedList<Token> tokens = t.getTokens();
 //				System.out.println(p.parse(tokens));
 //			} catch (SyntaxError e) {
@@ -120,7 +124,7 @@ public class Parser {
 	
 	private boolean blockItem() throws SyntaxError {
 		if(statement() || expression() || forLoop() || whileLoop() ||
-				methodDef() || classDef()) {
+				methodDef() || classDef() || tryCatch()) {
 			if(eol())
 				return true;
 			else
@@ -366,27 +370,6 @@ public class Parser {
 			return false;
 	}
 
-	private boolean expression() throws SyntaxError {
-		return inlineIfStatement() || parenthesizedExpression() || ifStatement();
-	}
-
-	private boolean parenthesizedExpression() throws SyntaxError {
-		if(symbol("("))
-			stack.pop();
-		else
-			return false;
-		if(symbol(")"))
-			throw getSyntaxError("nothing inside ()'s");
-		if(!expression())
-			throw getSyntaxError("No expression after (");
-		if(symbol(")")) {
-			stack.pop();
-			return true;
-		} else
-			throw new SyntaxError("Expected ), found " + tokens.peek().getValue(),
-									tokens.peek().getStart());
-	}
-	
 	private boolean ifStatement() throws SyntaxError {
 		if(word("if") || word("unless")) {
 			getIf(getLastToken());
@@ -423,33 +406,12 @@ public class Parser {
 				}
 			} else
 				throw new SyntaxError("No block inside if statement",
-										startWord.getStart());
+										startWord.getSourceSpan().getEnd()
+										.getLine().getEnd().next());
 		} else
 			throw new SyntaxError("No condition after \""
 									+ startWord.getValue() + "\"",
 									startWord.getEnd().next());
-	}
-	
-	private boolean methodDef() throws SyntaxError {
-		if(word("def")) {
-			Token defWord = getLastToken();
-			if(variable()) {
-				Token name = ((VariableNode)stack.pop()).getOrigin();
-				ArgsSpecNode args = null;
-				if(argsSpec("(",")"))
-					args = (ArgsSpecNode)stack.pop();
-				if(block()) {
-					BlockNode block = (BlockNode)stack.pop();
-					stack.push(new MethodDefNode(name,args,block));
-					return true;
-				} else
-					throw new SyntaxError("No block after method heading",
-							defWord.getSourceSpan().getEnd().getLine().getEnd());
-			} else
-				throw new SyntaxError("No method name after \"def\"",
-										defWord.getEnd().next());
-		} else
-			return false;
 	}
 	
 	private boolean classDef() throws SyntaxError {
@@ -475,6 +437,29 @@ public class Parser {
 		} else
 			return false;
 	}
+
+	private boolean methodDef() throws SyntaxError {
+		if(word("def")) {
+			Token defWord = getLastToken();
+			if(variable()) {
+				Token name = ((VariableNode)stack.pop()).getOrigin();
+				ArgsSpecNode args = null;
+				if(argsSpec("(",")"))
+					args = (ArgsSpecNode)stack.pop();
+				if(block()) {
+					BlockNode block = (BlockNode)stack.pop();
+					stack.push(new MethodDefNode(name,args,block));
+					return true;
+				} else
+					throw new SyntaxError("No block after method heading",
+											defWord.getSourceSpan().getEnd()
+											.getLine().getEnd().next());
+			} else
+				throw new SyntaxError("No method name after \"def\"",
+										defWord.getEnd().next());
+		} else
+			return false;
+	}
 	
 	private boolean superclassDef() throws SyntaxError {
 		if(symbol("[")) {
@@ -494,6 +479,68 @@ public class Parser {
 			return false;
 	}
 	
+	private boolean tryCatch() throws SyntaxError {
+		if(word("try")) {
+			Token tryWord = getLastToken();
+			if(block()) {
+				BlockNode tryBlock = (BlockNode)stack.pop();
+				ArrayList<CatchNode> catches = new ArrayList<CatchNode>();
+				while(word("catch")) {
+					Token catchWord = getLastToken();
+					if(variable()) {
+						ObjectNode exceptionClass = (ObjectNode)stack.pop();
+						if(block()) {
+							BlockNode catchBlock = (BlockNode)stack.pop();
+							catches.add(new CatchNode(exceptionClass,catchBlock));
+						} else
+							throw new SyntaxError("No block after \"catch\"",
+											catchWord.getSourceSpan().getEnd()
+											.getLine().getEnd().next());
+					} else
+						throw new SyntaxError("Catch what? " +
+												"(Use \"finally\" to catch everything)",
+												catchWord.getEnd().next());
+				}
+				BlockNode finallyBlock = null;
+				if(word("finally")) {
+					Token finallyWord = getLastToken();
+					if(block())
+						finallyBlock = (BlockNode)stack.pop();
+					else
+						throw new SyntaxError("No block after \"finally\"",
+												finallyWord.getEnd().next());
+				}
+				stack.push(new TryNode(tryBlock,catches,finallyBlock));
+				return true;
+			} else
+				throw new SyntaxError("No block after \"try\"",
+										tryWord.getSourceSpan().getEnd()
+										.getLine().getEnd().next());
+		} else
+			return false;
+	}
+	
+	private boolean expression() throws SyntaxError {
+		return inlineIfStatement() || parenthesizedExpression() || ifStatement();
+	}
+
+	private boolean parenthesizedExpression() throws SyntaxError {
+		if(symbol("("))
+			stack.pop();
+		else
+			return false;
+		if(symbol(")"))
+			throw getSyntaxError("nothing inside ()'s");
+		if(!expression())
+			throw getSyntaxError("No expression after (");
+		if(symbol(")")) {
+			stack.pop();
+			return true;
+		} else
+			throw new SyntaxError("Expected ), found " + tokens.peek().getValue(),
+									tokens.peek().getStart());
+	}
+
 	private boolean inlineIfStatement() throws SyntaxError {
 		if(!or())
 			if(!parenthesizedExpression())
