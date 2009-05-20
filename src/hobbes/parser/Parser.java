@@ -73,6 +73,8 @@ public class Parser {
 		reservedWords.add("until");
 		reservedWords.add("for");
 		reservedWords.add("if");
+		reservedWords.add("else");
+		reservedWords.add("elif");
 		reservedWords.add("match");
 		reservedWords.add("case");
 		reservedWords.add("try");
@@ -387,24 +389,45 @@ public class Parser {
 	
 	private boolean ifStatement() throws SyntaxError {
 		if(word("if") || word("unless")) {
-			Token iou = getLastToken();
-			if(expression()) {
-				ExpressionNode cond = getLastExpression();
-				if(iou.getValue().equals("unless"))
-					cond = new NotNode(cond);
-				if(block()) {
-					BlockNode block = (BlockNode)stack.pop();
-					stack.push(new IfStatementNode(cond,block));
-					return true;
-				} else
-					throw new SyntaxError("No block inside if statement",
-											iou.getStart());
-			} else
-				throw new SyntaxError("No condition after \""
-										+ iou.getValue() + "\"",
-										iou.getEnd().next());
+			getIf(getLastToken());
+			return true;
 		} else
 			return false;
+	}
+	
+	private boolean getIf(Token startWord) throws SyntaxError {
+		if(expression()) {
+			ExpressionNode cond = getLastExpression();
+			if(startWord.getValue().equals("unless"))
+				cond = new NotNode(cond);
+			if(block()) {
+				BlockNode block = (BlockNode)stack.pop();
+				if(word("else")) {
+					Token elseWord = getLastToken();
+					if(block()) {
+						BlockNode elseBlock = (BlockNode)stack.pop();
+						stack.push(new IfStatementNode(cond,block,elseBlock));
+						return true;
+					} else
+						throw new SyntaxError("No block after \"else\"",
+												elseWord.getEnd().next());
+				} else if(word("elif")) {
+					Token elifWord = getLastToken();
+					getIf(elifWord);
+					BlockNode elseBlock = new BlockNode((IfStatementNode)stack.pop());
+					stack.push(new IfStatementNode(cond,block,elseBlock));
+					return true;
+				} else {
+					stack.push(new IfStatementNode(cond,block));
+					return true;
+				}
+			} else
+				throw new SyntaxError("No block inside if statement",
+										startWord.getStart());
+		} else
+			throw new SyntaxError("No condition after \""
+									+ startWord.getValue() + "\"",
+									startWord.getEnd().next());
 	}
 	
 	private boolean methodDef() throws SyntaxError {

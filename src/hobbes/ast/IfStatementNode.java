@@ -21,10 +21,9 @@ public class IfStatementNode implements ExpressionNode {
 	}
 	
 	public String toString() {
-		String ans = "if(" + condition + "," + theIf;
-		if(theElse != null) ans += "," + theElse;
-		ans += ")";
-		return ans;
+		return "if(" + condition + "," + theIf
+		+ "," + (theElse == null ? "" : theElse)
+		+ ")";
 	}
 	
 }
