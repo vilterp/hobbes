@@ -730,8 +730,8 @@ public class Parser {
 			dot = getLastToken();
 		// get attribute name
 		Token attr = null;
-		if(wordWithPattern(variablePattern)) {
-			attr = getLastToken();
+		if(variable()) {
+			attr = ((VariableNode)stack.pop()).getOrigin();
 		} else
 			throw new SyntaxError("no attribute name after \".\"",dot.getEnd());
 		if(!symbol("(")) {
