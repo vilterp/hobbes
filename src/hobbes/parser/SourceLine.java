@@ -29,4 +29,8 @@ public class SourceLine {
 		return lineNo;
 	}
 	
+	public SourceLocation getEnd() {
+		return new SourceLocation(this,code.length()-1);
+	}
+	
 }

@@ -6,12 +6,10 @@ public class ArgSpecNode implements SyntaxNode {
 	
 	private ArgType type;
 	private Token name;
-	private ObjectNode typeSpec;
 	private AtomNode defaultValue;
 	
-	public ArgSpecNode(Token n, ArgType t, ObjectNode ts, AtomNode d) {
+	public ArgSpecNode(Token n, ArgType t, AtomNode d) {
 		name = n;
-		typeSpec = ts;
 		defaultValue = d;
 		type = t;
 	}
@@ -23,15 +21,9 @@ public class ArgSpecNode implements SyntaxNode {
 		else if(type == ArgType.SPLAT)
 			ans += "*";
 		ans += name.getValue();
-		if(classNameSpecified())
-			ans += ":" + typeSpec;
 		if(defaultSpecified())
 			ans += "=" + defaultValue;
 		return ans;
-	}
-	
-	private boolean classNameSpecified() {
-		return typeSpec != null;
 	}
 	
 	private boolean defaultSpecified() {

@@ -4,20 +4,17 @@ import hobbes.parser.Token;
 
 public class IfStatementNode implements ExpressionNode {
 	
-	private Token ifOrUnless;
 	private ExpressionNode condition;
 	private BlockNode theIf;
 	private BlockNode theElse;
 	
-	public IfStatementNode(Token iou, ExpressionNode c, BlockNode i) {
-		ifOrUnless = iou;
+	public IfStatementNode(ExpressionNode c, BlockNode i) {
 		condition = c;
 		theIf = i;
 		theElse = null;
 	}
 	
-	public IfStatementNode(Token iou, ExpressionNode c, BlockNode i, BlockNode e) {
-		ifOrUnless = iou;
+	public IfStatementNode(ExpressionNode c, BlockNode i, BlockNode e) {
 		condition = c;
 		theIf = i;
 		theElse = e;
