@@ -157,7 +157,7 @@ public class Tokenizer {
 			} else
 				getToken();
 		}
-		if(isReady())
+		if(isReady() || getLastOpener().equals("{"))
 			tokens.add(new Token("",TokenType.EOL,new SourceSpan(pos,pos)));
 	}
 	
