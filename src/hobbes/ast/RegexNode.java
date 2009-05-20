@@ -11,7 +11,14 @@ public class RegexNode implements AtomNode {
 	}
 	
 	public String toString() {
-		return "/" + origin.getValue() + "/";
+		return "/" + sanitizedValue() + "/";
+	}
+	
+	public String sanitizedValue() {
+		return origin.getValue()
+				.replaceAll("\n", "\\\\n")
+				.replaceAll("\t", "\\\\t")
+				.replaceAll("\"", "\\\"");
 	}
 	
 }

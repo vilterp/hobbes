@@ -40,4 +40,9 @@ public class Token {
 		return location.getEnd();
 	}
 	
+	public Token mergeWith(Token other) {
+		return new Token(value + other.getValue(),type,
+							new SourceSpan(location.getStart(),other.getEnd()));
+	}
+	
 }

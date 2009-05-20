@@ -20,9 +20,9 @@ public class ClassNode implements SyntaxNode {
 		return "class "
 				+ name.getValue()
 				+ "("
-				+ "(" + args + ")" + ","
+				+ "(" + (args == null ? "" : args) + ")" + ","
 				+ (superclass == null ? "" : "[" + superclass + "]") + ","
-				+ body
+				+ (body == null ? "" : body)
 				+ ")";
 	}
 	

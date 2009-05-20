@@ -13,44 +13,42 @@ public class Tokenizer {
 		Tokenizer t = new Tokenizer();
 		Scanner s = new Scanner(System.in);
 		
-		int lineNo = 1;
-		while(true) {
-			System.out.print(lineNo + ":");
-			if(t.isReady())
-				System.out.print(">> ");
-			else
-				System.out.print(t.getLastOpener()+"> ");
-			try {
-				t.addLine(new SourceLine(s.nextLine(),lineNo));
-				if(t.isReady()) {
-					LinkedList<Token> tokens = t.getTokens();
-					System.out.println(tokens);
-//					for(Token token: tokens)
-//						System.out.println(token.getSourceSpan().show());
-				}
-			} catch(SyntaxError e) {
-				t.reset();
-				System.err.println(e.getMessage());
-				System.err.println(e.getLocation().show());
-			}
-			lineNo++;
-		}
-		
-//		try {
-//			t.addLine(new SourceLine("if something",1));
-//			t.addLine(new SourceLine("  something",1));
-//			t.addLine(new SourceLine("",1));
-//		} catch (SyntaxError e) {
-//			System.err.println(e.getMessage());
-//			System.err.println(e.getLocation().show());
+//		int lineNo = 1;
+//		while(true) {
+//			System.out.print(lineNo + ":");
+//			if(t.isReady())
+//				System.out.print(">> ");
+//			else
+//				System.out.print(t.getLastOpener()+"> ");
+//			try {
+//				t.addLine(new SourceLine(s.nextLine(),lineNo));
+//				if(t.isReady()) {
+//					LinkedList<Token> tokens = t.getTokens();
+//					System.out.println(tokens);
+////					for(Token token: tokens)
+////						System.out.println(token.getSourceSpan().show());
+//				}
+//			} catch(SyntaxError e) {
+//				t.reset();
+//				System.err.println(e.getMessage());
+//				System.err.println(e.getLocation().show());
+//			}
+//			lineNo++;
 //		}
-//		if(t.isReady()) {
-//			ArrayList<Token> tokens = t.getTokens();
-//			System.out.println(tokens);
-//			for(Token token: tokens)
-//				System.out.println(token.getSourceSpan().show());
-//		} else
-//			System.out.println("waiting to close "+t.getLastOpener());
+		
+		try {
+			t.addLine(new SourceLine("def /(a)",1));
+		} catch (SyntaxError e) {
+			System.err.println(e.getMessage());
+			System.err.println(e.getLocation().show());
+		}
+		if(t.isReady()) {
+			LinkedList<Token> tokens = t.getTokens();
+			System.out.println(tokens);
+			for(Token token: tokens)
+				System.out.println(token.getSourceSpan().show());
+		} else
+			System.out.println("waiting to close "+t.getLastOpener());
 		
 	}
 	
@@ -144,7 +142,7 @@ public class Tokenizer {
 	
 	private void tokenize() throws SyntaxError {
 		if(!moreCode()) {
-			if("\"".equals(getLastOpener()))
+			if("\"".equals(getLastOpener()) || "/".equals(getLastOpener()))
 				buffer.append("\n");
 			return;
 		}
@@ -159,7 +157,8 @@ public class Tokenizer {
 			} else
 				getToken();
 		}
-		tokens.add(new Token("",TokenType.EOL,new SourceSpan(pos,pos)));
+		if(isReady())
+			tokens.add(new Token("",TokenType.EOL,new SourceSpan(pos,pos)));
 	}
 	
 	private void getToken() throws SyntaxError {
@@ -191,7 +190,7 @@ public class Tokenizer {
 		} else if(peek() == '/') {
 			Token lastToken = lastToken();
 			if(lastToken != null &&
-				(lastToken.getType() == TokenType.NUMBER || 
+				(lastToken.getType() == TokenType.NUMBER ||
 				 lastToken.getType() == TokenType.WORD ||
 				 (lastToken.getType() == TokenType.SYMBOL &&
 					lastToken.getValue().equals(")"))))
