@@ -2,7 +2,7 @@ package hobbes.ast;
 
 import java.util.ArrayList;
 
-public class FunctionCallNode implements ObjectNode {
+public class FunctionCallNode implements FunctionNode {
 	
 	private ExpressionNode function;
 	private ArrayList<ArgNode> args;

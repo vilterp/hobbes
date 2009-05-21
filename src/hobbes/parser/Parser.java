@@ -725,7 +725,6 @@ public class Parser {
 	private boolean negative() throws SyntaxError {
 		if(symbol("-")) {
 			Token negative = getLastToken();
-			stack.pop();
 			if(exponent() || parenthesizedExpression()) {
 				stack.push(new NegativeNode(getLastExpression()));
 				return true;

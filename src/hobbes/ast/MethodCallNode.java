@@ -4,7 +4,7 @@ import hobbes.parser.Token;
 
 import java.util.ArrayList;
 
-public class MethodCallNode implements ObjectNode {
+public class MethodCallNode implements FunctionNode {
 	
 	private ExpressionNode receiver;
 	private Token origin;

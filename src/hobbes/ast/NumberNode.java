@@ -18,7 +18,11 @@ public class NumberNode implements AtomNode {
 	}
 	
 	public String toString() {
-		return ((negative != null) ? "-" : "") + origin.getValue();
+		return origin.getValue();
+	}
+	
+	public String getValue() {
+		return origin.getValue();
 	}
 	
 }

@@ -6,14 +6,19 @@ public class SourceLine {
 	private int lineNo;
 	private String filePath;
 	
-	public SourceLine(String c, int line) {
+	public SourceLine(String c, int line, String file) {
 		code = c;
 		lineNo = line;
-		filePath = null;
+		filePath = file;
 	}
 	
 	public String toString() {
-		return "SourceLine[" + lineNo + ":" + code + "@" + hashCode() +"]";
+		return "SourceLine["
+				+ filePath + ":"
+				+ lineNo + ":"
+				+ code + "@"
+				+ hashCode()
+				+"]";
 	}
 	
 	public boolean equals(SourceLine other) {
