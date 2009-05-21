@@ -15,7 +15,7 @@ public class TimeTester {
 			long start = System.currentTimeMillis();
 			for(int trial=0; trial < NUM_TRIALS; trial++) {
 				try {
-					t.addLine(new SourceLine(example,1));
+					t.addLine(new SourceLine(example,1,"<console>"));
 					SyntaxNode tree = p.parse(t.getTokens());
 				} catch (SyntaxError e) {
 					System.err.println(e.getMessage());

@@ -33,7 +33,7 @@ public class Parser {
 					System.out.println();
 				}
 				try {
-					t.addLine(new SourceLine(line,lineNo));
+					t.addLine(new SourceLine(line,lineNo,"<console>"));
 					if(t.isReady() && t.numTokens() > 0)
 						System.out.println(p.parse(t.getTokens()));
 				} catch (SyntaxError e) {

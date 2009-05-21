@@ -37,7 +37,7 @@ public class Tokenizer {
 //		}
 		
 		try {
-			t.addLine(new SourceLine("     def /(a)",1));
+			t.addLine(new SourceLine("     def /(a)",1,"<console>"));
 		} catch (SyntaxError e) {
 			System.err.println(e.getMessage());
 			System.err.println(e.getLocation().show());
