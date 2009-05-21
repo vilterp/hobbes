@@ -21,7 +21,7 @@ public class Token {
 	}
 	
 	public String getValue() {
-		return value;
+		return (type == TokenType.EOL ? "[EOL]" : value);
 	}
 	
 	public TokenType getType() {

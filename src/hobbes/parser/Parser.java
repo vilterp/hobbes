@@ -37,7 +37,9 @@ public class Parser {
 					if(t.isReady() && t.numTokens() > 0)
 						System.out.println(p.parse(t.getTokens()));
 				} catch (SyntaxError e) {
-					System.err.println(e.getMessage());
+					System.err.println("line "
+										+ e.getLocation().getLine().getLineNo() + ": " 
+										+ e.getMessage());
 					System.err.println(e.getLocation().show());
 					p.reset();
 					t.reset();
@@ -46,12 +48,11 @@ public class Parser {
 			}
 			
 //			try {
-//				t.addLine(new SourceLine("try {",1));
-//				t.addLine(new SourceLine("  print(bla)",2));
-//				t.addLine(new SourceLine("} catch {",3));
-//				t.addLine(new SourceLine("  print(\"whoops!\")",4));
-//				t.addLine(new SourceLine("}",5));
+//				t.addLine(new SourceLine("5.times(||{",1));
+//				t.addLine(new SourceLine("  print(\"odelay!\")",2));
+//				t.addLine(new SourceLine("})",3));
 //				LinkedList<Token> tokens = t.getTokens();
+//				System.out.println(tokens);
 //				System.out.println(p.parse(tokens));
 //			} catch (SyntaxError e) {
 //				System.err.println(e.getMessage());
@@ -108,8 +109,9 @@ public class Parser {
 				if(stack.size() == 1)
 					return stack.pop();
 				else
-					throw new SyntaxError("Parser error: stack not empty: " + stack,
-											tokens.peek().getStart());
+					throw new SyntaxError("Parser error: " + stack.size()
+											+ " items on stack: " + stack,
+											firstToken.getStart());
 			} else
 				throw new SyntaxError("Unexpected \"" + tokens.peek().getValue() + "\"",
 										tokens.peek().getStart());
@@ -137,7 +139,7 @@ public class Parser {
 	
 	private boolean statement() throws SyntaxError {
 		return assignment() || deletionStatement() || importStatement() ||
-				returnStatement();
+				returnStatement() || globalStatement();
 	}
 
 	private boolean assignment() throws SyntaxError {
@@ -280,7 +282,7 @@ public class Parser {
 						throw getSyntaxError("Trailing dot");
 					else
 						stack.pop();
-				} else if(tokens.isEmpty()) {
+				} else if(tokens.peek().getType() == TokenType.EOL) {
 					if(path.isEmpty())
 						throw new SyntaxError("No name after \"import\"",
 												importWord.getEnd().next());
@@ -303,6 +305,19 @@ public class Parser {
 			} else
 				throw new SyntaxError("No expression after \"return\"",
 										returnWord.getEnd().next());
+		} else
+			return false;
+	}
+	
+	private boolean globalStatement() throws SyntaxError {
+		if(word("global")) {
+			Token globalWord = getLastToken();
+			if(variable()) {
+				stack.push(new GlobalNode((VariableNode)stack.pop()));
+				return true;
+			} else
+				throw new SyntaxError("No variable name after \"global\"",
+										globalWord.getEnd().next());
 		} else
 			return false;
 	}
@@ -686,8 +701,8 @@ public class Parser {
 				makeOperation();
 				return true;
 			} else
-				throw new SyntaxError("No expression after "+getLastToken().getValue(),
-									  	getLastToken().getEnd());
+				throw new SyntaxError("No expression after "+lastToken().getValue(),
+									  	lastToken().getEnd());
 		} else
 			return true;
 	}
@@ -701,8 +716,8 @@ public class Parser {
 				makeOperation();
 				return true;
 			} else
-				throw new SyntaxError("No expression after "+getLastToken().getValue(),
-									  	getLastToken().getEnd());
+				throw new SyntaxError("No expression after "+lastToken().getValue(),
+									  	lastToken().getEnd());
 		} else
 			return true;
 	}
@@ -793,50 +808,49 @@ public class Parser {
 	
 	private boolean methodCall() throws SyntaxError {
 		// get dot
-		Token dot = null;
-		if(!symbol("."))
-			return false;
-		else
-			dot = getLastToken();
-		// get attribute name
-		Token attr = null;
-		if(variable()) {
-			attr = ((VariableNode)stack.pop()).getOrigin();
-		} else
-			throw new SyntaxError("no attribute name after \".\"",dot.getEnd());
-		if(!symbol("(")) {
-			stack.push(new MethodCallNode(getLastExpression(),attr));
-			return true;
-		} else
-			stack.pop();
-		destroyEOLsUntil(")");
-		ArrayList<ArgNode> args = new ArrayList<ArgNode>();
-		if(symbol(")")) {
-			stack.pop();
-			stack.push(new MethodCallNode(getLastExpression(),attr,args));
-			return true;
-		}
-		while(true) {
-			if(argument())
-				args.add((ArgNode)stack.pop());
-			if(symbol(",")) {
-				if(symbol(","))
-					throw getSyntaxError("Double comma");
-				else if(symbol(")")) {
+		if(symbol(".")) {
+			Token dot = getLastToken();
+			// get attribute name
+			if(variable()) {
+				Token attr = ((VariableNode)stack.pop()).getOrigin();
+				if(symbol("(")) {
 					stack.pop();
-					throw getSyntaxError("Trailing comma");
-				} else
-					stack.pop();
-			} else {
-				if(symbol(")")) {
-					stack.pop();
-					stack.push(new MethodCallNode(getLastExpression(),attr,args));
+					destroyEOLsUntil(")");
+					ArrayList<ArgNode> args = new ArrayList<ArgNode>();
+					if(symbol(")")) {
+						stack.pop();
+						stack.push(new MethodCallNode(getLastExpression(),attr,args));
+						return true;
+					}
+					while(true) {
+						if(argument())
+							args.add((ArgNode)stack.pop());
+						if(symbol(",")) {
+							if(symbol(","))
+								throw getSyntaxError("Double comma");
+							else if(symbol(")")) {
+								stack.pop();
+								throw getSyntaxError("Trailing comma");
+							} else
+								stack.pop();
+						} else {
+							if(symbol(")")) {
+								stack.pop();
+								stack.push(new MethodCallNode(getLastExpression(),attr,args));
+								return true;
+							} else
+								throw new SyntaxError("Missing comma",
+														tokens.peek().getStart());
+						}
+					}
+				} else {
+					stack.push(new MethodCallNode(getLastExpression(),attr));
 					return true;
-				} else
-					throw new SyntaxError("Missing comma",
-											tokens.peek().getStart());
-			}
-		}
+				}
+			} else
+				throw new SyntaxError("no attribute name after \".\"",dot.getEnd());
+		} else
+			return false;
 	}
 	
 	private boolean functionCall() throws SyntaxError {
@@ -1163,7 +1177,7 @@ public class Parser {
 										theUnexpected.getStart());
 			}
 		} else {
-			if(expression() || statement())
+			if(statement() || expression())
 				lines.add(stack.pop());
 			if(symbol("}")) {
 				stack.pop();
@@ -1351,9 +1365,15 @@ public class Parser {
 	}
 	
 	private boolean tokenAhead(TokenType type, String value) {
-		for(Token t: tokens)
-			if(t.getType() == type && value.equals(t.getValue()))
+		int depth = 0;
+		for(Token t: tokens) {
+			if(depth == 0 && t.getType() == type && value.equals(t.getValue()))
 				return true;
+			if(t.getType() == TokenType.SYMBOL && t.getValue().equals("{"))
+				depth++;
+			else if(t.getType() == TokenType.SYMBOL && t.getValue().equals("}"))
+				depth--;
+		}
 		return false;
 	}
 	
@@ -1382,6 +1402,10 @@ public class Parser {
 		return ((TempNode)stack.pop()).getToken();
 	}
 	
+	private Token lastToken() {
+		return ((TempNode)stack.peek()).getToken();
+	}
+	
 	private ExpressionNode getLastExpression() {
 		return (ExpressionNode)stack.pop();
 	}
@@ -1406,12 +1430,19 @@ public class Parser {
 	
 	private void destroyEOLsUntil(String val) {
 		Iterator<Token> it = tokens.iterator();
+		int depth = 0;
 		while(it.hasNext()) {
 			Token t = it.next();
-			if(t.getType() == TokenType.SYMBOL && t.getValue().equals(val))
+			if(depth == 0 && t.getType() == TokenType.SYMBOL &&
+					t.getValue().equals(val))
 				return;
-			else if(t.getType() == TokenType.EOL)
+			else if(depth == 0 && 
+					t.getType() == TokenType.EOL)
 				it.remove();
+			else if(t.getType() == TokenType.SYMBOL && t.getValue().equals("{"))
+				depth++;
+			else if(t.getType() == TokenType.SYMBOL && t.getValue().equals("}"))
+				depth--;
 		}
 	}
 	
