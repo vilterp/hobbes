@@ -7,7 +7,7 @@ import java.util.HashMap;
 public class HbObject {
 	
 	protected HashMap<String,Integer> instanceVars;
-	protected HashMap<String,HbMethod> methods;
+	protected HashMap<String,Integer> methods;
 	protected ObjectSpace objSpace;
 	protected int id;
 	
@@ -17,7 +17,7 @@ public class HbObject {
 		id = objSpace.add(this);
 		// initialize stuff
 		instanceVars = new HashMap<String,Integer>();
-		methods = new HashMap<String,HbMethod>();
+		methods = new HashMap<String,Integer>();
 	}
 	
 	public HbInt id() {

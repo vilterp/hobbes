@@ -139,7 +139,7 @@ public class Parser {
 	
 	private boolean statement() throws SyntaxError {
 		return assignment() || deletionStatement() || importStatement() ||
-				returnStatement() || globalStatement();
+				returnStatement() || globalStatement() || raiseStatement();
 	}
 
 	private boolean assignment() throws SyntaxError {
@@ -305,6 +305,19 @@ public class Parser {
 			} else
 				throw new SyntaxError("No expression after \"return\"",
 										returnWord.getEnd().next());
+		} else
+			return false;
+	}
+	
+	private boolean raiseStatement() throws SyntaxError {
+		if(word("raise")) {
+			Token raiseWord = getLastToken();
+			if(expression()) {
+				stack.push(new RaiseNode((ExpressionNode)stack.pop()));
+				return true;
+			} else
+				throw new SyntaxError("No expression after \"raise\"",
+										raiseWord.getEnd().next());
 		} else
 			return false;
 	}
