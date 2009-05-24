@@ -14,4 +14,12 @@ public class AssignmentNode implements StatementNode {
 		return "=(" + var + "," + expr + ")";
 	}
 	
+	public VariableNode getVar() {
+		return var;
+	}
+	
+	public ExpressionNode getExpr() {
+		return expr;
+	}
+	
 }

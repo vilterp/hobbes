@@ -24,7 +24,7 @@ public class FunctionFrame extends ExecutionFrame implements ShowableFrame {
 	}
 	
 	public String show() {
-		return "  at " + name
+		return "  in " + name
 				+ "(" + loc.getLine().getFileName()
 				+ ":" + loc.getLine().getLineNo() + ")\n"
 				+ loc.show();

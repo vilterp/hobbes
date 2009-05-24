@@ -1,11 +1,12 @@
 package hobbes.core;
 
+import java.util.HashMap;
 import java.util.Scanner;
 import java.util.Stack;
 
 import hobbes.ast.*;
-import hobbes.core.builtins.*;
 import hobbes.parser.*;
+import hobbes.values.*;
 
 public class Interpreter {
 	
@@ -29,51 +30,83 @@ public class Interpreter {
 				t.addLine(new SourceLine(s.nextLine(),lineNo,fileName));
 				tree = p.parse(t.getTokens());
 			} catch(SyntaxError e) {
-				HbSyntaxError error = i.convertSyntaxError(e);
+				HbError error = i.convertSyntaxError(e);
 				error.addFrame((ModuleFrame)i.getCurrentFrame());
 				error.printStackTrace();
 				t.reset();
 				p.reset();
 			}
-			System.out.println(i.interpret(tree).toString());
+			HbValue result = i.interpret(tree);
+			if(result != null)
+				System.out.println("=> " + result.show());
 		}
 		
 	}
 	
-	private ObjectSpace objSpace;
 	private ExecutionFrame frame;
+	private HashMap<String,HbValue> variables;
 	
 	public Interpreter(String fileName) {
-		objSpace = new ObjectSpace();
 		frame = new ModuleFrame(fileName);
-	}
-	
-	public HbObject interpret(SyntaxNode tree) {
-		try {
-			// Scala's pattern matching would shine here...
-			if(tree instanceof AtomNode) {
-				if(tree instanceof NumberNode) {
-					try {
-						return new HbInt(objSpace,Integer.parseInt(((NumberNode)tree).getValue()));
-					} catch(NumberFormatException e) {
-						System.err.println("only integers for now");
-					}
-				} else if(tree instanceof VariableNode) {
-					return objSpace.get(((VariableNode)tree).getValue());
-				}
-			}
-		} catch(HbError e) {
-			
-		}
-		return null;
+		variables = new HashMap<String,HbValue>();
 	}
 	
 	public ExecutionFrame getCurrentFrame() {
 		return frame;
 	}
 	
-	public HbSyntaxError convertSyntaxError(SyntaxError t) {
-		return new HbSyntaxError(objSpace, t.getLocation(), t.getMessage());
+	public HbError convertSyntaxError(SyntaxError t) {
+		return new HbError("Syntax Error",t.getMessage(),t.getLocation());
+	}
+	
+	public HbValue interpret(SyntaxNode tree) {
+		try {
+			return exec(tree);
+		} catch(HbError e) {
+			// ... pop frames, etc
+		}
+	}
+	
+	public HbValue exec(SyntaxNode tree) throws HbError {
+		if(tree instanceof ExpressionNode) {
+			return evaluate((ExpressionNode)tree);
+		} else if(tree instanceof DeletionNode) {
+			delete(((DeletionNode)tree).getVarName());
+			return null;
+		} else if(tree instanceof AssignmentNode) {
+			AssignmentNode a = (AssignmentNode)tree;
+			assign(a.getVar().getValue(),evaluate(a.getExpr()));
+			return null;
+		} else
+			return null;
+	}
+	
+	public HbValue evaluate(ExpressionNode tree) throws HbError {
+		if(tree instanceof NumberNode) {
+			try {
+				return new HbInt(Integer.parseInt(((NumberNode)tree).getValue()));
+			} catch(NumberFormatException e) {
+				System.err.println("Only integers for the time being");
+			}
+		} else if(tree instanceof VariableNode) {
+			String varName = ((VariableNode)tree).getValue();
+			HbValue result = variables.get(varName);
+			if(result != null)
+				return result;
+			else
+				throw new HbError("Name Error",
+									"name \"" + varName + "\" isn't defined",
+									((VariableNode)tree).getOrigin().getStart());
+		}
+		return null;
+	}
+	
+	public void delete(String varName) {
+		variables.remove(varName);
+	}
+	
+	public void assign(String var, HbValue val) {
+		variables.put(var, val);
 	}
 	
 }
