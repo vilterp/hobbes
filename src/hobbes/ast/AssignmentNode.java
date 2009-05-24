@@ -2,10 +2,10 @@ package hobbes.ast;
 
 public class AssignmentNode implements StatementNode {
 	
-	private VarNode var;
+	private VariableNode var;
 	private ExpressionNode expr;
 	
-	public AssignmentNode(VarNode v, ExpressionNode e) {
+	public AssignmentNode(VariableNode v, ExpressionNode e) {
 		var = v;
 		expr = e;
 	}

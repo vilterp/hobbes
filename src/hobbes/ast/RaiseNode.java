@@ -2,14 +2,23 @@ package hobbes.ast;
 
 public class RaiseNode implements StatementNode {
 	
-	private ExpressionNode exception;
+	private StringNode errorName;
+	private ExpressionNode errorDesc;
 	
-	public RaiseNode(ExpressionNode e) {
-		exception = e;
+	public RaiseNode(StringNode n, ExpressionNode d) {
+		errorName = n;
+		errorDesc = d;
+	}
+	
+	public RaiseNode(StringNode n) {
+		errorName = n;
+		errorDesc = null;
 	}
 	
 	public String toString() {
-		return "raise(" + exception + ")";
+		return "raise(" + errorName
+				+ (errorDesc == null ? "" : "," + errorDesc)
+				+ ")";
 	}
 	
 }

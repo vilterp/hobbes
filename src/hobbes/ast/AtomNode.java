@@ -1,5 +1,5 @@
 package hobbes.ast;
 
-public interface AtomNode extends ObjectNode {
+public interface AtomNode extends ExpressionNode {
 	
 }

@@ -4,13 +4,13 @@ import hobbes.parser.SourceLocation;
 
 import java.util.ArrayList;
 
-public class FunctionCallNode implements FunctionNode {
+public class FunctionCallNode implements AtomNode {
 	
 	private ExpressionNode function;
-	private ArrayList<ArgNode> args;
+	private ArrayList<ExpressionNode> args;
 	private SourceLocation parenLoc; // to provide a location, for tracebacks
 	
-	public FunctionCallNode(ExpressionNode f, ArrayList<ArgNode> a, SourceLocation o) {
+	public FunctionCallNode(ExpressionNode f, ArrayList<ExpressionNode> a, SourceLocation o) {
 		function = f;
 		args = a;
 		parenLoc = o;

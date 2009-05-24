@@ -1,14 +1,16 @@
 package hobbes.ast;
 
+import java.util.ArrayList;
+
 import hobbes.parser.Token;
 
-public class MethodDefNode implements SyntaxNode {
+public class FunctionDefNode implements StatementNode {
 	
 	private Token name;
-	private ArgsSpecNode args;
+	private ArrayList<VariableNode> args;
 	private BlockNode block;
 	
-	public MethodDefNode(Token n, ArgsSpecNode a, BlockNode b) {
+	public FunctionDefNode(Token n, ArrayList<VariableNode> a, BlockNode b) {
 		name = n;
 		args = a;
 		block = b;

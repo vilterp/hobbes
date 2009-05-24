@@ -2,16 +2,16 @@ package hobbes.ast;
 
 public class CatchNode implements SyntaxNode {
 	
-	private ObjectNode exceptionClass;
+	private StringNode errorName;
 	private BlockNode block;
 	
-	public CatchNode(ObjectNode ec, BlockNode b) {
-		exceptionClass = ec;
+	public CatchNode(StringNode n, BlockNode b) {
+		errorName = n;
 		block = b;
 	}
 	
 	public String toString() {
-		return exceptionClass + "(" + block + ")";
+		return errorName + "(" + block + ")";
 	}
 	
 }

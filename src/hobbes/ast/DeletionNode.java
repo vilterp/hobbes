@@ -2,9 +2,9 @@ package hobbes.ast;
 
 public class DeletionNode implements StatementNode {
 	
-	private VarNode var;
+	private VariableNode var;
 	
-	public DeletionNode(VarNode v) {
+	public DeletionNode(VariableNode v) {
 		var = v;
 	}
 	

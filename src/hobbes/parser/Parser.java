@@ -64,8 +64,6 @@ public class Parser {
 
 	private static final Pattern variablePattern =
 					Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*(\\?|!)?");
-	private static final Pattern instanceVarPattern = 
-					Pattern.compile("@[a-zA-Z_][a-zA-Z0-9_]*");
 	private static final Pattern classNamePattern = 
 					Pattern.compile("[A-Z][a-zA-Z0-9]*");
 	private static final HashSet<String> reservedWords = new HashSet<String>();
@@ -126,7 +124,7 @@ public class Parser {
 	
 	private boolean blockItem() throws SyntaxError {
 		if(statement() || expression() || forLoop() || whileLoop() ||
-				methodDef() || classDef() || tryCatch()) {
+				functionDef() || tryCatch()) {
 			if(eol())
 				return true;
 			else
@@ -138,58 +136,25 @@ public class Parser {
 	}
 	
 	private boolean statement() throws SyntaxError {
-		return assignment() || deletionStatement() || importStatement() ||
-				returnStatement() || globalStatement() || raiseStatement();
+		return assignment() || deletionStatement() || returnStatement() ||
+				globalStatement() || raiseStatement();
 	}
 
 	private boolean assignment() throws SyntaxError {
-		if(tokenAhead(TokenType.SYMBOL,"=") && object()) {
-			ObjectNode leftObj = (ObjectNode)stack.pop();
+		if(variable()) {
+			VariableNode var = (VariableNode)stack.pop();
 			if(symbol("=")) {
 				Token equals = getLastToken();
 				if(expression()) {
-					ExpressionNode rightExpr = getLastExpression();
-					if(leftObj instanceof VarNode) {
-						stack.push(new AssignmentNode(
-											(VarNode)leftObj,rightExpr));
-						return true;
-					}
-					// make sure it's assignable
-					if(leftObj instanceof AtomNode)
-						throw new SyntaxError("Can't assign to an atom",
-												equals.getStart());
-					if(leftObj instanceof FunctionCallNode)
-						throw new SyntaxError("Can't assign to the result of a " +
-												"function call",
-												equals.getStart());
-					// ok, it's a method call
-					MethodCallNode left = (MethodCallNode)leftObj;
-					// foo[bar] = baz
-					if(left.getMethodName().equals("[]")) {
-						ArrayList<ArgNode> args = new ArrayList<ArgNode>();
-						args.add(left.getArgs().get(0));
-						args.add(new ArgNode(rightExpr,ArgType.NORMAL));
-						stack.push(new MethodCallNode(left.getReceiver(),
-														equals,"[]set",args));
-						return true;
-					} else if(left.hasArgs())
-						throw new SyntaxError("Can't assign to the result of " +
-												"a method with arguments",
-												equals.getStart());
-					else {
-						ArrayList<ArgNode> args  = new ArrayList<ArgNode>();
-						args.add(new ArgNode(
-								new StringNode(left.getOrigin()),ArgType.NORMAL));
-						args.add(new ArgNode(rightExpr,ArgType.NORMAL));
-						stack.push(new MethodCallNode(left.getReceiver(),
-														equals,"setattr",args));
-						return true;
-					}
+					ExpressionNode expr = getLastExpression();
+					stack.push(new AssignmentNode(var,expr));
+					return true;
 				} else
-					throw new SyntaxError("No object after =",
+					throw new SyntaxError("No expression after \"=\"",
 											equals.getEnd());
 			} else {
-				return true;
+				tokens.addFirst(var.getOrigin());
+				return false;
 			}
 		} else
 			return false;
@@ -198,100 +163,13 @@ public class Parser {
 	private boolean deletionStatement() throws SyntaxError {
 		if(word("del")) {
 			Token delWord = getLastToken();
-			if(object()) {
-				ObjectNode delObj = (ObjectNode)stack.pop();
-				if(delObj instanceof AtomNode) {
-					if(delObj instanceof VarNode) {
-						stack.push(new DeletionNode((VarNode)delObj));
-						return true;
-					} else
-						throw new SyntaxError("Can't delete an atom",
-												delWord.getEnd().next());
-				} else if(delObj instanceof FunctionCallNode)
-					throw new SyntaxError("Can't delete the result " +
-											"of a function call",
-											delWord.getEnd());
-				else { // it's a MethodCallNode
-					MethodCallNode obj = (MethodCallNode)delObj;
-					if(obj.getMethodName().equals("[]")) {
-						ArrayList<ArgNode> args = new ArrayList<ArgNode>();
-						args.add(obj.getArgs().get(0));
-						stack.push(new MethodCallNode(obj.getReceiver(),
-														delWord,"[]del",args));
-						return true;
-					} else if(obj.hasArgs())
-						throw new SyntaxError("Can't delete the result of " +
-												"a method call with arguments",
-												obj.getOrigin().getEnd());
-					else {
-						ArrayList<ArgNode> args = new ArrayList<ArgNode>();
-						args.add(new ArgNode(new StringNode(obj.getOrigin()),
-												ArgType.NORMAL));
-						stack.push(new MethodCallNode(obj.getReceiver(),
-														delWord,"delattr",args));
-						return true;
-					}
-				}
+			if(variable()) {
+				VariableNode var = (VariableNode)stack.pop();
+				stack.push(new DeletionNode(var));
+				return true;
 			} else
-				throw new SyntaxError("No object after \"del\"",
+				throw new SyntaxError("No variable after \"del\"",
 										delWord.getEnd());
-		} else
-			return false;
-	}
-
-	private boolean importStatement() throws SyntaxError {
-		if(word("import")) {
-			Token importWord = getLastToken();
-			ArrayList<VariableNode> path = new ArrayList<VariableNode>();
-			while(true) {
-				if(variable()) {
-					VariableNode var = (VariableNode)stack.pop();
-					path.add(var);
-					if(var.getValue().equals("_")) {
-						stack.push(new ImportNode(path));
-						return true;
-					}
-				} else if(symbol("{")) {
-					stack.pop();
-					if(symbol("}"))
-						throw getSyntaxError("Nothing inside {}s");
-					HashSet<VariableNode> names = new HashSet<VariableNode>();
-					while(true) {
-						if(variable())
-							names.add((VariableNode)stack.pop());
-						if(symbol(",")) {
-							if(symbol(","))
-								throw getSyntaxError("Double comma");
-							if(symbol(","))
-								throw getSyntaxError("Trailing comma");
-							else
-								stack.pop();
-						} else if(symbol("}")) {
-							stack.pop();
-							stack.push(new ImportNode(path,names));
-							return true;
-						} else
-							throw new SyntaxError("Missing comma",
-													tokens.peek().getStart());
-					}
-				}
-				if(symbol(".")) {
-					if(symbol("."))
-						throw getSyntaxError("Double dot");
-					else if(tokens.isEmpty())
-						throw getSyntaxError("Trailing dot");
-					else
-						stack.pop();
-				} else if(tokens.peek().getType() == TokenType.EOL) {
-					if(path.isEmpty())
-						throw new SyntaxError("No name after \"import\"",
-												importWord.getEnd().next());
-					stack.push(new ImportNode(path));
-					return true;
-				} else
-					throw new SyntaxError("Unexpected " + tokens.peek().getValue(),
-											tokens.peek().getStart());
-			}
 		} else
 			return false;
 	}
@@ -312,11 +190,23 @@ public class Parser {
 	private boolean raiseStatement() throws SyntaxError {
 		if(word("raise")) {
 			Token raiseWord = getLastToken();
-			if(expression()) {
-				stack.push(new RaiseNode((ExpressionNode)stack.pop()));
-				return true;
+			if(string()) {
+				StringNode errorName = (StringNode)stack.pop();
+				if(symbol(",")) {
+					Token comma = getLastToken();
+					if(expression()) {
+						ExpressionNode errorDesc = getLastExpression();
+						stack.push(new RaiseNode(errorName,errorDesc));
+						return true;
+					} else
+						throw new SyntaxError("No description \",\"",
+												comma.getEnd());
+				} else {
+					stack.push(new RaiseNode(errorName));
+					return true;
+				}
 			} else
-				throw new SyntaxError("No expression after \"raise\"",
+				throw new SyntaxError("No error name after \"raise\"",
 										raiseWord.getEnd().next());
 		} else
 			return false;
@@ -441,68 +331,46 @@ public class Parser {
 									+ startWord.getValue() + "\"",
 									startWord.getEnd().next());
 	}
-	
-	private boolean classDef() throws SyntaxError {
-		if(word("class")) {
-			Token classWord = getLastToken();
-			if(wordWithPattern(classNamePattern)) {
-				Token name = getLastToken();
-				ArgsSpecNode args = null;
-				if(argsSpec("(",")"))
-					args = (ArgsSpecNode)stack.pop();
-				ObjectNode superclass = null;
-				if(superclassDef())
-					superclass = (ObjectNode)stack.pop();
-				BlockNode block = null;
-				if(block())
-					block = (BlockNode)stack.pop();
-				stack.push(new ClassNode(name,args,superclass,block));
-				return true;
-			} else
-				throw new SyntaxError("No class name after \"class\" " +
-										"(must start with a capital letter)",
-										classWord.getEnd().next());
-		} else
-			return false;
-	}
 
-	private boolean methodDef() throws SyntaxError {
+	private boolean functionDef() throws SyntaxError {
 		if(word("def")) {
 			Token defWord = getLastToken();
+			// name
 			if(variable()) {
 				Token name = ((VariableNode)stack.pop()).getOrigin();
-				ArgsSpecNode args = null;
-				if(argsSpec("(",")"))
-					args = (ArgsSpecNode)stack.pop();
-				if(block()) {
-					BlockNode block = (BlockNode)stack.pop();
-					stack.push(new MethodDefNode(name,args,block));
-					return true;
+				// args spec
+				if(symbol("(")) {
+					stack.pop();
+					ArrayList<VariableNode> args = new ArrayList<VariableNode>();
+					while(true) {
+						if(variable())
+							args.add((VariableNode)stack.pop());
+						if(symbol(",")) {
+							if(symbol(","))
+								throw getSyntaxError("Double comma");
+							else if(symbol(")")) {
+								stack.pop();
+								throw getSyntaxError("Trailing comma");
+							} else
+								stack.pop();
+						} else if(symbol(")")) {
+							stack.pop();
+							if(block()) {
+								BlockNode block = (BlockNode)stack.pop();
+								stack.push(new FunctionDefNode(name,args,block));
+								return true;
+							} else
+								throw new SyntaxError("No block after method heading",
+														defWord.getSourceSpan().getEnd()
+														.getLine().getEnd().next());
+						}
+					}
 				} else
-					throw new SyntaxError("No block after method heading",
-											defWord.getSourceSpan().getEnd()
-											.getLine().getEnd().next());
+					throw new SyntaxError("No argument specification after method name",
+											name.getEnd().next());
 			} else
 				throw new SyntaxError("No method name after \"def\"",
 										defWord.getEnd().next());
-		} else
-			return false;
-	}
-	
-	private boolean superclassDef() throws SyntaxError {
-		if(symbol("[")) {
-			Token opener = getLastToken();
-			if(object()) {
-				if(symbol("]")) {
-					stack.pop();
-					return true;
-				} else
-					throw new SyntaxError("Expected ], found "
-											+ tokens.peek().getValue(),
-											tokens.peek().getStart());
-			} else
-				throw new SyntaxError("No class expression after [",
-										opener.getStart());
 		} else
 			return false;
 	}
@@ -515,11 +383,11 @@ public class Parser {
 				ArrayList<CatchNode> catches = new ArrayList<CatchNode>();
 				while(word("catch")) {
 					Token catchWord = getLastToken();
-					if(variable()) {
-						ObjectNode exceptionClass = (ObjectNode)stack.pop();
+					if(string()) {
+						StringNode errorName = (StringNode)stack.pop();
 						if(block()) {
 							BlockNode catchBlock = (BlockNode)stack.pop();
-							catches.add(new CatchNode(exceptionClass,catchBlock));
+							catches.add(new CatchNode(errorName,catchBlock));
 						} else
 							throw new SyntaxError("No block after \"catch\"",
 											catchWord.getSourceSpan().getEnd()
@@ -766,7 +634,7 @@ public class Parser {
 	}
 	
 	private boolean exponent() throws SyntaxError {
-		if(!object())
+		if(!atom())
 			if(!parenthesizedExpression())
 				return false;
 		if(powerOp()) {
@@ -779,173 +647,43 @@ public class Parser {
 			return true;
 	}
 	
-	private boolean object() throws SyntaxError {
-		if(!atom())
-			if(!parenthesizedExpression())
-				return false;
-		while(true) {
-			if(functionCall())
-				continue;
-			else if(methodCall())
-				continue;
-			else if(subscript())
-				continue;
-			else
-				break;
-		}
-		return true;
-	}
-	
-	private boolean subscript() throws SyntaxError {
-		Token opener = null;
-		if(!symbol("["))
-			return false;
-		else
-			opener = getLastToken();
-		if(expression()) {
-			if(symbol("]")) {
-				stack.pop();
-				ExpressionNode subscr = getLastExpression();
-				ExpressionNode obj = getLastExpression();
-				ArrayList<ArgNode> args = new ArrayList<ArgNode>();
-				args.add(new ArgNode(subscr,ArgType.NORMAL));
-				stack.push(new MethodCallNode(obj,opener,"[]",args));
-				return true;
-			} else
-				throw new SyntaxError("Only one expression should be in the []'s",
-										tokens.peek().getStart());
-		} else
-			throw new SyntaxError("No expression in []'s",opener.getEnd());
-	}
-	
-	private boolean methodCall() throws SyntaxError {
-		// get dot
-		if(symbol(".")) {
-			Token dot = getLastToken();
-			// get attribute name
-			if(variable()) {
-				Token attr = ((VariableNode)stack.pop()).getOrigin();
-				if(symbol("(")) {
-					stack.pop();
-					destroyEOLsUntil(")");
-					ArrayList<ArgNode> args = new ArrayList<ArgNode>();
-					if(symbol(")")) {
-						stack.pop();
-						stack.push(new MethodCallNode(getLastExpression(),attr,args));
-						return true;
-					}
-					while(true) {
-						if(argument())
-							args.add((ArgNode)stack.pop());
-						if(symbol(",")) {
-							if(symbol(","))
-								throw getSyntaxError("Double comma");
-							else if(symbol(")")) {
-								stack.pop();
-								throw getSyntaxError("Trailing comma");
-							} else
-								stack.pop();
-						} else {
-							if(symbol(")")) {
-								stack.pop();
-								stack.push(new MethodCallNode(getLastExpression(),attr,args));
-								return true;
-							} else
-								throw new SyntaxError("Missing comma",
-														tokens.peek().getStart());
-						}
-					}
-				} else {
-					stack.push(new MethodCallNode(getLastExpression(),attr));
-					return true;
-				}
-			} else
-				throw new SyntaxError("no attribute name after \".\"",dot.getEnd());
-		} else
-			return false;
-	}
-	
 	private boolean functionCall() throws SyntaxError {
-		if(symbol("(")) {
-			Token opener = getLastToken();
-			ExpressionNode function = getLastExpression();
-			destroyEOLsUntil(")");
-			ArrayList<ArgNode> args = new ArrayList<ArgNode>();
-			while(true) {
-				if(argument())
-					args.add((ArgNode)stack.pop());
-				if(symbol(",")) {
-					if(symbol(","))
-						throw getSyntaxError("Double comma");
-					if(symbol(")")) {
-						stack.pop();
-						throw getSyntaxError("Trailing comma");
-					} else
-						stack.pop();
-				} else if(symbol(")")) {
-					stack.pop();
-					stack.push(new FunctionCallNode(function,args,opener.getStart()));
-					return true;
-				} else
-					throw new SyntaxError("Missing comma",
-											tokens.peek().getStart());
-			}
-		} else
-			return false;
-	}
-
-	private boolean argument() throws SyntaxError {
-		// named arg
 		if(variable()) {
-			Token name = ((VariableNode)stack.pop()).getOrigin();
-			if(symbol("=")) {
-				Token equals = getLastToken();
-				if(expression()) {
-					ExpressionNode expr = getLastExpression();
-					stack.push(new ArgNode(name.getValue(),expr));
-					return true;
-				} else
-					throw new SyntaxError("No expression after \"=\"",
-											equals.getEnd());
-			} else
-				tokens.addFirst(name);
-		}
-		// *arg and **arg
-		if(symbol("*")) {
-			Token starOne = getLastToken();
-			if(symbol("*")) {
-				Token starTwo = getLastToken();
-				ArgType type = ArgType.KEYWORDS;
-				if(expression()) {
-					ExpressionNode expr = getLastExpression();
-					stack.push(new ArgNode(expr,type));
-					return true;
-				} else
-					throw new SyntaxError("No expression after \"**\"",
-											starTwo.getEnd());
+			VariableNode function = (VariableNode)stack.pop();
+			if(symbol("(")) {
+				Token opener = getLastToken();
+				destroyEOLsUntil(")");
+				ArrayList<ExpressionNode> args = new ArrayList<ExpressionNode>();
+				while(true) {
+					if(expression())
+						args.add(getLastExpression());
+					if(symbol(",")) {
+						if(symbol(","))
+							throw getSyntaxError("Double comma");
+						if(symbol(")")) {
+							stack.pop();
+							throw getSyntaxError("Trailing comma");
+						} else
+							stack.pop();
+					} else if(symbol(")")) {
+						stack.pop();
+						stack.push(new FunctionCallNode(function,args,opener.getStart()));
+						return true;
+					} else
+						throw new SyntaxError("Missing comma",
+												tokens.peek().getStart());
+				}
 			} else {
-				ArgType type = ArgType.SPLAT;
-				if(expression()) {
-					ExpressionNode expr = getLastExpression();
-					stack.push(new ArgNode(expr,type));
-					return true;
-				} else
-					throw new SyntaxError("No expression after \"*\"",
-											starOne.getEnd());
+				tokens.addFirst(function.getOrigin());
+				return false;
 			}
-		} else if(expression()) {
-			ArgType type = ArgType.NORMAL;
-			ExpressionNode expr = getLastExpression();
-			stack.push(new ArgNode(expr,type));
-			return true;
 		} else
 			return false;
 	}
 	
 	private boolean atom() throws SyntaxError {
-		return variable() || instanceVar() || number() || string() ||
-				regex() || list() || dictOrSet() || character() ||
-				anonymousFunction();
+		return functionCall() || variable() || number() || string() ||
+				regex() || list() || dictOrSet() || character();
 	}
 
 	private boolean variable() {
@@ -991,14 +729,6 @@ public class Parser {
 		if(token(TokenType.CHAR)) {
 			Token charToken = getLastToken();
 			stack.push(new CharNode(charToken));
-			return true;
-		} else
-			return false;
-	}
-
-	private boolean instanceVar() {
-		if(wordWithPattern(instanceVarPattern)) {
-			stack.push(new InstanceVarNode(getLastToken()));
 			return true;
 		} else
 			return false;
@@ -1150,20 +880,6 @@ public class Parser {
 		} else
 			return false;
 	}
-
-	private boolean anonymousFunction() throws SyntaxError {
-		ArgsSpecNode args = null;
-		if(!argsSpec("|","|"))
-			return false;
-		args = (ArgsSpecNode)stack.pop();
-		if(block()) {
-			BlockNode funcBlock = (BlockNode)stack.pop();
-			stack.push(new AnonymousFunctionNode(args,funcBlock));
-			return true;
-		} else
-			throw new SyntaxError("No block after anonymous function header",
-									args.getClosingToken().getEnd());
-	}
 	
 	private boolean block() throws SyntaxError {
 		if(!symbol("{"))
@@ -1201,90 +917,6 @@ public class Parser {
 										+ theUnexpected.getValue(),
 										theUnexpected.getStart());
 			}
-		}
-	}
-	
-	private boolean argsSpec(String open, String close) throws SyntaxError {
-		if(!symbol(open))
-			return false;
-		else
-			stack.pop();
-		boolean splatAlready = false;
-		boolean kwargsAlready = false;
-		ArrayList<ArgSpecNode> args = new ArrayList<ArgSpecNode>();
-		destroyEOLsUntil(close);
-		while(true) {
-			if(argSpec()) {
-				ArgSpecNode arg = (ArgSpecNode)stack.pop();
-				if(arg.getType() == ArgType.SPLAT) {
-					if(splatAlready)
-						throw new SyntaxError(
-								"There can only be one splat argument",
-								arg.getNameToken().getStart());								
-					else
-						splatAlready = true;
-				} else if(arg.getType() == ArgType.KEYWORDS) {
-					if(kwargsAlready)
-						throw new SyntaxError(
-								"There can only be one keyword argument",
-								arg.getNameToken().getStart());
-					else
-						kwargsAlready = true;
-				} else if(splatAlready)
-					throw new SyntaxError("There can't be normal " +
-											"arguments after splat arguments",
-											arg.getNameToken().getStart());
-				args.add(arg);
-			}
-			if(symbol(",")) {
-				if(symbol(","))
-					throw getSyntaxError("Double comma");
-				else if(symbol(close)) {
-					stack.pop();
-					throw getSyntaxError("Trailing comma");
-				} else
-					stack.pop();
-			} else if(symbol(close)) {
-				Token closingToken = getLastToken();
-				stack.push(new ArgsSpecNode(args,closingToken));
-				return true;
-			} else {
-				throw new SyntaxError("Missing comma",tokens.peek().getStart());
-			}
-		}
-	}
-	
-	private boolean argSpec() throws SyntaxError {
-		ArgType type = ArgType.NORMAL;
-		if(symbol("*")) {
-			stack.pop();
-			if(symbol("*")) {
-				stack.pop();
-				type = ArgType.KEYWORDS;
-			} else
-				type = ArgType.SPLAT;
-		}
-		if(variable()) {
-			Token argName = ((VariableNode)stack.pop()).getOrigin();
-			AtomNode defaultValue = null;
-			if(defaultSpec())
-				defaultValue = (AtomNode)stack.pop();
-			stack.push(new ArgSpecNode(argName,type,defaultValue));
-			return true;
-		} else
-			return false;
-	}
-	
-	private boolean defaultSpec() throws SyntaxError {
-		if(!symbol("="))
-			return false;
-		else {
-			Token equals = getLastToken();
-			if(atom())
-				return true;
-			else
-				throw new SyntaxError("no default value specified after =",
-										equals.getStart());
 		}
 	}
 	
@@ -1376,19 +1008,6 @@ public class Parser {
 		}
 	}
 	
-	private boolean tokenAhead(TokenType type, String value) {
-		int depth = 0;
-		for(Token t: tokens) {
-			if(depth == 0 && t.getType() == type && value.equals(t.getValue()))
-				return true;
-			if(t.getType() == TokenType.SYMBOL && t.getValue().equals("{"))
-				depth++;
-			else if(t.getType() == TokenType.SYMBOL && t.getValue().equals("}"))
-				depth--;
-		}
-		return false;
-	}
-	
 	private boolean token(TokenType type, String value) {
 		if(tokens.isEmpty())
 			return false;
@@ -1431,9 +1050,7 @@ public class Parser {
 	
 	private void makeOperation(ExpressionNode left, Token operator,
 									ExpressionNode right) {
-		ArrayList<ArgNode> args = new ArrayList<ArgNode>();
-		args.add(new ArgNode(right,ArgType.NORMAL));
-		stack.push(new MethodCallNode(left,operator,args));
+		stack.push(new OperationNode(left,operator,right));
 	}
 	
 	private SyntaxError getSyntaxError(String message) {
