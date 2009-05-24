@@ -1,9 +1,33 @@
 package hobbes.core;
 
-import hobbes.ast.FunctionNode;
+import hobbes.parser.SourceLocation;
 
-public class FunctionFrame implements ExecutionFrame {
+public class FunctionFrame extends ExecutionFrame implements ShowableFrame {
 	
-	private FunctionNode function;
+	public String name;
+	public SourceLocation loc;
+	public boolean isNative;
+	
+	public FunctionFrame(ExecutionFrame e, String na, SourceLocation p, boolean in) {
+		super(e);
+		name = na;
+		loc = p;
+		isNative = in;
+	}
+	
+	public SourceLocation getLoc() {
+		return loc;
+	}
+	
+	public boolean isNative() {
+		return isNative;
+	}
+	
+	public String show() {
+		return "  at " + name
+				+ "(" + loc.getLine().getFileName()
+				+ ":" + loc.getLine().getLineNo() + ")\n"
+				+ loc.show();
+	}
 	
 }

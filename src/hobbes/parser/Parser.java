@@ -867,7 +867,7 @@ public class Parser {
 	
 	private boolean functionCall() throws SyntaxError {
 		if(symbol("(")) {
-			stack.pop();
+			Token opener = getLastToken();
 			ExpressionNode function = getLastExpression();
 			destroyEOLsUntil(")");
 			ArrayList<ArgNode> args = new ArrayList<ArgNode>();
@@ -884,7 +884,7 @@ public class Parser {
 						stack.pop();
 				} else if(symbol(")")) {
 					stack.pop();
-					stack.push(new FunctionCallNode(function,args));
+					stack.push(new FunctionCallNode(function,args,opener.getStart()));
 					return true;
 				} else
 					throw new SyntaxError("Missing comma",

@@ -1,10 +1,11 @@
 package hobbes.core.builtins;
 
 import hobbes.core.ObjectSpace;
+import hobbes.core.NativeMethod;
 
 import java.util.HashMap;
 
-public class HbObject {
+public class HbObject extends Throwable {
 	
 	protected HashMap<String,Integer> instanceVars;
 	protected HashMap<String,Integer> methods;
@@ -20,6 +21,11 @@ public class HbObject {
 		methods = new HashMap<String,Integer>();
 	}
 	
+	public String getName() {
+		return "Object";
+	}
+	
+	@NativeMethod(name="id",numArgs=0)
 	public HbInt id() {
 		return new HbInt(objSpace,id);
 	}

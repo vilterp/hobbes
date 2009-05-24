@@ -4,17 +4,17 @@ public class SourceLine {
 	
 	private String code;
 	private int lineNo;
-	private String filePath;
+	private String fileName;
 	
 	public SourceLine(String c, int line, String file) {
 		code = c;
 		lineNo = line;
-		filePath = file;
+		fileName = file;
 	}
 	
 	public String toString() {
 		return "SourceLine["
-				+ filePath + ":"
+				+ fileName + ":"
 				+ lineNo + ":"
 				+ code + "@"
 				+ hashCode()
@@ -36,6 +36,10 @@ public class SourceLine {
 	
 	public SourceLocation getEnd() {
 		return new SourceLocation(this,code.length()-1);
+	}
+	
+	public String getFileName() {
+		return fileName;
 	}
 	
 }

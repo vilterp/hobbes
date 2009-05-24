@@ -8,12 +8,12 @@ public class ObjectSpace {
 	
 	private HashMap<String,Integer> variables;
 	private HashMap<Integer,ObjectRecord> objects;
-	private int latestId;
+	private int nextId;
 	
 	public ObjectSpace() {
 		variables = new HashMap<String,Integer>();
 		objects = new HashMap<Integer,ObjectRecord>();
-		latestId = 0;
+		nextId = 0;
 	}
 	
 	public HbObject get(String varName) {
@@ -42,8 +42,8 @@ public class ObjectSpace {
 	}
 	
 	public int nextId() {
-		int temp = latestId;
-		latestId++;
+		int temp = nextId;
+		nextId++;
 		return temp;
 	}
 	
