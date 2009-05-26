@@ -4,8 +4,8 @@ public class ModuleFrame extends ExecutionFrame implements ShowableFrame {
 	
 	private String name;
 	
-	public ModuleFrame(String n) {
-		super(null);
+	public ModuleFrame(ObjectSpace o, String n) {
+		super(null,o);
 		name = n;
 	}
 	

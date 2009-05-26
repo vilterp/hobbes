@@ -453,16 +453,14 @@ public class Parser {
 					Token elseWord = getLastToken();
 					if(or()) {
 						ExpressionNode theElse = getLastExpression();
-						BlockNode ifBlock = new BlockNode(theIf);
-						BlockNode elseBlock = new BlockNode(theElse);
-						stack.push(new IfStatementNode(condition,ifBlock,elseBlock));
+						stack.push(new InlineIfStatementNode(
+											condition,theIf,theElse));
 						return true;
 					} else
 						throw new SyntaxError("No expression after \"else\"",
 												elseWord.getEnd());
 				} else {
-					BlockNode ifBlock = new BlockNode(theIf);
-					stack.push(new IfStatementNode(condition,ifBlock));
+					stack.push(new InlineIfStatementNode(condition,theIf,null));
 					return true;
 				}
 			} else

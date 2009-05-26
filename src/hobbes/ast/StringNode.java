@@ -21,4 +21,8 @@ public class StringNode implements AtomNode {
 				.replaceAll("\"", "\\\"");
 	}
 	
+	public String getValue() {
+		return origin.getValue();
+	}
+	
 }

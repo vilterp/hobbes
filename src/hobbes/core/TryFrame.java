@@ -6,8 +6,8 @@ public class TryFrame extends ExecutionFrame {
 
 	private TryNode tryNode;
 	
-	public TryFrame(ExecutionFrame e, TryNode t) {
-		super(e);
+	public TryFrame(ExecutionFrame e, ObjectSpace o, TryNode t) {
+		super(e,o);
 		tryNode = t;
 	}
 	

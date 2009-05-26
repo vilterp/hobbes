@@ -2,7 +2,7 @@ package hobbes.ast;
 
 import java.util.ArrayList;
 
-public class TryNode implements StatementNode {
+public class TryNode implements ControlStructureNode {
 	
 	private BlockNode tryBlock;
 	private ArrayList<CatchNode> catches;

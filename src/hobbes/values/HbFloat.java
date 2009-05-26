@@ -2,30 +2,30 @@ package hobbes.values;
 
 import hobbes.core.ObjectSpace;
 
-public class HbInt extends HbNumber {
+public class HbFloat extends HbNumber {
 	
-	private int value;
+	private float value;
 	
-	public HbInt(ObjectSpace o, int v) {
+	public HbFloat(ObjectSpace o, float v) {
 		super(o);
 		value = v;
 	}
 	
 	public HbString show() {
-		return new HbString(getObjSpace(),new Integer(value).toString());
+		return new HbString(getObjSpace(),new Float(value).toString());
 	}
 	
 	public HbString getType() {
-		return new HbString(getObjSpace(),"Int");
+		return new HbString(getObjSpace(),"Float");
 	}
 	
-	public int getValue() {
+	public float getValue() {
 		return value;
 	}
 	
 	public HbBoolean is(HbValue other) {
-		if(other instanceof HbInt) {
-			if(((HbInt)other).getValue() == getValue())
+		if(other instanceof HbFloat) {
+			if(((HbFloat)other).getValue() == getValue())
 				return getObjSpace().getTrue();
 			else
 				return getObjSpace().getFalse();
@@ -35,7 +35,7 @@ public class HbInt extends HbNumber {
 
 	public HbNumber plus(HbNumber other) {
 		if(other instanceof HbInt) {
-			return getObjSpace().getInt(getValue() + ((HbInt)other).getValue());
+			return getObjSpace().getFloat(getValue() + ((HbInt)other).getValue());
 		} else {
 			return getObjSpace().getFloat(getValue() + ((HbFloat)other).getValue());
 		}
@@ -43,14 +43,14 @@ public class HbInt extends HbNumber {
 
 	public HbNumber minus(HbNumber other) {
 		if(other instanceof HbInt) {
-			return getObjSpace().getInt(getValue() + ((HbInt)other).getValue());
+			return getObjSpace().getFloat(getValue() + ((HbInt)other).getValue());
 		} else
 			return getObjSpace().getFloat(getValue() + ((HbFloat)other).getValue());
 	}
 
 	public HbNumber times(HbNumber other) {
 		if(other instanceof HbInt) {
-			return getObjSpace().getInt(getValue() * ((HbInt)other).getValue());
+			return getObjSpace().getFloat(getValue() * ((HbInt)other).getValue());
 		} else
 			return getObjSpace().getFloat(getValue() * ((HbFloat)other).getValue());
 	}

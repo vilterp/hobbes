@@ -1,6 +1,6 @@
 package hobbes.ast;
 
-public class IfStatementNode implements ExpressionNode {
+public class IfStatementNode implements ControlStructureNode {
 	
 	private ExpressionNode condition;
 	private BlockNode theIf;

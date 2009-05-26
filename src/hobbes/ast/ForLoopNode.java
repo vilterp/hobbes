@@ -1,6 +1,6 @@
 package hobbes.ast;
 
-public class ForLoopNode implements StatementNode {
+public class ForLoopNode implements ControlStructureNode {
 	
 	private VariableNode indexVar;
 	private VariableNode loopVar;

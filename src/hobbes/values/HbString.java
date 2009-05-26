@@ -1,0 +1,40 @@
+package hobbes.values;
+
+import hobbes.core.ObjectSpace;
+
+public class HbString extends HbValue {
+	
+	private StringBuilder value;
+	
+	public HbString(ObjectSpace o, String val) {
+		super(o);
+		value = new StringBuilder(val);
+	}
+	
+	public String toString() {
+		return value.toString();
+	}
+	
+	public StringBuilder getValue() {
+		return value;
+	}
+	
+	public HbString getType() {
+		return new HbString(getObjSpace(),"String");
+	}
+	
+	public HbBoolean is(HbValue other) {
+		if(other instanceof HbString) {
+			if(((HbString)other).getValue().equals(getValue()))
+				return getObjSpace().getTrue();
+			else
+				return getObjSpace().getFalse();
+		} else
+			return getObjSpace().getFalse();
+	}
+	
+	public HbString show() {
+		return new HbString(getObjSpace(),"\"" + getValue().toString() + "\"");
+	}
+
+}

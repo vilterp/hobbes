@@ -1,6 +1,6 @@
 package hobbes.ast;
 
-public class WhileLoopNode implements StatementNode {
+public class WhileLoopNode implements ControlStructureNode {
 	
 	private ExpressionNode cond;
 	private BlockNode block;

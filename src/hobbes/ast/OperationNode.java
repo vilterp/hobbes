@@ -18,4 +18,16 @@ public class OperationNode implements ExpressionNode {
 		return operator.getValue() + "(" + left + "," + right + ")";
 	}
 	
+	public Token getOperator() {
+		return operator;
+	}
+	
+	public ExpressionNode getLeft() {
+		return left;
+	}
+	
+	public ExpressionNode getRight() {
+		return right;
+	}
+	
 }

@@ -2,14 +2,20 @@ package hobbes.core;
 
 public abstract class ExecutionFrame {
 	
-	protected ExecutionFrame enclosing;
+	private ExecutionFrame enclosing;
+	private Scope scope;
 	
-	public ExecutionFrame(ExecutionFrame e) {
+	public ExecutionFrame(ExecutionFrame e, ObjectSpace o) {
 		enclosing = e;
+		scope = new Scope(o);
 	}
 	
 	public ExecutionFrame getEnclosing() {
 		return enclosing;
+	}
+	
+	public Scope getScope() {
+		return scope;
 	}
 	
 }
