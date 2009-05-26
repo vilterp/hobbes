@@ -147,7 +147,7 @@ public class Parser {
 				Token equals = getLastToken();
 				if(expression()) {
 					ExpressionNode expr = getLastExpression();
-					stack.push(new AssignmentNode(var,expr));
+					stack.push(new AssignmentNode(var,equals,expr));
 					return true;
 				} else
 					throw new SyntaxError("No expression after \"=\"",

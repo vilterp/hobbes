@@ -29,6 +29,7 @@ public class HbError extends Throwable {
 		System.err.print(errorName);
 		if(getMessage() != null)
 			System.err.println(": " + getMessage());
+		System.err.println(location.show());
 		for(ShowableFrame f: trace)
 			System.err.println(f.show());
 	}

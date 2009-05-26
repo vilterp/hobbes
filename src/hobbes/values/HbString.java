@@ -15,6 +15,13 @@ public class HbString extends HbValue {
 		return value.toString();
 	}
 	
+	public String sanitizedValue() {
+		return getValue().toString()
+				.replaceAll("\n", "\\\\n")
+				.replaceAll("\t", "\\\\t")
+				.replaceAll("\"", "\\\"");
+	}
+	
 	public StringBuilder getValue() {
 		return value;
 	}
@@ -34,7 +41,7 @@ public class HbString extends HbValue {
 	}
 	
 	public HbString show() {
-		return new HbString(getObjSpace(),"\"" + getValue().toString() + "\"");
+		return new HbString(getObjSpace(),"\"" + sanitizedValue() + "\"");
 	}
 
 }

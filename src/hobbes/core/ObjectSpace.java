@@ -20,7 +20,7 @@ public class ObjectSpace {
 		floatConstants = new HashMap<Float, HbFloat>();
 		nextId = 0;
 		trueId = new HbTrue(this).getId();
-		falseId = new HbTrue(this).getId();
+		falseId = new HbFalse(this).getId();
 		nilId = new HbNil(this).getId();
 	}
 

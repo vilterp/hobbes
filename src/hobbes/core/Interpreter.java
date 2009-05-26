@@ -32,8 +32,16 @@ public class Interpreter {
 			}
 			SyntaxNode tree = null;
 			try {
+				// parse
 				t.addLine(new SourceLine(line,lineNo,fileName));
-				tree = p.parse(t.getTokens());
+				if(t.isReady()) {
+					tree = p.parse(t.getTokens());
+					// interpret
+					HbValue result = i.interpret(tree);
+					if(result != null)
+						System.out.println("=> " + result.show());
+				}
+				lineNo++;
 			} catch(SyntaxError e) {
 				HbError error = i.convertSyntaxError(e);
 				error.addFrame((ModuleFrame)i.getCurrentFrame());
@@ -41,9 +49,6 @@ public class Interpreter {
 				t.reset();
 				p.reset();
 			}
-			HbValue result = i.interpret(tree);
-			if(result != null)
-				System.out.println("=> " + result.show());
 		}
 	}
 	
@@ -96,7 +101,13 @@ public class Interpreter {
 			return null;
 		} else if(tree instanceof AssignmentNode) {
 			AssignmentNode a = (AssignmentNode)tree;
-			assign(a.getVar().getValue(),evaluate(a.getExpr()));
+			try {
+				assign(a.getVar().getValue(),evaluate(a.getExpr()));
+			} catch (ReadOnlyNameException e) {
+				throw new HbError("Read Only Error",
+									"the name \"" + e.getNameInQuestion() + "\" is read-only",
+									a.getEqualsToken().getStart());
+			}
 			return null;
 		} else
 			return null;
@@ -163,7 +174,7 @@ public class Interpreter {
 		getCurrentFrame().getScope().delete(varName);
 	}
 	
-	public void assign(String var, HbValue val) {
+	public void assign(String var, HbValue val) throws ReadOnlyNameException {
 		getCurrentFrame().getScope().set(var, val);
 	}
 	
