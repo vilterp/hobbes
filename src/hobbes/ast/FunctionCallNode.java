@@ -24,4 +24,12 @@ public class FunctionCallNode implements AtomNode {
 		return parenLoc;
 	}
 	
+	public ExpressionNode getFunction() {
+		return function;
+	}
+	
+	public ArrayList<ExpressionNode> getArgs() {
+		return args;
+	}
+	
 }

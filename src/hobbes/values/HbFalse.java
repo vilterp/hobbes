@@ -23,5 +23,9 @@ public class HbFalse extends HbBoolean {
 	public HbString show() {
 		return new HbString(getObjSpace(),"false");
 	}
+	
+	public HbBoolean toBool() {
+		return getObjSpace().getFalse();
+	}
 
 }

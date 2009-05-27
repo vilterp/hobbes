@@ -22,8 +22,8 @@ public class HbString extends HbValue {
 				.replaceAll("\"", "\\\"");
 	}
 	
-	public StringBuilder getValue() {
-		return value;
+	public String getValue() {
+		return value.toString();
 	}
 	
 	public HbString getType() {

@@ -178,7 +178,7 @@ public class Parser {
 		if(word("return")) {
 			Token returnWord = getLastToken();
 			if(expression()) {
-				stack.push(new ReturnNode(getLastExpression()));
+				stack.push(new ReturnNode(returnWord,getLastExpression()));
 				return true;
 			} else
 				throw new SyntaxError("No expression after \"return\"",
@@ -339,40 +339,44 @@ public class Parser {
 			if(variable()) {
 				Token name = ((VariableNode)stack.pop()).getOrigin();
 				// args spec
-				if(symbol("(")) {
-					stack.pop();
-					ArrayList<VariableNode> args = new ArrayList<VariableNode>();
-					while(true) {
-						if(variable())
-							args.add((VariableNode)stack.pop());
-						if(symbol(",")) {
-							if(symbol(","))
-								throw getSyntaxError("Double comma");
-							else if(symbol(")")) {
-								stack.pop();
-								throw getSyntaxError("Trailing comma");
-							} else
-								stack.pop();
-						} else if(symbol(")")) {
-							stack.pop();
-							if(block()) {
-								BlockNode block = (BlockNode)stack.pop();
-								stack.push(new FunctionDefNode(name,args,block));
-								return true;
-							} else
-								throw new SyntaxError("No block after method heading",
-														defWord.getSourceSpan().getEnd()
-														.getLine().getEnd().next());
-						}
-					}
+				ArrayList<VariableNode> args = argsSpec();
+				if(block()) {
+					BlockNode block = (BlockNode)stack.pop();
+					stack.push(new FunctionDefNode(name,args,block));
+					return true;
 				} else
-					throw new SyntaxError("No argument specification after method name",
-											name.getEnd().next());
+					throw new SyntaxError("No block after method heading",
+											defWord.getSourceSpan().getEnd()
+											.getLine().getEnd().next());
 			} else
 				throw new SyntaxError("No method name after \"def\"",
 										defWord.getEnd().next());
 		} else
 			return false;
+	}
+	
+	private ArrayList<VariableNode> argsSpec() throws SyntaxError {
+		ArrayList<VariableNode> args = new ArrayList<VariableNode>();
+		if(symbol("(")) {
+			stack.pop();
+			while(true) {
+				if(variable())
+					args.add((VariableNode)stack.pop());
+				if(symbol(",")) {
+					if(symbol(","))
+						throw getSyntaxError("Double comma");
+					else if(symbol(")")) {
+						stack.pop();
+						throw getSyntaxError("Trailing comma");
+					} else
+						stack.pop();
+				} else if(symbol(")")) {
+					stack.pop();
+					return args;
+				}
+			}
+		} else
+			return args;
 	}
 	
 	private boolean tryCatch() throws SyntaxError {
@@ -919,17 +923,17 @@ public class Parser {
 	}
 	
 	private boolean testOp() {
-		if(symbols("=="))
+		if(symbol("=="))
 			return true;
-		if(symbols("!="))
+		if(symbol("!="))
 			return true;
-		if(symbols(">="))
+		if(symbol(">="))
 			return true;
-		if(symbols("<="))
+		if(symbol("<="))
 			return true;
-		if(symbols("<"))
+		if(symbol("<"))
 			return true;
-		if(symbols(">"))
+		if(symbol(">"))
 			return true;
 		if(word("in"))
 			return true;
@@ -972,19 +976,6 @@ public class Parser {
 
 	private boolean symbol(String value) {
 		return token(TokenType.SYMBOL,value);
-	}
-	
-	private boolean symbols(String value) {
-		int beginSize = stack.size();
-		for(int i=0; i < value.length(); i++) {
-			Character c = value.charAt(i);
-			if(!symbol(c.toString())) {
-				while(stack.size() > beginSize)
-					tokens.addFirst(getLastToken());
-				return false;
-			}
-		}
-		return true;
 	}
 	
 	private boolean word(String value) {

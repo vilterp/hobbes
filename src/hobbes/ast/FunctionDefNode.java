@@ -23,4 +23,20 @@ public class FunctionDefNode implements StatementNode {
 				+ block + ")";
 	}
 	
+	public String getName() {
+		return name.getValue();
+	}
+	
+	public Token getNameToken() {
+		return name;
+	}
+	
+	public ArrayList<VariableNode> getArgs() {
+		return args;
+	}
+	
+	public BlockNode getBlock() {
+		return block;
+	}
+	
 }

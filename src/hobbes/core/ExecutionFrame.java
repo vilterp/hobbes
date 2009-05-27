@@ -6,7 +6,6 @@ public abstract class ExecutionFrame {
 	private Scope scope;
 	
 	public ExecutionFrame(ExecutionFrame e, ObjectSpace o) {
-		enclosing = e;
 		scope = new Scope(o);
 	}
 	

@@ -15,5 +15,17 @@ public class InlineIfStatementNode implements ExpressionNode {
 	public String toString() {
 		return "inlineIf(" + condition + "," + theIf + "," + theElse + ")";
 	}
+
+	public ExpressionNode getCondition() {
+		return condition;
+	}
+
+	public ExpressionNode getTheIf() {
+		return theIf;
+	}
+
+	public ExpressionNode getTheElse() {
+		return theElse;
+	}
 	
 }

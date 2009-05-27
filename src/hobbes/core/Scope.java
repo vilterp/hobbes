@@ -34,14 +34,22 @@ public class Scope {
 	}
 	
 	public void set(String name, HbValue val) throws ReadOnlyNameException {
+		// get id of whatever is already there
+		Integer prevId = null;
+		if(names.containsKey(name))
+			prevId = names.get(name);
 		if(readOnly.contains(name))
 			throw new ReadOnlyNameException(name);
-		else
+		else {
 			names.put(name, val.getId());
+			if(prevId != null)
+				objSpace.garbageCollect(prevId);
+		}
 	}
 	
 	public void delete(String name) {
-		names.remove(name);
+		int id = names.remove(name);
+		objSpace.garbageCollect(id);
 	}
 	
 	public boolean isDefined(String name) {

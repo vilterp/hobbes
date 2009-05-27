@@ -29,8 +29,19 @@ public class HbInt extends HbNumber {
 				return getObjSpace().getTrue();
 			else
 				return getObjSpace().getFalse();
-		} else
+		} else {
+			if(((HbFloat)other).getValue() == getValue())
+				return getObjSpace().getTrue();
+			else
+				return getObjSpace().getFalse();
+		}
+	}
+	
+	public HbBoolean toBool() {
+		if(getValue() == 0)
 			return getObjSpace().getFalse();
+		else
+			return getObjSpace().getTrue();
 	}
 
 	public HbNumber plus(HbNumber other) {

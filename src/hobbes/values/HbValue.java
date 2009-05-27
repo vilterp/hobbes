@@ -20,6 +20,10 @@ public abstract class HbValue {
 		return objSpace;
 	}
 	
+	public HbBoolean toBool() {
+		return getObjSpace().getTrue();
+	}
+	
 	public abstract HbString show();
 	public abstract HbString getType();
 	public abstract HbBoolean is(HbValue other);

@@ -23,4 +23,8 @@ public class HbNil extends HbValue {
 		return new HbString(getObjSpace(),"nil");
 	}
 	
+	public HbBoolean toBool() {
+		return getObjSpace().getFalse();
+	}
+	
 }

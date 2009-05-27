@@ -24,13 +24,24 @@ public class HbFloat extends HbNumber {
 	}
 	
 	public HbBoolean is(HbValue other) {
-		if(other instanceof HbFloat) {
+		if(other instanceof HbInt) {
+			if(((HbInt)other).getValue() == getValue())
+				return getObjSpace().getTrue();
+			else
+				return getObjSpace().getFalse();
+		} else {
 			if(((HbFloat)other).getValue() == getValue())
 				return getObjSpace().getTrue();
 			else
 				return getObjSpace().getFalse();
-		} else
+		}
+	}
+	
+	public HbBoolean toBool() {
+		if(getValue() == 0)
 			return getObjSpace().getFalse();
+		else
+			return getObjSpace().getTrue();
 	}
 
 	public HbNumber plus(HbNumber other) {

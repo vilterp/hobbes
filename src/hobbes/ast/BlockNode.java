@@ -3,7 +3,7 @@ package hobbes.ast;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-public class BlockNode implements SyntaxNode {
+public class BlockNode implements SyntaxNode, Iterable<SyntaxNode> {
 	
 	private ArrayList<SyntaxNode> lines;
 	
@@ -33,6 +33,10 @@ public class BlockNode implements SyntaxNode {
 			ans += "\n";
 			return ans;
 		}
+	}
+	
+	public Iterator<SyntaxNode> iterator() {
+		return lines.iterator();
 	}
 	
 }

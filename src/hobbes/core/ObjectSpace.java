@@ -6,7 +6,7 @@ import hobbes.values.*;
 
 public class ObjectSpace {
 
-	private HashMap<Integer, HbValue> objects;
+	private HashMap<Integer, ValueRecord> objects;
 	private HashMap<Integer, HbInt> intConstants;
 	private HashMap<Float, HbFloat> floatConstants;
 	private int nextId;
@@ -15,7 +15,7 @@ public class ObjectSpace {
 	private int nilId;
 
 	public ObjectSpace() {
-		objects = new HashMap<Integer, HbValue>();
+		objects = new HashMap<Integer, ValueRecord>();
 		intConstants = new HashMap<Integer, HbInt>();
 		floatConstants = new HashMap<Float, HbFloat>();
 		nextId = 0;
@@ -31,7 +31,7 @@ public class ObjectSpace {
 	}
 
 	public HbValue get(int id) {
-		return objects.get(id);
+		return objects.get(id).getValue();
 	}
 
 	public int add(HbValue val) {
@@ -41,7 +41,7 @@ public class ObjectSpace {
 	}
 
 	public void set(int id, HbValue val) {
-		objects.put(id, val);
+		objects.put(id, new ValueRecord(val));
 	}
 
 	public HbBoolean getTrue() {
@@ -74,6 +74,11 @@ public class ObjectSpace {
 			floatConstants.put(val, newConstant);
 			return newConstant;
 		}
+	}
+	
+	public void garbageCollect(int id) {
+		if(!objects.get(id).isReferenced())
+			objects.remove(id);
 	}
 
 }
