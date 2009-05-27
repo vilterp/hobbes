@@ -3,6 +3,7 @@ package hobbes.core;
 import java.util.ArrayList;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
+import java.util.Stack;
 
 import hobbes.ast.*;
 import hobbes.parser.*;
@@ -58,38 +59,43 @@ public class Interpreter {
 		}
 	}
 	
-	private ExecutionFrame frame; // is there any reason that this should be a linked list instead of a stack?
+	private Stack<ExecutionFrame> stack;
 	private ObjectSpace objSpace;
 	
 	public Interpreter(String fileName) {
 		objSpace = new ObjectSpace();
-		frame = new ModuleFrame(objSpace,fileName);
+		stack = new Stack<ExecutionFrame>();
+		stack.push(new ModuleFrame(objSpace,fileName));
 	}
 	
 	public ExecutionFrame getCurrentFrame() {
-		return frame;
+		return stack.peek();
 	}
 	
-	private void setCurrentFrame(ExecutionFrame f) {
-		frame = f;
+	private void pushFrame(ExecutionFrame f) {
+		stack.push(f);
 	}
 	
 	private void popFrame() {
-		if(getCurrentFrame().getEnclosing() != null)
-			frame = getCurrentFrame().getEnclosing();
+		if(canPop())
+			stack.pop();
 		else
 			throw new IllegalStateException("Can't pop the top level frame");
+	}
+	
+	private boolean canPop() {
+		return stack.size() > 1;
 	}
 	
 	public HbValue interpret(SyntaxNode tree) {
 		try {
 			return run(tree);
 		} catch(HbError e) {
-			while(getCurrentFrame().getEnclosing() != null) {
+			while(canPop()) {
 				ExecutionFrame f = getCurrentFrame();
 				if(f instanceof ShowableFrame)
 					e.addFrame((ShowableFrame)f);
-				frame = f.getEnclosing();
+				popFrame();
 			}
 			e.addFrame((ShowableFrame)getCurrentFrame()); // top-level module frame
 			e.printStackTrace();
@@ -217,7 +223,7 @@ public class Interpreter {
 			} catch(ClassCastException e) {
 				throw new HbError("Type Error",
 									"expression on right of + isn't a number",
-									op.getOperator().getEnd());
+									op.getOperator().getStart());
 			}
 			if(o.equals("+"))
 				return left.plus(right);
@@ -261,13 +267,12 @@ public class Interpreter {
 						", got " + argValues.size(),
 						funcCall.getParenLoc());
 		// push function frame
-		FunctionFrame frame = new FunctionFrame(getCurrentFrame(),objSpace,
-									func.getName(),funcCall.getParenLoc(),false);
-		setCurrentFrame(frame);
+		pushFrame(new FunctionFrame(objSpace,func.getName(),
+										funcCall.getParenLoc(),false));
 		// set arg names to arg values
 		for(int i=0; i < argNames.size(); i++) {
 			try {
-				frame.getScope().set(argNames.get(i).getValue(),
+				getCurrentFrame().getScope().set(argNames.get(i).getValue(),
 									 	evaluate(argValues.get(i)));
 			} catch (ReadOnlyNameException e) {
 				throw new HbError("Read Only Error",e.getNameInQuestion(),
@@ -282,7 +287,7 @@ public class Interpreter {
 				popFrame();
 				return result;
 			} else
-				lastResult = interpret(blockItem);
+				lastResult = run(blockItem);
 		}
 		popFrame();
 		return lastResult;

@@ -8,9 +8,8 @@ public class FunctionFrame extends ExecutionFrame implements ShowableFrame {
 	public SourceLocation loc;
 	public boolean isNative;
 	
-	public FunctionFrame(ExecutionFrame e, ObjectSpace o,
-							String na, SourceLocation p, boolean in) {
-		super(e,o);
+	public FunctionFrame(ObjectSpace o, String na, SourceLocation p, boolean in) {
+		super(new Scope(o));
 		name = na;
 		loc = p;
 		isNative = in;
