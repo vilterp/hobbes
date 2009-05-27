@@ -27,6 +27,7 @@ public class Interpreter {
 			String line = null;
 			try {
 				line = s.nextLine();
+				lineNo++;
 			} catch(NoSuchElementException e) {
 				break;
 			}
@@ -41,7 +42,6 @@ public class Interpreter {
 					if(result != null)
 						System.out.println("=> " + result.show());
 				}
-				lineNo++;
 			} catch(SyntaxError e) {
 				HbError error = i.convertSyntaxError(e);
 				error.addFrame((ModuleFrame)i.getCurrentFrame());
