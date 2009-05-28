@@ -9,6 +9,7 @@ public class Scope {
 	
 	private ObjectSpace objSpace;
 	private HashMap<String,Integer> names;
+	private HashSet<String> globals;
 	
 	private static HashSet<String> readOnly = new HashSet<String>();
 	static {
@@ -18,12 +19,36 @@ public class Scope {
 	}
 	
 	public Scope(ObjectSpace o) {
+		this(o,null);
+	}
+	
+	public Scope(ObjectSpace o, Scope adoptGlobals) {
 		objSpace = o;
 		names = new HashMap<String,Integer>();
-		// globals
-		names.put("true", objSpace.getTrue().getId());
-		names.put("false", objSpace.getFalse().getId());
-		names.put("nil", objSpace.getNil().getId());
+		if(adoptGlobals == null) {
+			globals = new HashSet<String>();
+			addGlobals();
+		} else {
+			globals = adoptGlobals.getGlobals();
+			for(String global: adoptGlobals.getGlobals()) {
+				try {
+					setGlobalForce(global,adoptGlobals.get(global));
+				} catch (UndefinedNameException e) {
+					throw new IllegalArgumentException("name \"" + global
+														+ "\" in globals not in scope object");
+				}
+			}
+		}
+	}
+	
+	private void addGlobals() {
+		setGlobalForce("true", objSpace.getTrue());
+		setGlobalForce("false", objSpace.getFalse());
+		setGlobalForce("nil", objSpace.getNil());
+	}
+	
+	public HashSet<String> getGlobals() {
+		return globals;
 	}
 	
 	public HbValue get(String name) throws UndefinedNameException {
@@ -38,13 +63,33 @@ public class Scope {
 		Integer prevId = null;
 		if(names.containsKey(name))
 			prevId = names.get(name);
+		// ensure this name is not read-only
 		if(readOnly.contains(name))
 			throw new ReadOnlyNameException(name);
-		else {
-			names.put(name, val.getId());
-			if(prevId != null)
-				objSpace.garbageCollect(prevId);
-		}
+		// set
+		names.put(name, val.getId());
+		// garbage collect on overwritten object
+		if(prevId != null)
+			objSpace.garbageCollect(prevId);
+	}
+	
+	// can be used to set read-only names
+	public void setForce(String name, HbValue val) {
+		try {
+			set(name,val);
+		} catch (ReadOnlyNameException e) {}
+	}
+	
+	public void setGlobal(String name, HbValue val) throws ReadOnlyNameException {
+		set(name,val);
+		globals.add(name);
+	}
+	
+	// can be used to set read-only globals
+	public void setGlobalForce(String name, HbValue val) {
+		try {
+			setGlobal(name,val);
+		} catch (ReadOnlyNameException e) {}
 	}
 	
 	public void delete(String name) {

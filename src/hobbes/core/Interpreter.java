@@ -132,7 +132,8 @@ public class Interpreter {
 	
 	private void define(FunctionDefNode func) throws HbError {
 		try {
-			getCurrentFrame().getScope().set(func.getName(),new HbFunction(objSpace,func));
+			getCurrentFrame().getScope().setGlobal(func.getName(),
+										new HbFunction(objSpace,func));
 		} catch(ReadOnlyNameException e) {
 			throw new HbError("Read Only Error",
 								e.getNameInQuestion(),
@@ -259,21 +260,24 @@ public class Interpreter {
 		}
 		// ensure correct # args
 		ArrayList<VariableNode> argNames = func.getArgs();
-		ArrayList<ExpressionNode> argValues = funcCall.getArgs();
-		if(argValues.size() != argNames.size())
+		ArrayList<ExpressionNode> argExprs = funcCall.getArgs();
+		if(argExprs.size() != argNames.size())
 			throw new HbError("Wrong Number of Arguments",
 						"Function \"" + func.getName() +
 						"\" takes " + argNames.size() +
-						", got " + argValues.size(),
+						", got " + argExprs.size(),
 						funcCall.getParenLoc());
+		// evaluate param expressions
+		ArrayList<HbValue> argValues = new ArrayList<HbValue>();
+		for(ExpressionNode expr: argExprs)
+			argValues.add(evaluate(expr));
 		// push function frame
-		pushFrame(new FunctionFrame(objSpace,func.getName(),
-										funcCall.getParenLoc(),false));
+		pushFrame(new FunctionFrame(objSpace,getCurrentFrame().getScope(),
+								func.getName(),funcCall.getParenLoc(),false)); // TODO: give definition as location, right?
 		// set arg names to arg values
 		for(int i=0; i < argNames.size(); i++) {
 			try {
-				getCurrentFrame().getScope().set(argNames.get(i).getValue(),
-									 	evaluate(argValues.get(i)));
+				getCurrentFrame().getScope().set(argNames.get(i).getValue(),argValues.get(i));
 			} catch (ReadOnlyNameException e) {
 				throw new HbError("Read Only Error",e.getNameInQuestion(),
 									argNames.get(i).getOrigin().getStart());
