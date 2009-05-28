@@ -14,54 +14,6 @@ import java.util.regex.Pattern;
 
 public class Parser {
 	
-	public static void main(String[] args) {
-			Tokenizer t = new Tokenizer();
-			Parser p = new Parser();
-			
-			int lineNo = 1;
-			Scanner s = new Scanner(System.in);
-			while(true) {
-				System.out.print(lineNo + ":");
-				if(t.isReady())
-					System.out.print(">> ");
-				else
-					System.out.print(t.getLastOpener() + "> ");
-				String line = null;
-				try {
-					line = s.nextLine();
-				} catch(NoSuchElementException e) {
-					System.out.println();
-				}
-				try {
-					t.addLine(new SourceLine(line,lineNo,"<console>"));
-					if(t.isReady() && t.numTokens() > 0)
-						System.out.println(p.parse(t.getTokens()));
-				} catch (SyntaxError e) {
-					System.err.println("line "
-										+ e.getLocation().getLine().getLineNo() + ": " 
-										+ e.getMessage());
-					System.err.println(e.getLocation().show());
-					p.reset();
-					t.reset();
-				}
-				lineNo++;
-			}
-			
-//			try {
-//				t.addLine(new SourceLine("5.times(||{",1));
-//				t.addLine(new SourceLine("  print(\"odelay!\")",2));
-//				t.addLine(new SourceLine("})",3));
-//				LinkedList<Token> tokens = t.getTokens();
-//				System.out.println(tokens);
-//				System.out.println(p.parse(tokens));
-//			} catch (SyntaxError e) {
-//				System.err.println(e.getMessage());
-//				System.err.println(e.getLocation().show());
-//				e.printStackTrace();
-//			}
-			
-	}
-
 	private static final Pattern variablePattern =
 					Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*(\\?|!)?");
 	private static final Pattern classNamePattern = 

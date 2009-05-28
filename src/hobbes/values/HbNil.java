@@ -1,6 +1,6 @@
 package hobbes.values;
 
-import hobbes.core.ObjectSpace;
+import hobbes.interpreter.ObjectSpace;
 
 public class HbNil extends HbValue {
 	

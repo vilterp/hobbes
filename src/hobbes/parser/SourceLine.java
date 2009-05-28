@@ -6,7 +6,7 @@ public class SourceLine {
 	private int lineNo;
 	private String fileName;
 	
-	public SourceLine(String c, int line, String file) {
+	public SourceLine(String c, String file, int line) {
 		code = c;
 		lineNo = line;
 		fileName = file;

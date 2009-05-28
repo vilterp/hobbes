@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import hobbes.ast.FunctionDefNode;
 import hobbes.ast.BlockNode;
 import hobbes.ast.VariableNode;
-import hobbes.core.ObjectSpace;
+import hobbes.interpreter.ObjectSpace;
 
 public class HbFunction extends HbValue {
 	

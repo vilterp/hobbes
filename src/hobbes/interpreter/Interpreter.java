@@ -1,4 +1,4 @@
-package hobbes.core;
+package hobbes.interpreter;
 
 import java.util.ArrayList;
 import java.util.NoSuchElementException;
@@ -13,94 +13,101 @@ public class Interpreter {
 	
 	public static void main(String[] args) {
 		
-		int lineNo = 1;
-		String fileName = "<console>"; 
-		
 		Scanner s = new Scanner(System.in);
-		Tokenizer t = new Tokenizer();
-		Parser p = new Parser();
-		Interpreter i = new Interpreter(fileName);
+		Interpreter i = new Interpreter("<console>");
 		
 		while(true) {
-			// print prompt
-			if(t.isReady())
-				System.out.print(">> ");
+			if(i.needsMore())
+				System.out.print(i.getLastOpener() + "> ");
 			else
-				System.out.print(t.getLastOpener() + "> ");
-			// get input
-			SourceLine line = null;
+				System.out.print(">> ");
 			try {
-				line = new SourceLine(s.nextLine(),lineNo,fileName);
-				lineNo++;
-			} catch(NoSuchElementException e) {
-				break;
-			}
-			SyntaxNode tree = null;
-			try {
-				// tokenize
-				t.addLine(line);
-				if(t.isReady()) {
-					// parse
-					tree = p.parse(t.getTokens());
-					if(tree != null) {
-						// interpret
-						HbValue result = i.interpret(tree);
-						if(result != null)
-							System.out.println("=> " + result.show());
-					}
+				i.add(s.nextLine());
+				if(!i.needsMore()) {
+					HbValue result = i.getResult();
+					if(result != null)
+						System.out.println("=> " + result.show());
 				}
-			} catch(SyntaxError e) {
-				HbError error = i.convertSyntaxError(e);
-				error.addFrame((ModuleFrame)i.getCurrentFrame());
-				error.printStackTrace();
-				t.reset();
-				p.reset();
+			} catch(NoSuchElementException e) {
+				System.out.println();
+				break;
 			}
 		}
 	}
 	
 	private Stack<ExecutionFrame> stack;
 	private ObjectSpace objSpace;
+	private int lineNo;
+	private String fileName;
+	private Parser parser;
+	private Tokenizer tokenizer;
 	
-	public Interpreter(String fileName) {
+	private static final int MAX_STACK_SIZE = 500;
+	
+	public Interpreter(String fn) {
 		objSpace = new ObjectSpace();
 		stack = new Stack<ExecutionFrame>();
+		lineNo = 1;
+		fileName = fn;
 		stack.push(new ModuleFrame(objSpace,fileName));
+		parser = new Parser();
+		tokenizer = new Tokenizer();
 	}
 	
-	public ExecutionFrame getCurrentFrame() {
-		return stack.peek();
-	}
-	
-	private void pushFrame(ExecutionFrame f) {
-		stack.push(f);
-	}
-	
-	private void popFrame() {
-		if(canPop())
-			stack.pop();
-		else
-			throw new IllegalStateException("Can't pop the top level frame");
-	}
-	
-	private boolean canPop() {
-		return stack.size() > 1;
-	}
-	
-	public HbValue interpret(SyntaxNode tree) {
+	public void add(String line) {
 		try {
-			return run(tree);
-		} catch(HbError e) {
-			while(canPop()) {
-				ExecutionFrame f = getCurrentFrame();
-				if(f instanceof ShowableFrame)
-					e.addFrame((ShowableFrame)f);
-				popFrame();
-			}
-			e.addFrame((ShowableFrame)getCurrentFrame()); // top-level module frame
-			e.printStackTrace();
+			tokenizer.addLine(new SourceLine(line,fileName,lineNo));
+		} catch (SyntaxError e) {
+			handleSyntaxError(e);
 		}
-		return null;
+	}
+	
+	public boolean needsMore() {
+		return !tokenizer.isReady();
+	}
+	
+	public String getLastOpener() {
+		return tokenizer.getLastOpener();
+	}
+	
+	public HbValue getResult() {
+		if(needsMore())
+			throw new IllegalStateException("More code needed");
+		else {
+			try {
+				return interpret(parser.parse(tokenizer.getTokens()));
+			} catch (SyntaxError e) {
+				handleSyntaxError(e);
+				return null;
+			}
+		}
+	}
+	
+	private void handleSyntaxError(SyntaxError e) {
+		HbError error = convertSyntaxError(e);
+		error.addFrame((ModuleFrame)getCurrentFrame());
+		error.printStackTrace();
+		tokenizer.reset();
+		parser.reset();
+	}
+	
+	private HbValue interpret(SyntaxNode tree) {
+		if(tree != null) {
+			try {
+				return run(tree);
+			} catch(HbError e) {
+				while(canPop()) {
+					ExecutionFrame f = getCurrentFrame();
+					if(f instanceof ShowableFrame)
+						e.addFrame((ShowableFrame)f);
+					popFrame();
+				}
+				e.addFrame((ShowableFrame)getCurrentFrame()); // top-level frame
+				e.printStackTrace();
+				return null;
+			}
+		} else
+			return null;
 	}
 	
 	private HbValue run(SyntaxNode tree) throws HbError {
@@ -246,6 +253,24 @@ public class Interpreter {
 				return objSpace.getTrue();
 			else
 				return objSpace.getFalse();
+		} else if(o.equals("and")) {
+			if(evaluateCondition(op.getLeft()) && evaluateCondition(op.getRight()))
+				return objSpace.getTrue();
+			else
+				return objSpace.getFalse();
+		} else if(o.equals("or")) {
+			HbValue leftResult = evaluate(op.getLeft());
+			if(leftResult.toBool() == objSpace.getTrue())
+				return leftResult;
+			else {
+				HbValue rightResult = evaluate(op.getRight());
+				if(rightResult.toBool() == objSpace.getTrue())
+					return rightResult;
+				else
+					return objSpace.getFalse();
+			}
+		} else {
+			System.err.println("Can't do that operator yet");
 		}
 		return null;
 	}
@@ -272,12 +297,17 @@ public class Interpreter {
 		for(ExpressionNode expr: argExprs)
 			argValues.add(evaluate(expr));
 		// push function frame
-		pushFrame(new FunctionFrame(objSpace,getCurrentFrame().getScope(),
-								func.getName(),funcCall.getParenLoc(),false)); // TODO: give definition as location, right?
+		try {
+			pushFrame(new FunctionFrame(objSpace,getCurrentFrame().getScope(),
+									func.getName(),funcCall.getParenLoc(),false));
+		} catch (StackOverflow e1) {
+			throw new HbError("Stack Overflow",funcCall.getParenLoc());
+		}
 		// set arg names to arg values
 		for(int i=0; i < argNames.size(); i++) {
 			try {
-				getCurrentFrame().getScope().set(argNames.get(i).getValue(),argValues.get(i));
+				getCurrentFrame().getScope().set(argNames.get(i).getValue(),
+													argValues.get(i));
 			} catch (ReadOnlyNameException e) {
 				throw new HbError("Read Only Error",e.getNameInQuestion(),
 									argNames.get(i).getOrigin().getStart());
@@ -299,6 +329,28 @@ public class Interpreter {
 	
 	private HbError convertSyntaxError(SyntaxError t) {
 		return new HbError("Syntax Error",t.getMessage(),t.getLocation());
+	}
+
+	private ExecutionFrame getCurrentFrame() {
+		return stack.peek();
+	}
+
+	private void pushFrame(ExecutionFrame f) throws StackOverflow {
+		if(stack.size() < MAX_STACK_SIZE)
+			stack.push(f);
+		else
+			throw new StackOverflow();
+	}
+
+	private void popFrame() {
+		if(canPop())
+			stack.pop();
+		else
+			throw new IllegalStateException("Can't pop the top level frame");
+	}
+
+	private boolean canPop() {
+		return stack.size() > 1;
 	}
 	
 }

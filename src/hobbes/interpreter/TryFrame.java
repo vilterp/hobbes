@@ -1,4 +1,4 @@
-package hobbes.core;
+package hobbes.interpreter;
 
 import hobbes.ast.TryNode;
 
