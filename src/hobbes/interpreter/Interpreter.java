@@ -1,5 +1,7 @@
 package hobbes.interpreter;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
@@ -12,26 +14,51 @@ import hobbes.values.*;
 public class Interpreter {
 	
 	public static void main(String[] args) {
-		
-		Scanner s = new Scanner(System.in);
-		Interpreter i = new Interpreter("<console>");
-		
-		while(true) {
-			if(i.needsMore())
-				System.out.print(i.getLastOpener() + "> ");
-			else
-				System.out.print(">> ");
-			try {
-				i.add(s.nextLine());
-				if(!i.needsMore()) {
-					HbValue result = i.getResult();
-					if(result != null)
-						System.out.println("=> " + result.show());
+		if(args.length == 0) { // interactive console
+			Scanner s = new Scanner(System.in);
+			Interpreter i = new Interpreter("<console>");
+			while(true) {
+				if(i.needsMore())
+					System.out.print(i.getLastOpener() + "> ");
+				else
+					System.out.print(">> ");
+				try {
+					i.add(s.nextLine());
+					if(!i.needsMore()) {
+						HbValue result = i.getResult();
+						if(result != null)
+							System.out.println("=> " + result.show());
+					}
+				} catch(NoSuchElementException e) {
+					System.out.println();
+					break;
 				}
-			} catch(NoSuchElementException e) {
-				System.out.println();
-				break;
 			}
+		} else if(args.length == 1) {
+			if(args[0].equals("-h")) {
+				System.out.println("Run with no args to use the interactive console,\n"
+									+ "or with a file name to run that file");
+			} else { // run file
+				File f = new File(args[0]);
+				Scanner s = null;
+				try {
+					s = new Scanner(f);
+				} catch (FileNotFoundException e) {
+					System.err.println("File \"" + args[0] + "\" not found.");
+					System.exit(0);
+				}
+				Interpreter i = new Interpreter(args[0]);
+				while(s.hasNext()) {
+					i.add(s.nextLine());
+					if(!i.needsMore())
+						i.getResult();
+				}
+				if(i.needsMore())
+					System.err.println("Unexpected end of file in \"" + args[0] + "\": "+
+										"still waiting to close " + i.getLastOpener());
+			}
+		} else {
+			System.out.print("Too many args. Run hobbes -h for help.");
 		}
 	}
 	
