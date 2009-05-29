@@ -57,6 +57,7 @@ public class Interpreter {
 	public void add(String line) {
 		try {
 			tokenizer.addLine(new SourceLine(line,fileName,lineNo));
+			lineNo++;
 		} catch (SyntaxError e) {
 			handleSyntaxError(e);
 		}
@@ -116,9 +117,14 @@ public class Interpreter {
 		else if(tree instanceof StatementNode) {
 			exec((StatementNode)tree);
 			return null;
-		} else {
-			// ControlStructureNode
-			System.err.println("not doing control structures yet");
+		} else if(tree instanceof IfStatementNode) {
+			execIfStatement((IfStatementNode)tree);
+			return null;
+		} else if(tree instanceof WhileLoopNode) {
+			execWhileLoop((WhileLoopNode)tree);
+			return null;
+		} else { 
+			System.err.println("not doing that control structure yet");
 			return null;
 		}
 	}
@@ -135,6 +141,29 @@ public class Interpreter {
 								((ReturnNode)stmt).getOrigin().getStart());
 		else
 			System.err.println("doesn't do that kind of statement yet");
+	}
+	
+	private void execIfStatement(IfStatementNode stmt) throws HbError {
+		if(evaluateCondition(stmt.getCondition())) {
+			for(SyntaxNode item: stmt.getIfBlock())
+				run(item);
+		} else if(stmt.getElseBlock() != null) {
+			for(SyntaxNode item: stmt.getElseBlock())
+				run(item);
+		}
+	}
+	
+	private void execWhileLoop(WhileLoopNode wl) throws HbError {
+		while(evaluateCondition(wl.getCondition())) {
+			for(SyntaxNode item: wl.getBlock()) {
+				if(item instanceof BreakNode)
+					return;
+				else if(item instanceof ContinueNode)
+					break;
+				else
+					run(item);
+			}
+		}
 	}
 	
 	private void define(FunctionDefNode func) throws HbError {
@@ -181,6 +210,10 @@ public class Interpreter {
 			return evaluateOperation((OperationNode)expr);
 		else if(expr instanceof FunctionCallNode)
 			return evaluateFunctionCall((FunctionCallNode)expr);
+		else if(expr instanceof NegativeNode)
+			return evaluateNegative((NegativeNode)expr);
+		else if(expr instanceof NotNode)
+			return evaluateNot((NotNode)expr);
 		else
 			System.err.println("doesn't do that kind of expression yet");
 		return null;
@@ -376,6 +409,27 @@ public class Interpreter {
 			System.err.println("doesn't do that native function yet");
 			return objSpace.getNil();
 		}
+	}
+	
+	private HbValue evaluateNegative(NegativeNode neg) throws HbError {
+		HbValue expr = evaluate(neg.getExpr());
+		if(expr instanceof HbFloat)
+			return objSpace.getFloat(-((HbFloat)expr).getValue());
+		else if(expr instanceof HbInt)
+			return objSpace.getInt(-((HbInt)expr).getValue());
+		else {
+			if(expr.toBool() == objSpace.getTrue())
+				return objSpace.getFalse();
+			else
+				return objSpace.getTrue();
+		}
+	}
+	
+	private HbValue evaluateNot(NotNode not) throws HbError {
+		if(evaluate(not.getExpr()).toBool() == objSpace.getTrue())
+			return objSpace.getFalse();
+		else
+			return objSpace.getTrue();
 	}
 
 	private ExecutionFrame getCurrentFrame() {

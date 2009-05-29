@@ -24,6 +24,10 @@ public abstract class HbValue {
 		return getObjSpace().getTrue();
 	}
 	
+	public String toString() {
+		return show().toString();
+	}
+	
 	public abstract HbString show();
 	public abstract HbString getType();
 	public abstract HbBoolean is(HbValue other);

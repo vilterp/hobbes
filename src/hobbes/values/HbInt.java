@@ -15,6 +15,10 @@ public class HbInt extends HbNumber {
 		return new HbString(getObjSpace(),new Integer(value).toString());
 	}
 	
+	public String toString() {
+		return new Integer(value).toString();
+	}
+	
 	public HbString getType() {
 		return new HbString(getObjSpace(),"Int");
 	}

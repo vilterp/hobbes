@@ -176,6 +176,22 @@ public class Parser {
 		} else
 			return false;
 	}
+	
+	private boolean continueStatement() {
+		if(word("continue")) {
+			stack.push(new ContinueNode(getLastToken()));
+			return true;
+		} else
+			return false;
+	}
+	
+	private boolean breakStatement() {
+		if(word("break")) {
+			stack.push(new BreakNode(getLastToken()));
+			return true;
+		} else
+			return false;
+	}
 
 	private boolean whileLoop() throws SyntaxError {
 		if(word("while") || word("until")) {

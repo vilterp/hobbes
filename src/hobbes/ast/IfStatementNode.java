@@ -24,4 +24,16 @@ public class IfStatementNode implements ControlStructureNode {
 		+ ")";
 	}
 	
+	public BlockNode getIfBlock() {
+		return theIf;
+	}
+	
+	public BlockNode getElseBlock() {
+		return theElse;
+	}
+	
+	public ExpressionNode getCondition() {
+		return condition;
+	}
+	
 }

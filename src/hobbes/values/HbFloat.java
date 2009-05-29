@@ -15,6 +15,10 @@ public class HbFloat extends HbNumber {
 		return new HbString(getObjSpace(),new Float(value).toString());
 	}
 	
+	public String toString() {
+		return new Float(value).toString();
+	}
+	
 	public HbString getType() {
 		return new HbString(getObjSpace(),"Float");
 	}

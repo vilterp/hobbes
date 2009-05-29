@@ -14,4 +14,12 @@ public class WhileLoopNode implements ControlStructureNode {
 		return "while(" + cond + "," + block + ")";
 	}
 	
+	public ExpressionNode getCondition() {
+		return cond;
+	}
+	
+	public BlockNode getBlock() {
+		return block;
+	}
+	
 }
