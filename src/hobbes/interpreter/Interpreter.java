@@ -366,7 +366,11 @@ public class Interpreter {
 			return objSpace.getNil();
 		} else if(func.getName().equals("get_input")) {
 			Scanner in = new Scanner(System.in);
-			System.out.print(argValues.get(0));
+			if(argValues.get(0) instanceof HbString)
+				System.out.print(argValues.get(0));
+			else
+				throw new HbError("Type Error","get_input takes a String",
+									funcCall.getParenLoc().next());
 			return new HbString(objSpace,in.nextLine());
 		} else {
 			System.err.println("doesn't do that native function yet");
