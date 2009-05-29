@@ -1,16 +1,16 @@
 package hobbes.ast;
 
-public class RaiseNode implements StatementNode {
+public class ThrowNode implements StatementNode {
 	
 	private StringNode errorName;
 	private ExpressionNode errorDesc;
 	
-	public RaiseNode(StringNode n, ExpressionNode d) {
+	public ThrowNode(StringNode n, ExpressionNode d) {
 		errorName = n;
 		errorDesc = d;
 	}
 	
-	public RaiseNode(StringNode n) {
+	public ThrowNode(StringNode n) {
 		errorName = n;
 		errorDesc = null;
 	}

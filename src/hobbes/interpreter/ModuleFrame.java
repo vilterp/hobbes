@@ -6,6 +6,7 @@ public class ModuleFrame extends ExecutionFrame implements ShowableFrame {
 	
 	public ModuleFrame(ObjectSpace o, String n) {
 		super(new Scope(o));
+		getScope().addBasics();
 		name = n;
 	}
 	

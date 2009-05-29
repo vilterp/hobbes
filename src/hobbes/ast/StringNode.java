@@ -14,7 +14,7 @@ public class StringNode implements AtomNode {
 		return "\"" + sanitizedValue() + "\"";
 	}
 	
-	public String sanitizedValue() {
+	private String sanitizedValue() {
 		return origin.getValue()
 				.replaceAll("\n", "\\\\n")
 				.replaceAll("\t", "\\\\t")

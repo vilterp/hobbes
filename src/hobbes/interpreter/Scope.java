@@ -1,7 +1,9 @@
 package hobbes.interpreter;
 
+import hobbes.values.HbNativeFunction;
 import hobbes.values.HbValue;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -11,40 +13,46 @@ public class Scope {
 	private HashMap<String,Integer> names;
 	private HashSet<String> globals;
 	
-	private static HashSet<String> readOnly = new HashSet<String>();
+	private static HashSet<String> readOnlys = new HashSet<String>();
 	static {
-		readOnly.add("true");
-		readOnly.add("false");
-		readOnly.add("nil");
+		readOnlys.add("true");
+		readOnlys.add("false");
+		readOnlys.add("nil");
+		readOnlys.add("print");
+		readOnlys.add("get_input");
 	}
 	
 	public Scope(ObjectSpace o) {
 		this(o,null);
 	}
 	
-	public Scope(ObjectSpace o, Scope adoptGlobals) {
+	public Scope(ObjectSpace o, Scope inheritGlobalsFrom) {
 		objSpace = o;
 		names = new HashMap<String,Integer>();
-		if(adoptGlobals == null) {
+		if(inheritGlobalsFrom == null) {
 			globals = new HashSet<String>();
-			addGlobals();
 		} else {
-			globals = adoptGlobals.getGlobals();
-			for(String global: adoptGlobals.getGlobals()) {
+			globals = inheritGlobalsFrom.getGlobals();
+			for(String global: inheritGlobalsFrom.getGlobals()) {
 				try {
-					setGlobalForce(global,adoptGlobals.get(global));
+					setGlobalForce(global,inheritGlobalsFrom.get(global));
 				} catch (UndefinedNameException e) {
 					throw new IllegalArgumentException("name \"" + global
-														+ "\" in globals not in scope object");
+										+ "\" in globals not in scope object");
 				}
 			}
 		}
 	}
 	
-	private void addGlobals() {
+	public void addBasics() {
 		setGlobalForce("true", objSpace.getTrue());
 		setGlobalForce("false", objSpace.getFalse());
 		setGlobalForce("nil", objSpace.getNil());
+		// print function
+		setGlobalForce("print",new HbNativeFunction(objSpace,"print",new String[]{"object"}));
+		// get_input function
+		setGlobalForce("get_input",
+						new HbNativeFunction(objSpace,"get_input",new String[]{"prompt"}));
 	}
 	
 	public HashSet<String> getGlobals() {
@@ -64,7 +72,7 @@ public class Scope {
 		if(names.containsKey(name))
 			prevId = names.get(name);
 		// ensure this name is not read-only
-		if(readOnly.contains(name))
+		if(readOnlys.contains(name))
 			throw new ReadOnlyNameException(name);
 		// set
 		names.put(name, val.getId());
@@ -73,28 +81,27 @@ public class Scope {
 			objSpace.garbageCollect(prevId);
 	}
 	
-	// can be used to set read-only names
-	public void setForce(String name, HbValue val) {
-		try {
-			set(name,val);
-		} catch (ReadOnlyNameException e) {}
+	public void setGlobal(String name, HbValue val) throws ReadOnlyNameException {
+		if(readOnlys.contains(name))
+			throw new ReadOnlyNameException(name);
+		else {
+			names.put(name, val.getId());
+			globals.add(name);
+		}
 	}
 	
-	public void setGlobal(String name, HbValue val) throws ReadOnlyNameException {
-		set(name,val);
+	public void setGlobalForce(String name, HbValue val) {
+		names.put(name, val.getId());
 		globals.add(name);
 	}
 	
-	// can be used to set read-only globals
-	public void setGlobalForce(String name, HbValue val) {
-		try {
-			setGlobal(name,val);
-		} catch (ReadOnlyNameException e) {}
-	}
-	
-	public void delete(String name) {
-		int id = names.remove(name);
-		objSpace.garbageCollect(id);
+	public void delete(String name) throws ReadOnlyNameException {
+		if(readOnlys.contains(name))
+			throw new ReadOnlyNameException(name);
+		else {
+			int id = names.remove(name);
+			objSpace.garbageCollect(id);
+		}
 	}
 	
 	public boolean isDefined(String name) {

@@ -84,7 +84,7 @@ public class Interpreter {
 	}
 	
 	private void handleSyntaxError(SyntaxError e) {
-		HbError error = convertSyntaxError(e);
+		HbError error = new HbError("Syntax Error",e.getMessage(),e.getLocation());
 		error.addFrame((ModuleFrame)getCurrentFrame());
 		error.printStackTrace();
 		tokenizer.reset();
@@ -125,7 +125,7 @@ public class Interpreter {
 	
 	private void exec(StatementNode stmt) throws HbError {
 		if(stmt instanceof DeletionNode)
-			delete(((DeletionNode)stmt).getVarName());
+			delete((DeletionNode)stmt);
 		else if(stmt instanceof AssignmentNode)
 			assign((AssignmentNode)stmt);
 		else if(stmt instanceof FunctionDefNode)
@@ -140,7 +140,7 @@ public class Interpreter {
 	private void define(FunctionDefNode func) throws HbError {
 		try {
 			getCurrentFrame().getScope().setGlobal(func.getName(),
-										new HbFunction(objSpace,func));
+										new HbNormalFunction(objSpace,func));
 		} catch(ReadOnlyNameException e) {
 			throw new HbError("Read Only Error",
 								e.getNameInQuestion(),
@@ -158,8 +158,14 @@ public class Interpreter {
 		}
 	}
 
-	private void delete(String varName) {
-		getCurrentFrame().getScope().delete(varName);
+	private void delete(DeletionNode d) throws HbError {
+		try {
+			getCurrentFrame().getScope().delete(d.getVarName());
+		} catch (ReadOnlyNameException e) {
+			throw new HbError("Read Only Error",
+					e.getNameInQuestion(),
+					d.getOrigin().getEnd().next());
+		}
 	}
 
 	private HbValue evaluate(ExpressionNode expr) throws HbError {
@@ -275,14 +281,26 @@ public class Interpreter {
 		return null;
 	}
 	
-	private HbValue evaluateFunctionCall(FunctionCallNode funcCall) throws HbError {
+	private HbValue evaluateFunctionCall(FunctionCallNode funcCall)
+																throws HbError {
 		// get function object
 		HbFunction func = null;
 		try {
 			func = (HbFunction)evaluate(funcCall.getFunction());
 		} catch(ClassCastException e) {
-			throw new HbError("Not a function",funcCall.getParenLoc());
+			throw new HbError("Not a Function",
+								"tried to call something that's not a function",
+								funcCall.getParenLoc());
 		}
+		if(func instanceof HbNativeFunction)
+			return evaluateNativeFunctionCall(funcCall,(HbNativeFunction)func);
+		else
+			return evaluateNormalFunctionCall(funcCall,(HbNormalFunction)func);
+	}
+	
+	private HbValue evaluateNormalFunctionCall(FunctionCallNode funcCall,
+													HbNormalFunction func)
+															throws HbError {
 		// ensure correct # args
 		ArrayList<VariableNode> argNames = func.getArgs();
 		ArrayList<ExpressionNode> argExprs = funcCall.getArgs();
@@ -299,7 +317,8 @@ public class Interpreter {
 		// push function frame
 		try {
 			pushFrame(new FunctionFrame(objSpace,getCurrentFrame().getScope(),
-									func.getName(),funcCall.getParenLoc(),false));
+									func.getName(),
+									funcCall.getParenLoc(),false));
 		} catch (StackOverflow e1) {
 			throw new HbError("Stack Overflow",funcCall.getParenLoc());
 		}
@@ -326,9 +345,33 @@ public class Interpreter {
 		popFrame();
 		return lastResult;
 	}
-	
-	private HbError convertSyntaxError(SyntaxError t) {
-		return new HbError("Syntax Error",t.getMessage(),t.getLocation());
+
+	private HbValue evaluateNativeFunctionCall(FunctionCallNode funcCall,
+													HbNativeFunction func)
+																throws HbError {
+		// ensure correct # args
+		if(funcCall.getArgs().size() != func.getArgs().length)
+			throw new HbError("Wrong Number of Arguments",
+								"Function \"" + func.getName() + "\""
+								+ "takes " + func.getArgs().length
+								+ ", got " + funcCall.getArgs().size(),
+								funcCall.getParenLoc());
+		// evaluate arguments
+		ArrayList<HbValue> argValues = new ArrayList<HbValue>();
+		for(ExpressionNode expr: funcCall.getArgs())
+			argValues.add(evaluate(expr));
+		// run
+		if(func.getName().equals("print")) {
+			System.out.println(argValues.get(0));
+			return objSpace.getNil();
+		} else if(func.getName().equals("get_input")) {
+			Scanner in = new Scanner(System.in);
+			System.out.print(argValues.get(0));
+			return new HbString(objSpace,in.nextLine());
+		} else {
+			System.err.println("doesn't do that native function yet");
+			return objSpace.getNil();
+		}
 	}
 
 	private ExecutionFrame getCurrentFrame() {

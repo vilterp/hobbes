@@ -89,7 +89,7 @@ public class Parser {
 	
 	private boolean statement() throws SyntaxError {
 		return assignment() || deletionStatement() || returnStatement() ||
-				globalStatement() || raiseStatement();
+				globalStatement() || throwStatement();
 	}
 
 	private boolean assignment() throws SyntaxError {
@@ -117,7 +117,7 @@ public class Parser {
 			Token delWord = getLastToken();
 			if(variable()) {
 				VariableNode var = (VariableNode)stack.pop();
-				stack.push(new DeletionNode(var));
+				stack.push(new DeletionNode(delWord,var));
 				return true;
 			} else
 				throw new SyntaxError("No variable after \"del\"",
@@ -139,8 +139,8 @@ public class Parser {
 			return false;
 	}
 	
-	private boolean raiseStatement() throws SyntaxError {
-		if(word("raise")) {
+	private boolean throwStatement() throws SyntaxError {
+		if(word("throw")) {
 			Token raiseWord = getLastToken();
 			if(string()) {
 				StringNode errorName = (StringNode)stack.pop();
@@ -148,17 +148,17 @@ public class Parser {
 					Token comma = getLastToken();
 					if(expression()) {
 						ExpressionNode errorDesc = getLastExpression();
-						stack.push(new RaiseNode(errorName,errorDesc));
+						stack.push(new ThrowNode(errorName,errorDesc));
 						return true;
 					} else
 						throw new SyntaxError("No description \",\"",
 												comma.getEnd());
 				} else {
-					stack.push(new RaiseNode(errorName));
+					stack.push(new ThrowNode(errorName));
 					return true;
 				}
 			} else
-				throw new SyntaxError("No error name after \"raise\"",
+				throw new SyntaxError("No error name after \"throw\"",
 										raiseWord.getEnd().next());
 		} else
 			return false;
