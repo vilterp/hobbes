@@ -122,15 +122,28 @@ public class Interpreter {
 	private HbValue interpret(SyntaxNode tree) {
 		if(tree != null) {
 			try {
-				return run(tree);
+				try {
+					return run(tree);
+				} catch(Return r) {
+					throw new HbError("Unexpected Return Statement",
+										"not inside a function",
+										r.getOrigin().getStart());
+				} catch(Break b) {
+					throw new HbError("Unexpected Break Statement",
+										"not inside a loop",
+										b.getOrigin().getStart());
+				} catch(Continue c) {
+					throw new HbError("Unexpected Continue Statement",
+										"not inside a loop",
+										c.getOrigin().getStart());
+				}
 			} catch(HbError e) {
 				while(canPop()) {
 					ExecutionFrame f = getCurrentFrame();
-					if(f instanceof ShowableFrame)
-						e.addFrame((ShowableFrame)f);
+					e.addFrame(f);
 					popFrame();
 				}
-				e.addFrame((ShowableFrame)getCurrentFrame()); // top-level frame
+				e.addFrame(getCurrentFrame()); // top-level frame
 				e.printStackTrace();
 				return null;
 			}
@@ -138,7 +151,7 @@ public class Interpreter {
 			return null;
 	}
 	
-	private HbValue run(SyntaxNode tree) throws HbError {
+	private HbValue run(SyntaxNode tree) throws HbError, Return, Continue, Break {
 		if(tree instanceof ExpressionNode)
 			return evaluate((ExpressionNode)tree);
 		else if(tree instanceof StatementNode) {
@@ -159,7 +172,7 @@ public class Interpreter {
 		}
 	}
 	
-	private void exec(StatementNode stmt) throws HbError {
+	private void exec(StatementNode stmt) throws HbError, Return, Continue, Break {
 		if(stmt instanceof DeletionNode)
 			delete((DeletionNode)stmt);
 		else if(stmt instanceof AssignmentNode)
@@ -167,60 +180,65 @@ public class Interpreter {
 		else if(stmt instanceof FunctionDefNode)
 			define((FunctionDefNode)stmt);
 		else if(stmt instanceof ReturnNode)
-			throw new HbError("Unexpected Return Statement","not inside a function",
-								((ReturnNode)stmt).getOrigin().getStart());
+			execReturn((ReturnNode)stmt);
 		else if(stmt instanceof ThrowNode)
 			execThrow((ThrowNode)stmt);
+		else if(stmt instanceof ReturnNode)
+			execReturn((ReturnNode)stmt);
+		else if(stmt instanceof ContinueNode)
+			throw new Continue(((ContinueNode)stmt).getOrigin());
+		else if(stmt instanceof BreakNode)
+			throw new Break(((BreakNode)stmt).getOrigin());
 		else
 			System.err.println("doesn't do that kind of statement yet");
 	}
 	
-	private void execIfStatement(IfStatementNode stmt) throws HbError {
+	private void execIfStatement(IfStatementNode stmt) throws HbError, Return, Continue, Break {
 		if(evaluateCondition(stmt.getCondition())) {
-			for(SyntaxNode item: stmt.getIfBlock())
-				run(item);
+			runBlock(stmt.getIfBlock());
 		} else if(stmt.getElseBlock() != null) {
-			for(SyntaxNode item: stmt.getElseBlock())
-				run(item);
+			runBlock(stmt.getElseBlock());
 		}
 	}
 	
-	private void execWhileLoop(WhileLoopNode wl) throws HbError {
+	private void execWhileLoop(WhileLoopNode wl) throws HbError, Return {
 		while(evaluateCondition(wl.getCondition())) {
 			for(SyntaxNode item: wl.getBlock()) {
-				if(item instanceof BreakNode)
-					return;
-				else if(item instanceof ContinueNode)
-					break;
-				else
+				try {
 					run(item);
+				} catch (Continue e) {
+					break;
+				} catch (Break e) {
+					return;
+				}
 			}
 		}
 	}
 	
-	private void execTry(TryNode t) throws HbError {
+	private void execTry(TryNode t) throws HbError, Return, Continue, Break {
 		try {
-			for(SyntaxNode item: t.getTryBlock())
-				run(item);
+			runBlock(t.getTryBlock());
 		} catch(HbError e) {
 			for(CatchNode c: t.getCatches()) {
 				if(((HbString)evaluate(c.getName())).getValue().equals(e.getName())) {
-					for(SyntaxNode item: c.getBlock())
-						run(item);
+					runBlock(c.getBlock());
 					return;
 				}
 			}
 			throw e;
 		}
 		if(t.getFinally() != null)
-			for(SyntaxNode item: t.getFinally())
-				run(item);
+			runBlock(t.getFinally());
 	}
 	
 	private void execThrow(ThrowNode t) throws HbError {
 		throw new HbError(evaluate(t.getName()).toString(),
 							(t.getDesc() == null ? null : evaluate(t.getDesc()).toString()),
 							t.getOrigin().getStart());
+	}
+	
+	private void execReturn(ReturnNode r) throws Return, HbError {
+		throw new Return(r.getOrigin(),evaluate(r.getExpr()));
 	}
 	
 	private void define(FunctionDefNode func) throws HbError {
@@ -425,12 +443,20 @@ public class Interpreter {
 		// execute each block item
 		HbValue lastResult = null;
 		for(SyntaxNode blockItem: func.getBlock()) {
-			if(blockItem instanceof ReturnNode) {
-				HbValue result = run(((ReturnNode)blockItem).getExpr());
-				popFrame();
-				return result;
-			} else
+			try {
 				lastResult = run(blockItem);
+			} catch(Break b) {
+				throw new HbError("Unexpected Break Statement",
+									"not inside a loop",
+									b.getOrigin().getStart());
+			} catch(Continue c) {
+				throw new HbError("Unexpected Continue Statement",
+									"not inside a loop",
+									c.getOrigin().getStart());
+			} catch(Return r) {
+				popFrame();
+				return r.getToReturn();
+			}
 		}
 		popFrame();
 		return lastResult;
@@ -443,7 +469,7 @@ public class Interpreter {
 		if(funcCall.getArgs().size() != func.getArgs().length)
 			throw new HbError("Wrong Number of Arguments",
 								"Function \"" + func.getName() + "\""
-								+ "takes " + func.getArgs().length
+								+ " takes " + func.getArgs().length
 								+ ", got " + funcCall.getArgs().size(),
 								funcCall.getParenLoc());
 		// evaluate arguments
@@ -487,6 +513,13 @@ public class Interpreter {
 			return objSpace.getFalse();
 		else
 			return objSpace.getTrue();
+	}
+	
+	private HbValue runBlock(BlockNode b) throws HbError, Return, Continue, Break {
+		HbValue lastResult = null;
+		for(SyntaxNode blockItem: b)
+			lastResult = run(blockItem);
+		return lastResult;
 	}
 
 	private ExecutionFrame getCurrentFrame() {

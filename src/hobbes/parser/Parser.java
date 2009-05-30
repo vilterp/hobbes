@@ -89,7 +89,8 @@ public class Parser {
 	
 	private boolean statement() throws SyntaxError {
 		return assignment() || deletionStatement() || returnStatement() ||
-				globalStatement() || throwStatement();
+				globalStatement() || throwStatement() || continueStatement() ||
+				breakStatement();
 	}
 
 	private boolean assignment() throws SyntaxError {
@@ -517,6 +518,15 @@ public class Parser {
 					throw getSyntaxError("No expression after \"is not\"");
 			} else
 				tokens.addFirst(getLastToken());
+		} else if(symbol("!=")) {
+			if(test()) {
+				ExpressionNode right = getLastExpression();
+				Token sym = getLastToken(); // the !=
+				Token newSym = new Token("==",TokenType.SYMBOL,sym.getSourceSpan());
+				ExpressionNode left = getLastExpression();
+				makeOperation(left,newSym,right);
+				stack.push(new NotNode(getLastExpression()));
+			}
 		}
 		if(testOp()) {
 			if(test()) {
@@ -892,8 +902,6 @@ public class Parser {
 	
 	private boolean testOp() {
 		if(symbol("=="))
-			return true;
-		if(symbol("!="))
 			return true;
 		if(symbol(">="))
 			return true;

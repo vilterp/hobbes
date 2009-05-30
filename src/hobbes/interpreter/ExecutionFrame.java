@@ -12,4 +12,6 @@ public abstract class ExecutionFrame {
 		return scope;
 	}
 	
+	public abstract String show();
+	
 }

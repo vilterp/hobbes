@@ -1,6 +1,6 @@
 package hobbes.interpreter;
 
-public class ModuleFrame extends ExecutionFrame implements ShowableFrame {
+public class ModuleFrame extends ExecutionFrame {
 	
 	private String name;
 	

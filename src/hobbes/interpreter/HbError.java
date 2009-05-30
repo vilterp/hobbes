@@ -8,20 +8,20 @@ public class HbError extends Throwable {
 	
 	private String errorName;
 	private SourceLocation location;
-	private ArrayList<ShowableFrame> trace;
+	private ArrayList<ExecutionFrame> trace;
 	
 	public HbError(String n, String m, SourceLocation l) {
 		super(m);
 		errorName = n;
 		location = l;
-		trace = new ArrayList<ShowableFrame>();
+		trace = new ArrayList<ExecutionFrame>();
 	}
 	
 	public HbError(String n, SourceLocation l) {
 		this(n,null,l);
 	}
 	
-	public void addFrame(ShowableFrame f) {
+	public void addFrame(ExecutionFrame f) {
 		trace.add(f);
 	}
 	
@@ -31,7 +31,7 @@ public class HbError extends Throwable {
 			System.err.print(": " + getMessage());
 		System.err.println();
 		System.err.println(location.show());
-		for(ShowableFrame f: trace)
+		for(ExecutionFrame f: trace)
 			System.err.println(f.show());
 	}
 	

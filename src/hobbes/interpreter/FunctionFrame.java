@@ -2,7 +2,7 @@ package hobbes.interpreter;
 
 import hobbes.parser.SourceLocation;
 
-public class FunctionFrame extends ExecutionFrame implements ShowableFrame {
+public class FunctionFrame extends ExecutionFrame {
 	
 	public String name;
 	public SourceLocation loc;
