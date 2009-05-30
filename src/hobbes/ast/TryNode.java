@@ -21,4 +21,16 @@ public class TryNode implements ControlStructureNode {
 				+ ")";
 	}
 	
+	public BlockNode getTryBlock() {
+		return tryBlock;
+	}
+	
+	public ArrayList<CatchNode> getCatches() {
+		return catches;
+	}
+	
+	public BlockNode getFinally() {
+		return finallyBlock;
+	}
+	
 }

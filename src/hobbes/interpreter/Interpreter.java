@@ -150,6 +150,9 @@ public class Interpreter {
 		} else if(tree instanceof WhileLoopNode) {
 			execWhileLoop((WhileLoopNode)tree);
 			return null;
+		} else if(tree instanceof TryNode) {
+			execTry((TryNode)tree);
+			return null;
 		} else { 
 			System.err.println("not doing that control structure yet");
 			return null;
@@ -166,6 +169,8 @@ public class Interpreter {
 		else if(stmt instanceof ReturnNode)
 			throw new HbError("Unexpected Return Statement","not inside a function",
 								((ReturnNode)stmt).getOrigin().getStart());
+		else if(stmt instanceof ThrowNode)
+			execThrow((ThrowNode)stmt);
 		else
 			System.err.println("doesn't do that kind of statement yet");
 	}
@@ -191,6 +196,31 @@ public class Interpreter {
 					run(item);
 			}
 		}
+	}
+	
+	private void execTry(TryNode t) throws HbError {
+		try {
+			for(SyntaxNode item: t.getTryBlock())
+				run(item);
+		} catch(HbError e) {
+			for(CatchNode c: t.getCatches()) {
+				if(((HbString)evaluate(c.getName())).getValue().equals(e.getName())) {
+					for(SyntaxNode item: c.getBlock())
+						run(item);
+					return;
+				}
+			}
+			throw e;
+		}
+		if(t.getFinally() != null)
+			for(SyntaxNode item: t.getFinally())
+				run(item);
+	}
+	
+	private void execThrow(ThrowNode t) throws HbError {
+		throw new HbError(evaluate(t.getName()).toString(),
+							(t.getDesc() == null ? null : evaluate(t.getDesc()).toString()),
+							t.getOrigin().getStart());
 	}
 	
 	private void define(FunctionDefNode func) throws HbError {

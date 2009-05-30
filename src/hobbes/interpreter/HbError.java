@@ -35,4 +35,8 @@ public class HbError extends Throwable {
 			System.err.println(f.show());
 	}
 	
+	public String getName() {
+		return errorName;
+	}
+	
 }

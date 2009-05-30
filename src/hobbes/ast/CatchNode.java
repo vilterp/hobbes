@@ -14,4 +14,12 @@ public class CatchNode implements SyntaxNode {
 		return errorName + "(" + block + ")";
 	}
 	
+	public StringNode getName() {
+		return errorName;
+	}
+	
+	public BlockNode getBlock() {
+		return block;
+	}
+	
 }

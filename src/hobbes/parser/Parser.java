@@ -141,25 +141,25 @@ public class Parser {
 	
 	private boolean throwStatement() throws SyntaxError {
 		if(word("throw")) {
-			Token raiseWord = getLastToken();
+			Token throwWord = getLastToken();
 			if(string()) {
 				StringNode errorName = (StringNode)stack.pop();
 				if(symbol(",")) {
 					Token comma = getLastToken();
 					if(expression()) {
 						ExpressionNode errorDesc = getLastExpression();
-						stack.push(new ThrowNode(errorName,errorDesc));
+						stack.push(new ThrowNode(throwWord,errorName,errorDesc));
 						return true;
 					} else
 						throw new SyntaxError("No description \",\"",
 												comma.getEnd());
 				} else {
-					stack.push(new ThrowNode(errorName));
+					stack.push(new ThrowNode(throwWord,errorName));
 					return true;
 				}
 			} else
 				throw new SyntaxError("No error name after \"throw\"",
-										raiseWord.getEnd().next());
+										throwWord.getEnd().next());
 		} else
 			return false;
 	}
