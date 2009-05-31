@@ -14,15 +14,11 @@ public class StringNode implements AtomNode {
 		return "\"" + sanitizedValue() + "\"";
 	}
 	
-	private String sanitizedValue() {
+	public String sanitizedValue() {
 		return origin.getValue()
 				.replaceAll("\n", "\\\\n")
 				.replaceAll("\t", "\\\\t")
 				.replaceAll("\"", "\\\"");
-	}
-	
-	public String getValue() {
-		return origin.getValue();
 	}
 	
 }

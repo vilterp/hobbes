@@ -1,6 +1,6 @@
 package hobbes.ast;
 
-public class WhileLoopNode implements ControlStructureNode {
+public class WhileLoopNode implements StatementNode {
 	
 	private ExpressionNode cond;
 	private BlockNode block;
@@ -12,14 +12,6 @@ public class WhileLoopNode implements ControlStructureNode {
 	
 	public String toString() {
 		return "while(" + cond + "," + block + ")";
-	}
-	
-	public ExpressionNode getCondition() {
-		return cond;
-	}
-	
-	public BlockNode getBlock() {
-		return block;
 	}
 	
 }

@@ -1,6 +1,6 @@
 package hobbes.ast;
 
-public class IfStatementNode implements ControlStructureNode {
+public class IfStatementNode implements ExpressionNode {
 	
 	private ExpressionNode condition;
 	private BlockNode theIf;
@@ -22,18 +22,6 @@ public class IfStatementNode implements ControlStructureNode {
 		return "if(" + condition + "," + theIf
 		+ "," + (theElse == null ? "" : theElse)
 		+ ")";
-	}
-	
-	public BlockNode getIfBlock() {
-		return theIf;
-	}
-	
-	public BlockNode getElseBlock() {
-		return theElse;
-	}
-	
-	public ExpressionNode getCondition() {
-		return condition;
 	}
 	
 }

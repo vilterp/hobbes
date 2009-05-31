@@ -27,7 +27,7 @@ public class HbFloat extends HbNumber {
 		return value;
 	}
 	
-	public HbBoolean is(HbValue other) {
+	public HbBoolean is(HbInstance other) {
 		if(other instanceof HbInt) {
 			if(((HbInt)other).getValue() == getValue())
 				return getObjSpace().getTrue();

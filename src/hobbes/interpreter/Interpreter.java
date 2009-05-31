@@ -25,7 +25,7 @@ public class Interpreter {
 				try {
 					i.add(s.nextLine());
 					if(!i.needsMore()) {
-						HbValue result = i.getResult();
+						HbInstance result = i.getResult();
 						if(result != null)
 							System.out.println("=> " + result.show());
 					}
@@ -98,7 +98,7 @@ public class Interpreter {
 		return tokenizer.getLastOpener();
 	}
 	
-	public HbValue getResult() {
+	public HbInstance getResult() {
 		if(needsMore())
 			throw new IllegalStateException("More code needed");
 		else {
@@ -119,7 +119,7 @@ public class Interpreter {
 		parser.reset();
 	}
 	
-	private HbValue interpret(SyntaxNode tree) {
+	private HbInstance interpret(SyntaxNode tree) {
 		if(tree != null) {
 			try {
 				try {
@@ -151,7 +151,7 @@ public class Interpreter {
 			return null;
 	}
 	
-	private HbValue run(SyntaxNode tree) throws HbError, Return, Continue, Break {
+	private HbInstance run(SyntaxNode tree) throws HbError, Return, Continue, Break {
 		if(tree instanceof ExpressionNode)
 			return evaluate((ExpressionNode)tree);
 		else if(tree instanceof StatementNode) {
@@ -272,7 +272,7 @@ public class Interpreter {
 		}
 	}
 
-	private HbValue evaluate(ExpressionNode expr) throws HbError {
+	private HbInstance evaluate(ExpressionNode expr) throws HbError {
 		if(expr instanceof NumberNode)
 			return evaluateNumber((NumberNode)expr);
 		else if(expr instanceof StringNode)
@@ -294,7 +294,7 @@ public class Interpreter {
 		return null;
 	}
 	
-	private HbValue evaluateNumber(NumberNode num) {
+	private HbInstance evaluateNumber(NumberNode num) {
 		try {
 			int value = Integer.parseInt(num.getValue());
 			return objSpace.getInt(value);
@@ -304,7 +304,7 @@ public class Interpreter {
 		}
 	}
 
-	private HbValue evaluateVariable(VariableNode var) throws HbError {
+	private HbInstance evaluateVariable(VariableNode var) throws HbError {
 		String varName = var.getValue();
 		try {
 			return getCurrentFrame().getScope().get(varName);
@@ -314,7 +314,7 @@ public class Interpreter {
 		}
 	}
 
-	private HbValue evaluateInlineIf(InlineIfStatementNode ifStatement) throws HbError {
+	private HbInstance evaluateInlineIf(InlineIfStatementNode ifStatement) throws HbError {
 		if(evaluateCondition(ifStatement.getCondition())) {
 			return evaluate(ifStatement.getTheIf());
 		} else if(ifStatement.getTheElse() != null) {
@@ -327,7 +327,7 @@ public class Interpreter {
 		return evaluate(expr).toBool() == objSpace.getTrue();
 	}
 	
-	private HbValue evaluateOperation(OperationNode op) throws HbError {
+	private HbInstance evaluateOperation(OperationNode op) throws HbError {
 		String o = op.getOperator().getValue();
 		if(o.equals("+") || o.equals("-") || o.equals("*") || o.equals("/") ||
 				o.equals("%") || o.equals("^")) {
@@ -373,11 +373,11 @@ public class Interpreter {
 			else
 				return objSpace.getFalse();
 		} else if(o.equals("or")) {
-			HbValue leftResult = evaluate(op.getLeft());
+			HbInstance leftResult = evaluate(op.getLeft());
 			if(leftResult.toBool() == objSpace.getTrue())
 				return leftResult;
 			else {
-				HbValue rightResult = evaluate(op.getRight());
+				HbInstance rightResult = evaluate(op.getRight());
 				if(rightResult.toBool() == objSpace.getTrue())
 					return rightResult;
 				else
@@ -389,7 +389,7 @@ public class Interpreter {
 		return null;
 	}
 	
-	private HbValue evaluateFunctionCall(FunctionCallNode funcCall)
+	private HbInstance evaluateFunctionCall(FunctionCallNode funcCall)
 																throws HbError {
 		// get function object
 		HbFunction func = null;
@@ -406,7 +406,7 @@ public class Interpreter {
 			return evaluateNormalFunctionCall(funcCall,(HbNormalFunction)func);
 	}
 	
-	private HbValue evaluateNormalFunctionCall(FunctionCallNode funcCall,
+	private HbInstance evaluateNormalFunctionCall(FunctionCallNode funcCall,
 													HbNormalFunction func)
 															throws HbError {
 		// ensure correct # args
@@ -419,7 +419,7 @@ public class Interpreter {
 						", got " + argExprs.size(),
 						funcCall.getParenLoc());
 		// evaluate param expressions
-		ArrayList<HbValue> argValues = new ArrayList<HbValue>();
+		ArrayList<HbInstance> argValues = new ArrayList<HbInstance>();
 		for(ExpressionNode expr: argExprs)
 			argValues.add(evaluate(expr));
 		// push function frame
@@ -441,7 +441,7 @@ public class Interpreter {
 			}
 		}
 		// execute each block item
-		HbValue lastResult = null;
+		HbInstance lastResult = null;
 		for(SyntaxNode blockItem: func.getBlock()) {
 			try {
 				lastResult = run(blockItem);
@@ -462,7 +462,7 @@ public class Interpreter {
 		return lastResult;
 	}
 
-	private HbValue evaluateNativeFunctionCall(FunctionCallNode funcCall,
+	private HbInstance evaluateNativeFunctionCall(FunctionCallNode funcCall,
 													HbNativeFunction func)
 																throws HbError {
 		// ensure correct # args
@@ -473,7 +473,7 @@ public class Interpreter {
 								+ ", got " + funcCall.getArgs().size(),
 								funcCall.getParenLoc());
 		// evaluate arguments
-		ArrayList<HbValue> argValues = new ArrayList<HbValue>();
+		ArrayList<HbInstance> argValues = new ArrayList<HbInstance>();
 		for(ExpressionNode expr: funcCall.getArgs())
 			argValues.add(evaluate(expr));
 		// run
@@ -494,8 +494,8 @@ public class Interpreter {
 		}
 	}
 	
-	private HbValue evaluateNegative(NegativeNode neg) throws HbError {
-		HbValue expr = evaluate(neg.getExpr());
+	private HbInstance evaluateNegative(NegativeNode neg) throws HbError {
+		HbInstance expr = evaluate(neg.getExpr());
 		if(expr instanceof HbFloat)
 			return objSpace.getFloat(-((HbFloat)expr).getValue());
 		else if(expr instanceof HbInt)
@@ -508,15 +508,15 @@ public class Interpreter {
 		}
 	}
 	
-	private HbValue evaluateNot(NotNode not) throws HbError {
+	private HbInstance evaluateNot(NotNode not) throws HbError {
 		if(evaluate(not.getExpr()).toBool() == objSpace.getTrue())
 			return objSpace.getFalse();
 		else
 			return objSpace.getTrue();
 	}
 	
-	private HbValue runBlock(BlockNode b) throws HbError, Return, Continue, Break {
-		HbValue lastResult = null;
+	private HbInstance runBlock(BlockNode b) throws HbError, Return, Continue, Break {
+		HbInstance lastResult = null;
 		for(SyntaxNode blockItem: b)
 			lastResult = run(blockItem);
 		return lastResult;

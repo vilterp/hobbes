@@ -12,8 +12,4 @@ public class NotNode implements ExpressionNode {
 		return "not(" + expression + ")";
 	}
 	
-	public ExpressionNode getExpr() {
-		return expression;
-	}
-	
 }

@@ -1,7 +1,7 @@
 package hobbes.interpreter;
 
 import hobbes.values.HbNativeFunction;
-import hobbes.values.HbValue;
+import hobbes.values.HbInstance;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -59,14 +59,14 @@ public class Scope {
 		return globals;
 	}
 	
-	public HbValue get(String name) throws UndefinedNameException {
+	public HbInstance get(String name) throws UndefinedNameException {
 		if(names.containsKey(name))
 			return objSpace.get(names.get(name));
 		else
 			throw new UndefinedNameException(name);
 	}
 	
-	public void set(String name, HbValue val) throws ReadOnlyNameException {
+	public void set(String name, HbInstance val) throws ReadOnlyNameException {
 		// get id of whatever is already there
 		Integer prevId = null;
 		if(names.containsKey(name))
@@ -81,7 +81,7 @@ public class Scope {
 			objSpace.garbageCollect(prevId);
 	}
 	
-	public void setGlobal(String name, HbValue val) throws ReadOnlyNameException {
+	public void setGlobal(String name, HbInstance val) throws ReadOnlyNameException {
 		if(readOnlys.contains(name))
 			throw new ReadOnlyNameException(name);
 		else {
@@ -90,7 +90,7 @@ public class Scope {
 		}
 	}
 	
-	public void setGlobalForce(String name, HbValue val) {
+	public void setGlobalForce(String name, HbInstance val) {
 		names.put(name, val.getId());
 		globals.add(name);
 	}

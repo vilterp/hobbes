@@ -2,7 +2,7 @@ package hobbes.values;
 
 import hobbes.interpreter.ObjectSpace;
 
-public class HbString extends HbValue {
+public class HbString extends HbInstance {
 	
 	private StringBuilder value;
 	
@@ -30,7 +30,7 @@ public class HbString extends HbValue {
 		return new HbString(getObjSpace(),"String");
 	}
 	
-	public HbBoolean is(HbValue other) {
+	public HbBoolean is(HbInstance other) {
 		if(other instanceof HbString) {
 			if(((HbString)other).getValue().equals(getValue()))
 				return getObjSpace().getTrue();

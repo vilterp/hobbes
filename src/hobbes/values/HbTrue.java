@@ -13,7 +13,7 @@ public class HbTrue extends HbBoolean {
 	}
 
 	@Override
-	public HbBoolean is(HbValue other) {
+	public HbBoolean is(HbInstance other) {
 		if (other instanceof HbTrue)
 			return getObjSpace().getTrue();
 		else

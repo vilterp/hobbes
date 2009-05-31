@@ -36,7 +36,7 @@ public class HbNormalFunction extends HbFunction {
 		return new HbString(getObjSpace(),"Function");
 	}
 	
-	public HbBoolean is(HbValue other) {
+	public HbBoolean is(HbInstance other) {
 		if(other.getId() == getId())
 			return getObjSpace().getTrue();
 		else

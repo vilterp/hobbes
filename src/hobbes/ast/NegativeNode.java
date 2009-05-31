@@ -12,8 +12,4 @@ public class NegativeNode implements ExpressionNode {
 		return "-(" + expression + ")";
 	}
 	
-	public ExpressionNode getExpr() {
-		return expression;
-	}
-	
 }

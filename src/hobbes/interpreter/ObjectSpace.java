@@ -30,17 +30,17 @@ public class ObjectSpace {
 		return id;
 	}
 
-	public HbValue get(int id) {
+	public HbInstance get(int id) {
 		return objects.get(id).getValue();
 	}
 
-	public int add(HbValue val) {
+	public int add(HbInstance val) {
 		int id = getId();
 		set(id, val);
 		return id;
 	}
 
-	public void set(int id, HbValue val) {
+	public void set(int id, HbInstance val) {
 		objects.put(id, new ValueRecord(val));
 	}
 

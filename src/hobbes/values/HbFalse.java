@@ -13,7 +13,7 @@ public class HbFalse extends HbBoolean {
 	}
 	
 	
-	public HbBoolean is(HbValue other) {
+	public HbBoolean is(HbInstance other) {
 		if(other instanceof HbFalse)
 			return getObjSpace().getTrue();
 		else

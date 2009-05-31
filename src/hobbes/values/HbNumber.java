@@ -2,7 +2,7 @@ package hobbes.values;
 
 import hobbes.interpreter.ObjectSpace;
 
-public abstract class HbNumber extends HbValue {
+public abstract class HbNumber extends HbInstance {
 
 	public HbNumber(ObjectSpace o) {
 		super(o);

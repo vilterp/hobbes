@@ -1,27 +1,15 @@
 package hobbes.ast;
 
-import hobbes.parser.Token;
-
 public class DeletionNode implements StatementNode {
 	
-	private Token origin;
-	private VariableNode var;
+	private VarNode var;
 	
-	public DeletionNode(Token o, VariableNode v) {
-		origin = o;
+	public DeletionNode(VarNode v) {
 		var = v;
 	}
 	
 	public String toString() {
 		return "del(" + var + ")";
-	}
-	
-	public String getVarName() {
-		return var.getValue();
-	}
-	
-	public Token getOrigin() {
-		return origin;
 	}
 	
 }

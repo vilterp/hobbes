@@ -17,7 +17,7 @@ public class HbNativeFunction extends HbFunction {
 		return new HbString(getObjSpace(),"NativeFunction");
 	}
 	
-	public HbBoolean is(HbValue other) {
+	public HbBoolean is(HbInstance other) {
 		if(other.getId() == getId())
 			return getObjSpace().getTrue();
 		else

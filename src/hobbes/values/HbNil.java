@@ -2,7 +2,7 @@ package hobbes.values;
 
 import hobbes.interpreter.ObjectSpace;
 
-public class HbNil extends HbValue {
+public class HbNil extends HbInstance {
 	
 	public HbNil(ObjectSpace o) {
 		super(o);
@@ -12,7 +12,7 @@ public class HbNil extends HbValue {
 		return new HbString(getObjSpace(),"Nil");
 	}
 	
-	public HbBoolean is(HbValue other) {
+	public HbBoolean is(HbInstance other) {
 		if(other instanceof HbNil)
 			return getObjSpace().getTrue();
 		else
