@@ -58,9 +58,9 @@ public class HbFloat extends HbNumber {
 
 	public HbNumber minus(HbNumber other) {
 		if(other instanceof HbInt) {
-			return getObjSpace().getFloat(getValue() + ((HbInt)other).getValue());
+			return getObjSpace().getFloat(getValue() - ((HbInt)other).getValue());
 		} else
-			return getObjSpace().getFloat(getValue() + ((HbFloat)other).getValue());
+			return getObjSpace().getFloat(getValue() - ((HbFloat)other).getValue());
 	}
 
 	public HbNumber times(HbNumber other) {
