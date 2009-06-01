@@ -14,4 +14,8 @@ public class CatchNode implements SyntaxNode {
 		return exceptionClass + "(" + block + ")";
 	}
 	
+	public BlockNode getBlock() {
+		return block;
+	}
+	
 }

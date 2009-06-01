@@ -18,7 +18,7 @@ public class VariableNode implements VarNode {
 		return origin;
 	}
 	
-	public String getValue() {
+	public String getName() {
 		return origin.getValue();
 	}
 	

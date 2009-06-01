@@ -1,19 +1,19 @@
 package hobbes.interpreter;
 
 import hobbes.parser.Token;
-import hobbes.values.HbInstance;
+import hobbes.values.HbObject;
 
 public class Return extends Throwable {
 	
 	private Token origin;
-	private HbInstance toReturn;
+	private HbObject toReturn;
 	
-	public Return(Token o, HbInstance tr) {
+	public Return(Token o, HbObject tr) {
 		toReturn = tr;
 		origin = o;
 	}
 	
-	public HbInstance getToReturn() {
+	public HbObject getToReturn() {
 		return toReturn;
 	}
 	

@@ -23,5 +23,17 @@ public class IfStatementNode implements ExpressionNode {
 		+ "," + (theElse == null ? "" : theElse)
 		+ ")";
 	}
+
+	public ExpressionNode getCondition() {
+		return condition;
+	}
+
+	public BlockNode getIfBlock() {
+		return theIf;
+	}
+
+	public BlockNode getElseBlock() {
+		return theElse;
+	}
 	
 }

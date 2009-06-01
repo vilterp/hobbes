@@ -139,7 +139,8 @@ public class Parser {
 	
 	private boolean statement() throws SyntaxError {
 		return assignment() || deletionStatement() || importStatement() ||
-				returnStatement() || globalStatement() || raiseStatement();
+				returnStatement() || globalStatement() || raiseStatement() ||
+				breakStatement() || continueStatement();
 	}
 
 	private boolean assignment() throws SyntaxError {
@@ -151,7 +152,7 @@ public class Parser {
 					ExpressionNode rightExpr = getLastExpression();
 					if(leftObj instanceof VarNode) {
 						stack.push(new AssignmentNode(
-											(VarNode)leftObj,rightExpr));
+											equals,(VarNode)leftObj,rightExpr));
 						return true;
 					}
 					// make sure it's assignable
@@ -201,7 +202,7 @@ public class Parser {
 				ObjectNode delObj = (ObjectNode)stack.pop();
 				if(delObj instanceof AtomNode) {
 					if(delObj instanceof VarNode) {
-						stack.push(new DeletionNode((VarNode)delObj));
+						stack.push(new DeletionNode(delWord,(VarNode)delObj));
 						return true;
 					} else
 						throw new SyntaxError("Can't delete an atom",
@@ -245,7 +246,7 @@ public class Parser {
 				if(variable()) {
 					VariableNode var = (VariableNode)stack.pop();
 					path.add(var);
-					if(var.getValue().equals("_")) {
+					if(var.getName().equals("_")) {
 						stack.push(new ImportNode(path));
 						return true;
 					}
@@ -311,7 +312,7 @@ public class Parser {
 		if(word("raise")) {
 			Token raiseWord = getLastToken();
 			if(expression()) {
-				stack.push(new RaiseNode((ExpressionNode)stack.pop()));
+				stack.push(new ThrowNode((ExpressionNode)stack.pop()));
 				return true;
 			} else
 				throw new SyntaxError("No expression after \"raise\"",
@@ -332,7 +333,23 @@ public class Parser {
 		} else
 			return false;
 	}
-
+	
+	private boolean breakStatement() {
+		if(word("break")) {
+			stack.push(new BreakNode(getLastToken()));
+			return true;
+		} else
+			return false;
+	}
+	
+	private boolean continueStatement() {
+		if(word("continue")) {
+			stack.push(new ContinueNode(getLastToken()));
+			return true;
+		} else
+			return false;
+	}
+	
 	private boolean whileLoop() throws SyntaxError {
 		if(word("while") || word("until")) {
 			Token iou = getLastToken();

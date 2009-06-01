@@ -6,7 +6,7 @@ public class ModuleFrame extends ExecutionFrame {
 	
 	public ModuleFrame(ObjectSpace o, String n) {
 		super(new Scope(o));
-		getScope().addBasics();
+		// getScope().addBasics();
 		name = n;
 	}
 	

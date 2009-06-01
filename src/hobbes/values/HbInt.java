@@ -2,97 +2,22 @@ package hobbes.values;
 
 import hobbes.interpreter.ObjectSpace;
 
-public class HbInt extends HbNumber {
+public class HbInt extends HbObject {
 	
 	private int value;
 	
-	public HbInt(ObjectSpace o, int v) {
+	public HbInt(ObjectSpace o, int val) {
 		super(o);
-		value = v;
-	}
-	
-	public HbString show() {
-		return new HbString(getObjSpace(),new Integer(value).toString());
-	}
-	
-	public String toString() {
-		return new Integer(value).toString();
-	}
-	
-	public HbString getType() {
-		return new HbString(getObjSpace(),"Int");
+		value = val;
 	}
 	
 	public int getValue() {
 		return value;
 	}
 	
-	public HbBoolean is(HbInstance other) {
-		if(other instanceof HbInt) {
-			if(((HbInt)other).getValue() == getValue())
-				return getObjSpace().getTrue();
-			else
-				return getObjSpace().getFalse();
-		} else {
-			if(((HbFloat)other).getValue() == getValue())
-				return getObjSpace().getTrue();
-			else
-				return getObjSpace().getFalse();
-		}
+	@Override
+	public HbString show() {
+		return new HbString(getObjSpace(),new Integer(value).toString());
 	}
 	
-	public HbBoolean toBool() {
-		if(getValue() == 0)
-			return getObjSpace().getFalse();
-		else
-			return getObjSpace().getTrue();
-	}
-
-	public HbNumber plus(HbNumber other) {
-		if(other instanceof HbInt) {
-			return getObjSpace().getInt(getValue() + ((HbInt)other).getValue());
-		} else {
-			return getObjSpace().getFloat(getValue() + ((HbFloat)other).getValue());
-		}
-	}
-
-	public HbNumber minus(HbNumber other) {
-		if(other instanceof HbInt) {
-			return getObjSpace().getInt(getValue() - ((HbInt)other).getValue());
-		} else
-			return getObjSpace().getFloat(getValue() - ((HbFloat)other).getValue());
-	}
-
-	public HbNumber times(HbNumber other) {
-		if(other instanceof HbInt) {
-			return getObjSpace().getInt(getValue() * ((HbInt)other).getValue());
-		} else
-			return getObjSpace().getFloat(getValue() * ((HbFloat)other).getValue());
-	}
-
-	public HbNumber dividedBy(HbNumber other) {
-		if(other instanceof HbFloat)
-			return getObjSpace().getFloat(getValue() / ((HbFloat)other).getValue());
-		else
-			return getObjSpace().getFloat(getValue() / (float)((HbInt)other).getValue());
-	}
-
-	public HbNumber toThePowerOf(HbNumber other) {
-		if(other instanceof HbInt) {
-			int result = (int)Math.pow((double)getValue(), (double)((HbInt)other).getValue());
-			return getObjSpace().getInt(result);
-		} else {
-			float result = (float)Math.pow((double)getValue(),
-										(double)((HbFloat)other).getValue());
-			return getObjSpace().getFloat(result);
-		}
-	}
-	
-	public HbNumber mod(HbNumber other) {
-		if(other instanceof HbFloat)
-			return getObjSpace().getFloat(getValue() % ((HbFloat)other).getValue());
-		else
-			return getObjSpace().getFloat(getValue() % (float)((HbInt)other).getValue());
-	}
-
 }

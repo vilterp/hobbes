@@ -1,10 +1,10 @@
 package hobbes.ast;
 
-public class RaiseNode implements StatementNode {
+public class ThrowNode implements StatementNode {
 	
 	private ExpressionNode exception;
 	
-	public RaiseNode(ExpressionNode e) {
+	public ThrowNode(ExpressionNode e) {
 		exception = e;
 	}
 	

@@ -2,7 +2,7 @@ package hobbes.values;
 
 import hobbes.interpreter.ObjectSpace;
 
-public class HbString extends HbInstance {
+public class HbString extends HbObject {
 	
 	private StringBuilder value;
 	
@@ -11,37 +11,16 @@ public class HbString extends HbInstance {
 		value = new StringBuilder(val);
 	}
 	
-	public String toString() {
-		return value.toString();
+	public HbString(ObjectSpace o, StringBuilder val) {
+		this(o,val.toString());
 	}
 	
-	public String sanitizedValue() {
-		return getValue().toString()
-				.replaceAll("\n", "\\\\n")
-				.replaceAll("\t", "\\\\t")
-				.replaceAll("\"", "\\\"");
-	}
-	
-	public String getValue() {
-		return value.toString();
-	}
-	
-	public HbString getType() {
-		return new HbString(getObjSpace(),"String");
-	}
-	
-	public HbBoolean is(HbInstance other) {
-		if(other instanceof HbString) {
-			if(((HbString)other).getValue().equals(getValue()))
-				return getObjSpace().getTrue();
-			else
-				return getObjSpace().getFalse();
-		} else
-			return getObjSpace().getFalse();
+	public StringBuilder getValue() {
+		return value;
 	}
 	
 	public HbString show() {
-		return new HbString(getObjSpace(),"\"" + sanitizedValue() + "\"");
+		return new HbString(getObjSpace(),"\"" + value.toString() + "\"");
 	}
 
 }

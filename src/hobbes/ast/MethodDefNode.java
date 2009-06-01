@@ -21,4 +21,12 @@ public class MethodDefNode implements SyntaxNode {
 				+ block + ")";
 	}
 	
+	public String getName() {
+		return name.getValue();
+	}
+	
+	public Token getNameToken() {
+		return name;
+	}
+	
 }

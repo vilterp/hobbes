@@ -1,13 +1,13 @@
 package hobbes.interpreter;
 
-import hobbes.values.HbInstance;
+import hobbes.values.HbObject;
 
 public class ValueRecord {
 	
-	private HbInstance value;
+	private HbObject value;
 	private int numRefs;
 	
-	public ValueRecord(HbInstance val) {
+	public ValueRecord(HbObject val) {
 		value = val;
 		numRefs = 0;
 	}
@@ -16,7 +16,7 @@ public class ValueRecord {
 		numRefs++;
 	}
 	
-	public HbInstance getValue() {
+	public HbObject getValue() {
 		return value;
 	}
 	

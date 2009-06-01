@@ -1,7 +1,7 @@
 package hobbes.interpreter;
 
-import hobbes.values.HbNativeFunction;
-import hobbes.values.HbInstance;
+import hobbes.values.HbClass;
+import hobbes.values.HbObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,28 +45,22 @@ public class Scope {
 	}
 	
 	public void addBasics() {
-		setGlobalForce("true", objSpace.getTrue());
-		setGlobalForce("false", objSpace.getFalse());
-		setGlobalForce("nil", objSpace.getNil());
-		// print function
-		setGlobalForce("print",new HbNativeFunction(objSpace,"print",new String[]{"object"}));
-		// get_input function
-		setGlobalForce("get_input",
-						new HbNativeFunction(objSpace,"get_input",new String[]{"prompt"}));
+		for(String builtin: objSpace.getBuiltins().keySet())
+			setGlobalForce(builtin,objSpace.getBuiltins().get(builtin));
 	}
 	
 	public HashSet<String> getGlobals() {
 		return globals;
 	}
 	
-	public HbInstance get(String name) throws UndefinedNameException {
+	public HbObject get(String name) throws UndefinedNameException {
 		if(names.containsKey(name))
 			return objSpace.get(names.get(name));
 		else
 			throw new UndefinedNameException(name);
 	}
 	
-	public void set(String name, HbInstance val) throws ReadOnlyNameException {
+	public void set(String name, HbObject val) throws ReadOnlyNameException {
 		// get id of whatever is already there
 		Integer prevId = null;
 		if(names.containsKey(name))
@@ -81,7 +75,7 @@ public class Scope {
 			objSpace.garbageCollect(prevId);
 	}
 	
-	public void setGlobal(String name, HbInstance val) throws ReadOnlyNameException {
+	public void setGlobal(String name, HbObject val) throws ReadOnlyNameException {
 		if(readOnlys.contains(name))
 			throw new ReadOnlyNameException(name);
 		else {
@@ -90,7 +84,7 @@ public class Scope {
 		}
 	}
 	
-	public void setGlobalForce(String name, HbInstance val) {
+	public void setGlobalForce(String name, HbObject val) {
 		names.put(name, val.getId());
 		globals.add(name);
 	}

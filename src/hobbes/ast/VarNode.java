@@ -5,5 +5,6 @@ import hobbes.parser.Token;
 public interface VarNode extends AtomNode {
 	
 	Token getOrigin();
+	String getName();
 	
 }
