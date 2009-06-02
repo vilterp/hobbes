@@ -9,41 +9,53 @@ public class ObjectSpace {
 	private HashMap<Integer,ValueRecord> objects;
 	private HashMap<Integer,HbInt> intConstants;
 	//private HashMap<Float, HbFloat> floatConstants;
-	private HashMap<String,HbObject> builtins;
+	private HashMap<String,HbClass> classes;
 	private int nextId;
+	private int trueId;
+	private int falseId;
+	private int nilId;
 
 	public ObjectSpace() {
 		objects = new HashMap<Integer,ValueRecord>();
-		builtins = new HashMap<String,HbObject>();
+		classes = new HashMap<String,HbClass>();
 		intConstants = new HashMap<Integer,HbInt>();
 		//floatConstants = new HashMap<Float, HbFloat>();
 		nextId = 0;
 		// add builtin classes
 		HbClass metaClass = new HbClass(this);
-		builtins.put("Class",metaClass);
-		addBuiltinClass("Object");
-		addBuiltinClass("TrueClass");
-		addBuiltinClass("FalseClass");
-		addBuiltinClass("NilClass");
-		addBuiltinClass("Int");
-		addBuiltinClass("Float");
-		addBuiltinClass("String");
+		classes.put("Class",metaClass);
+		addClass("Object");
+		addClass("TrueClass");
+		addClass("FalseClass");
+		addClass("NilClass");
+		addClass("Int");
+		addClass("Float");
+		addClass("String");
+		addClass("Error");
+		addClass("SyntaxError");
+		addClass("MissingMethodError");
+		addClass("UndefinedNameError");
+		addClass("ArgumentError");
+		addClass("ReadOnlyError");
 		// add builtin globals
-		builtins.put("nil",new HbNil(this));
-		builtins.put("true",new HbTrue(this));
-		builtins.put("false",new HbFalse(this));
+		nilId = new HbNil(this).getId();
+		trueId = new HbTrue(this).getId();
+		falseId = new HbFalse(this).getId();
 	}
 	
-	private void addBuiltinClass(String name) {
-		builtins.put(name, new HbClass(this,name));
+	private void addClass(String name) {
+		classes.put(name, new HbClass(this,name));
 	}
 	
-	public HashMap<String,HbObject> getBuiltins() {
-		return builtins;
+	public HashMap<String,HbClass> getClasses() {
+		return classes;
 	}
 	
-	public HbClass getBuiltinClass(String name) {
-		return (HbClass)builtins.get(name);
+	public HbClass getClass(String name) {
+		if(classes.containsKey(name))
+			return (HbClass)classes.get(name);
+		else
+			throw new IllegalArgumentException("class \"" + name + "\" not in builtins");
 	}
 
 	private int getId() {
@@ -74,15 +86,15 @@ public class ObjectSpace {
 	}
 
 	public HbObject getTrue() {
-		return builtins.get("true");
+		return get(trueId);
 	}
 
 	public HbObject getFalse() {
-		return builtins.get("false");
+		return get(falseId);
 	}
 
 	public HbObject getNil() {
-		return builtins.get("nil");
+		return get(nilId);
 	}
 
 	public HbInt getInt(Integer val) {

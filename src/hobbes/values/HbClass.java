@@ -2,6 +2,7 @@ package hobbes.values;
 
 import hobbes.interpreter.ObjectSpace;
 
+@HobbesClass(name="Class")
 public class HbClass extends HbObject {
 	
 	String name;
@@ -20,7 +21,6 @@ public class HbClass extends HbObject {
 		return name;
 	}
 	
-	@Override
 	public HbString show() {
 		StringBuilder ans = new StringBuilder("<Class ");
 		ans.append(name);

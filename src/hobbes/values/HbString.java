@@ -2,6 +2,7 @@ package hobbes.values;
 
 import hobbes.interpreter.ObjectSpace;
 
+@HobbesClass(name="String")
 public class HbString extends HbObject {
 	
 	private StringBuilder value;
@@ -19,6 +20,7 @@ public class HbString extends HbObject {
 		return value;
 	}
 	
+	@HobbesMethod(name="show",numArgs=0)
 	public HbString show() {
 		return new HbString(getObjSpace(),"\"" + value.toString() + "\"");
 	}

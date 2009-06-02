@@ -484,7 +484,7 @@ public class Parser {
 	private boolean methodDef() throws SyntaxError {
 		if(word("def")) {
 			Token defWord = getLastToken();
-			if(variable()) {
+			if(identifier()) {
 				Token name = ((VariableNode)stack.pop()).getOrigin();
 				ArgsSpecNode args = null;
 				if(argsSpec("(",")"))
@@ -849,7 +849,7 @@ public class Parser {
 		if(symbol(".")) {
 			Token dot = getLastToken();
 			// get attribute name
-			if(variable()) {
+			if(identifier()) {
 				Token attr = ((VariableNode)stack.pop()).getOrigin();
 				if(symbol("(")) {
 					stack.pop();
@@ -937,6 +937,16 @@ public class Parser {
 				stack.push(new VariableNode(variableToken));
 				return true;
 			}
+		} else
+			return false;
+	}
+	
+	private boolean identifier() {
+		if(variable())
+			return true;
+		else if(token(TokenType.WORD)) {
+			stack.push(new VariableNode(getLastToken()));
+			return true;
 		} else if(symbol("[")) {
 			if(symbol("]")) {
 				if(word("set")) {

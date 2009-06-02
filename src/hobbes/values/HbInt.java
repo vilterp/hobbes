@@ -2,6 +2,7 @@ package hobbes.values;
 
 import hobbes.interpreter.ObjectSpace;
 
+@HobbesClass(name="Int")
 public class HbInt extends HbObject {
 	
 	private int value;
@@ -15,7 +16,6 @@ public class HbInt extends HbObject {
 		return value;
 	}
 	
-	@Override
 	public HbString show() {
 		return new HbString(getObjSpace(),new Integer(value).toString());
 	}

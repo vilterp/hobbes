@@ -22,4 +22,8 @@ public class ArgsSpecNode implements SyntaxNode {
 		return closingToken;
 	}
 	
+	public ArrayList<VariableNode> getVars() {
+		return args;
+	}
+	
 }

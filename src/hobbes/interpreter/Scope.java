@@ -45,8 +45,13 @@ public class Scope {
 	}
 	
 	public void addBasics() {
-		for(String builtin: objSpace.getBuiltins().keySet())
-			setGlobalForce(builtin,objSpace.getBuiltins().get(builtin));
+		// classes
+		for(String className: objSpace.getClasses().keySet())
+			setGlobalForce(className,objSpace.getClasses().get(className));
+		// variables
+		setGlobalForce("true",objSpace.getTrue());
+		setGlobalForce("false",objSpace.getFalse());
+		setGlobalForce("nil",objSpace.getNil());
 	}
 	
 	public HashSet<String> getGlobals() {

@@ -15,7 +15,7 @@ public class MethodCallNode implements FunctionNode {
 		receiver = r;
 		origin = t;
 		methodName = t.getValue();
-		args = null;
+		args = new ArrayList<ExpressionNode>();
 	}
 	
 	public MethodCallNode(ExpressionNode r, Token t, ArrayList<ExpressionNode> a) {
@@ -34,13 +34,11 @@ public class MethodCallNode implements FunctionNode {
 	}
 	
 	public String toString() {
-		String ans = "call(" + 
+		return "call(" + 
 		receiver + "," 
-		+ methodName;
-		if(args != null)
-			ans += "," + args;
-		ans += ")";
-		return ans;
+		+ methodName + ","
+		+ args
+		+ ")";
 	}
 	
 	public Token getOrigin() {
@@ -61,6 +59,10 @@ public class MethodCallNode implements FunctionNode {
 	
 	public ArrayList<ExpressionNode> getArgs() {
 		return args;
+	}
+	
+	public int getNumArgs() {
+		return args.size();
 	}
 	
 }

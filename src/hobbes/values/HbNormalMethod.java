@@ -3,7 +3,7 @@ package hobbes.values;
 import hobbes.ast.BlockNode;
 import hobbes.ast.MethodDefNode;
 
-public class HbNormalMethod {
+public class HbNormalMethod implements HbMethod {
 	
 	private String name;
 	private BlockNode block;
@@ -25,6 +25,10 @@ public class HbNormalMethod {
 
 	public MethodDefNode getDef() {
 		return def;
+	}
+	
+	public int getNumArgs() {
+		return def.getArgs().size();
 	}
 	
 }
