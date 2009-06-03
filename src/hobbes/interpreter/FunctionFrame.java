@@ -6,22 +6,16 @@ public class FunctionFrame extends ExecutionFrame {
 	
 	public String name;
 	public SourceLocation loc;
-	public boolean isNative;
 	
 	public FunctionFrame(ObjectSpace o, Scope adoptGlobals,
-						String na, SourceLocation p, boolean in) {
+						String na, SourceLocation p) {
 		super(new Scope(o,adoptGlobals));
 		name = na;
 		loc = p;
-		isNative = in;
 	}
 	
 	public SourceLocation getLoc() {
 		return loc;
-	}
-	
-	public boolean isNative() {
-		return isNative;
 	}
 	
 	public String show() {

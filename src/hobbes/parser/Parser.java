@@ -70,6 +70,7 @@ public class Parser {
 					Pattern.compile("[A-Z][a-zA-Z0-9]*");
 	private static final HashSet<String> reservedWords = new HashSet<String>();
 	static {
+		reservedWords.add("new");
 		reservedWords.add("not");
 		reservedWords.add("class");
 		reservedWords.add("trait");
@@ -471,7 +472,7 @@ public class Parser {
 				BlockNode block = null;
 				if(block())
 					block = (BlockNode)stack.pop();
-				stack.push(new ClassNode(name,args,superclass,block));
+				stack.push(new ClassDefNode(name,args,superclass,block));
 				return true;
 			} else
 				throw new SyntaxError("No class name after \"class\" " +
@@ -851,36 +852,10 @@ public class Parser {
 			// get attribute name
 			if(identifier()) {
 				Token attr = ((VariableNode)stack.pop()).getOrigin();
-				if(symbol("(")) {
-					stack.pop();
-					destroyEOLsUntil(")");
-					ArrayList<ExpressionNode> args = new ArrayList<ExpressionNode>();
-					if(symbol(")")) {
-						stack.pop();
-						stack.push(new MethodCallNode(getLastExpression(),attr,args));
-						return true;
-					}
-					while(true) {
-						if(expression())
-							args.add(getLastExpression());
-						if(symbol(",")) {
-							if(symbol(","))
-								throw getSyntaxError("Double comma");
-							else if(symbol(")")) {
-								stack.pop();
-								throw getSyntaxError("Trailing comma");
-							} else
-								stack.pop();
-						} else {
-							if(symbol(")")) {
-								stack.pop();
-								stack.push(new MethodCallNode(getLastExpression(),attr,args));
-								return true;
-							} else
-								throw new SyntaxError("Missing comma",
-														tokens.peek().getStart());
-						}
-					}
+				if(arguments()) {
+					ArgumentsNode args = (ArgumentsNode)stack.pop();
+					stack.push(new MethodCallNode(getLastExpression(),attr,args.getArgs()));
+					return true;
 				} else {
 					stack.push(new MethodCallNode(getLastExpression(),attr));
 					return true;
@@ -892,9 +867,42 @@ public class Parser {
 	}
 	
 	private boolean functionCall() throws SyntaxError {
+		if(arguments()) {
+			ArgumentsNode args = (ArgumentsNode)stack.pop();
+			stack.push(new FunctionCallNode(getLastExpression(),args.getArgs(),
+															args.getOpener().getStart()));
+			return true;
+		} else
+			return false;
+	}
+
+	private boolean atom() throws SyntaxError {
+		return variable() || instanceVar() || number() || string() ||
+				regex() || list() || dictOrSet() || character() ||
+				anonymousFunction() || newInstance();
+	}
+	
+	private boolean newInstance() throws SyntaxError {
+		if(word("new")) {
+			Token newWord = getLastToken();
+			if(variable()) {
+				VariableNode classVar = (VariableNode)stack.pop();
+				ArgumentsNode args = null;
+				if(arguments()) {
+					args = (ArgumentsNode)stack.pop();
+				}
+				stack.push(new NewInstanceNode(classVar,args.getOpener(),args.getArgs()));
+				return true;
+			} else
+				throw new SyntaxError("No class expression after \"new\"",
+										newWord.getEnd().next());
+		} else
+			return false;
+	}
+	
+	private boolean arguments() throws SyntaxError {
 		if(symbol("(")) {
 			Token opener = getLastToken();
-			ExpressionNode function = getLastExpression();
 			destroyEOLsUntil(")");
 			ArrayList<ExpressionNode> args = new ArrayList<ExpressionNode>();
 			while(true) {
@@ -910,7 +918,7 @@ public class Parser {
 						stack.pop();
 				} else if(symbol(")")) {
 					stack.pop();
-					stack.push(new FunctionCallNode(function,args,opener.getStart()));
+					stack.push(new ArgumentsNode(args,opener));
 					return true;
 				} else
 					throw new SyntaxError("Missing comma",
@@ -918,12 +926,6 @@ public class Parser {
 			}
 		} else
 			return false;
-	}
-
-	private boolean atom() throws SyntaxError {
-		return variable() || instanceVar() || number() || string() ||
-				regex() || list() || dictOrSet() || character() ||
-				anonymousFunction();
 	}
 
 	private boolean variable() {

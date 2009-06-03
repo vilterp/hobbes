@@ -22,29 +22,34 @@ public class ObjectSpace {
 		//floatConstants = new HashMap<Float, HbFloat>();
 		nextId = 0;
 		// add builtin classes
-		HbClass metaClass = new HbClass(this);
-		classes.put("Class",metaClass);
-		addClass("Object");
-		addClass("TrueClass");
-		addClass("FalseClass");
-		addClass("NilClass");
-		addClass("Int");
-		addClass("Float");
-		addClass("String");
-		addClass("Error");
-		addClass("SyntaxError");
-		addClass("MissingMethodError");
-		addClass("UndefinedNameError");
-		addClass("ArgumentError");
-		addClass("ReadOnlyError");
+		addClass(HbClass.class);
+		addClass(HbObject.class);
+		addClass(HbTrue.class);
+		addClass(HbFalse.class);
+		addClass(HbNil.class);
+		addClass(HbInt.class);
+//		addClass(HbFloat.class);
+		addClass(HbString.class);
+		addClass(HbError.class);
+		addClass(HbSyntaxError.class);
+		addClass(HbMissingMethodError.class);
+		addClass(HbUndefinedNameError.class);
+		addClass(HbArgumentError.class);
+		addClass(HbReadOnlyError.class);
 		// add builtin globals
 		nilId = new HbNil(this).getId();
 		trueId = new HbTrue(this).getId();
 		falseId = new HbFalse(this).getId();
 	}
 	
-	private void addClass(String name) {
-		classes.put(name, new HbClass(this,name));
+	private void addClass(Class<? extends HbObject> klass) {
+		if(klass.isAnnotationPresent(HobbesClass.class)) {
+			String name = ((HobbesClass)klass.getAnnotation(HobbesClass.class)).name();
+			classes.put(name,new HbClass(this,klass));
+			classes.get(name).setClass(classes.get("Class"));
+		} else
+			throw new IllegalArgumentException("Supplied class has no " +
+													"HobbesClass annotation");
 	}
 	
 	public HashMap<String,HbClass> getClasses() {
@@ -52,10 +57,7 @@ public class ObjectSpace {
 	}
 	
 	public HbClass getClass(String name) {
-		if(classes.containsKey(name))
-			return (HbClass)classes.get(name);
-		else
-			throw new IllegalArgumentException("class \"" + name + "\" not in builtins");
+		return (HbClass)classes.get(name);
 	}
 
 	private int getId() {
@@ -95,6 +97,13 @@ public class ObjectSpace {
 
 	public HbObject getNil() {
 		return get(nilId);
+	}
+	
+	public HbObject nilIfNull(HbObject obj) {
+		if(obj == null)
+			return getNil();
+		else
+			return obj;
 	}
 
 	public HbInt getInt(Integer val) {

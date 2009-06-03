@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 import hobbes.parser.Token;
 
-public class MethodDefNode implements SyntaxNode {
+public class MethodDefNode implements DefNode {
 	
 	private Token name;
 	private ArrayList<VariableNode> args;
@@ -33,6 +33,10 @@ public class MethodDefNode implements SyntaxNode {
 	
 	public ArrayList<VariableNode> getArgs() {
 		return args;
+	}
+	
+	public BlockNode getBlock() {
+		return block;
 	}
 	
 }

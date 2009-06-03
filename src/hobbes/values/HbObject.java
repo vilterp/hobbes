@@ -1,6 +1,5 @@
 package hobbes.values;
 
-import java.lang.reflect.Method;
 import java.util.HashMap;
 
 import hobbes.interpreter.ObjectSpace;
@@ -9,30 +8,34 @@ import hobbes.interpreter.ObjectSpace;
 public abstract class HbObject extends Throwable {
 	
 	private int id;
-	private HbClass theClass;
+	private HbClass klass;
 	private ObjectSpace objSpace;
 	private HashMap<String,Integer> instanceVars;
-	private HashMap<String,HbMethod> methods;
 	
 	public HbObject(ObjectSpace o) {
 		objSpace = o;
 		id = objSpace.add(this);
-		String className = getClass().getAnnotation(HobbesClass.class).name();
-		if(className.equals("Class"))
-			theClass = (HbClass)this;
-		else
-			theClass = getObjSpace().getClass(className);
 		instanceVars = new HashMap<String,Integer>();
-		methods = new HashMap<String,HbMethod>();
-		// add methods
-		for(Method m: getClass().getMethods()) {
-			if(m.isAnnotationPresent(HobbesMethod.class)) {
-				HobbesMethod ann = m.getAnnotation(HobbesMethod.class);
-				String n = ann.name();
-				HbNativeMethod meth = new HbNativeMethod(ann.name(),ann.numArgs(),m); 
-				methods.put(ann.name(),meth);
-			}
-		}
+		// get HbClass instance
+		if(getClass().isAnnotationPresent(HobbesClass.class)) {
+			String className = getClass().getAnnotation(HobbesClass.class).name();
+			if(!className.equals("Class"))
+				klass = getObjSpace().getClass(className);
+		} else
+			throw new IllegalArgumentException("\"" + getClass().getName() + "\" extends " +
+											"HbObject but doesn't have a HbClass annotation");
+	}
+	
+	public HbObject(ObjectSpace o, HbClass c) {
+		// FIXME eww code duplication
+		objSpace = o;
+		id = objSpace.add(this);
+		instanceVars = new HashMap<String,Integer>();
+		klass = c;
+	}
+	
+	public void setClass(HbClass c) {
+		klass = c;
 	}
 	
 	public String toString() {
@@ -55,21 +58,9 @@ public abstract class HbObject extends Throwable {
 		return objSpace.get(instanceVars.get(name));
 	}
 	
-	public HbMethod getMethod(String name) {
-		return methods.get(name);
-	}
-	
-	public HbString getString(String str) {
-		return new HbString(getObjSpace(),str);
-	}
-	
-	public HbString getString(StringBuilder str) {
-		return getString(str.toString());
-	}
-	
 	@HobbesMethod(name="class",numArgs=0)
 	public HbClass getClassInstance() {
-		return theClass;
+		return klass;
 	}
 	
 	@HobbesMethod(name="object_id",numArgs=0)
@@ -78,6 +69,13 @@ public abstract class HbObject extends Throwable {
 	}
 	
 	@HobbesMethod(name="show",numArgs=0)
-	public abstract HbString show();
+	public HbString show() {
+		StringBuilder repr = new StringBuilder("<");
+		repr.append(getClassInstance().getName());
+		repr.append(" @ ");
+		repr.append(Integer.toHexString(getId()));
+		repr.append(">");
+		return new HbString(getObjSpace(),repr);
+	}
 	
 }

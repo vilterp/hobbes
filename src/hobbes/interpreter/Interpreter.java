@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.Stack;
@@ -105,7 +106,7 @@ public class Interpreter {
 		else {
 			try {
 				return interpret(parser.parse(tokenizer.getTokens()));
-			} catch (SyntaxError e) {
+			} catch(SyntaxError e) {
 				handleSyntaxError(e);
 				return null;
 			}
@@ -125,22 +126,30 @@ public class Interpreter {
 		if(tree != null) {
 			try {
 				return run(tree);
-			} catch (HbError e) {
+			} catch(HbError e) {
 				while(canPop())
 					e.addFrame(popFrame());
 				e.addFrame(getCurrentFrame());
 				e.printStackTrace();
+				return null;
+			} catch(Return r) {
+				SyntaxError e = new SyntaxError("Unexpected return statment - " +
+							"not inside function or method",r.getOrigin().getStart());
+				handleSyntaxError(e);
 				return null;
 			}
 		} else
 			return null;
 	}
 	
-	private HbObject run(SyntaxNode tree) throws HbError {
+	private HbObject run(SyntaxNode tree) throws HbError, Return {
 		if(tree instanceof ExpressionNode)
 			return eval((ExpressionNode)tree);
 		else if(tree instanceof StatementNode) {
 			exec((StatementNode)tree);
+			return null;
+		} else if(tree instanceof ClassDefNode) {
+			defineClass((ClassDefNode)tree);
 			return null;
 		} else
 			return null;
@@ -157,6 +166,8 @@ public class Interpreter {
 			}
 		} else if(expr instanceof VariableNode)
 			return evalVariable((VariableNode)expr);
+		else if(expr instanceof NewInstanceNode)
+			return evalNewInstance((NewInstanceNode)expr);
 		else if(expr instanceof MethodCallNode)
 			return evalMethodCall((MethodCallNode)expr);
 		else {
@@ -165,6 +176,27 @@ public class Interpreter {
 		}
 	}
 	
+	private HbObject evalNewInstance(NewInstanceNode expr) throws HbError {
+		String className = expr.getClassVar().getName();
+		// get HbClass instance
+		HbClass klass = null;
+		try {
+			klass = (HbClass)eval(expr.getClassVar());
+		} catch(ClassCastException e) {
+			throw new HbNotAClassError(objSpace,className,
+										expr.getClassVar().getOrigin().getStart());
+		}
+		// instantiate
+		if(objSpace.getClasses().containsKey(className)) { // native class
+			System.err.println("native class constructors don't work yet");
+			// TODO: HobbesConstructor annotation?
+			return null; // TODO
+		} else { // class defined in Hobbes
+			return new HbNormalClass(objSpace,klass);
+			// TODO: call constructor
+		}
+	}
+
 	private HbObject evalVariable(VariableNode var) throws HbError {
 		try {
 			return getCurrentFrame().getScope().get(var.getName());
@@ -176,7 +208,8 @@ public class Interpreter {
 
 	private HbObject evalMethodCall(MethodCallNode call) throws HbError {
 		HbObject receiver = eval(call.getReceiver());
-		HbMethod method = receiver.getMethod(call.getMethodName());
+		HbClass receiverClass = receiver.getClassInstance();
+		HbMethod method = receiverClass.getMethod(call.getMethodName());
 		// check that method exists
 		if(method == null)
 			throw new HbMissingMethodError(objSpace,call.getMethodName(),
@@ -196,14 +229,33 @@ public class Interpreter {
 			args[i] = eval(call.getArgs().get(i));
 		if(method instanceof HbNativeMethod)
 			return evalNativeMethodCall(receiver,(HbNativeMethod)method,args);
-		else
-			return evalNormalMethodCall(receiver,(HbNormalMethod)method,args);
+		else {
+			try {
+				return evalNormalMethodCall(receiver,(HbNormalMethod)method,
+															args,call.getOrigin());
+			} catch (StackOverflow e) {
+				throw new HbStackOverflow(objSpace,call.getOrigin().getStart());
+			}
+		}
 	}
 	
-	private HbObject evalNormalMethodCall(HbObject receiver,
-			HbNormalMethod method, HbObject[] args) {
-		// TODO Auto-generated method stub
-		return null;
+	private HbObject evalNormalMethodCall(HbObject receiver, HbNormalMethod method,
+								HbObject[] args, Token origin) throws StackOverflow, HbError {
+		// add frame
+		pushFrame(new FunctionFrame(objSpace,getCurrentFrame().getScope(),
+									method.getName(),origin.getStart()));
+		// run method
+		HbObject lastResult = null;
+		for(SyntaxNode item: method.getBlock()) {
+			try {
+				lastResult = run(item);
+			} catch(Return r) {
+				popFrame();
+				return r.getToReturn();
+			}
+		}
+		popFrame();
+		return objSpace.nilIfNull(lastResult);
 	}
 
 	private HbObject evalNativeMethodCall(HbObject receiver,
@@ -217,14 +269,21 @@ public class Interpreter {
 		} catch (InvocationTargetException e) {
 			e.printStackTrace();
 		}
+		System.exit(1);
 		return null;
 	}
 	
-	private void exec(StatementNode stmt) throws HbError {
+	private void exec(StatementNode stmt) throws HbError, Return {
 		if(stmt instanceof AssignmentNode)
 			assign((AssignmentNode)stmt);
+		else if(stmt instanceof ReturnNode)
+			execReturn((ReturnNode)stmt);
 		else
 			System.out.println("doesn't do that statement yet");
+	}
+
+	private void execReturn(ReturnNode stmt) throws HbError, Return {
+		throw new Return(stmt.getOrigin(),eval(stmt.getExpr()));
 	}
 
 	private void assign(AssignmentNode stmt) throws HbError {
@@ -233,6 +292,25 @@ public class Interpreter {
 		} catch (ReadOnlyNameException e) {
 			throw new HbReadOnlyError(objSpace,e.getNameInQuestion(),
 												stmt.getEqualsToken().getStart());
+		}
+	}
+	
+	private void defineClass(ClassDefNode def) throws HbReadOnlyError {
+		// make HbClass instance
+		HbClass newClass = new HbClass(objSpace,def.getName());
+		// add class to object
+		try {
+			getCurrentFrame().getScope().set(def.getName(),newClass);
+		} catch (ReadOnlyNameException e) {
+			throw new HbReadOnlyError(objSpace,def.getName(),
+											def.getClassNameToken().getStart());
+		}
+		// define new class
+		for(SyntaxNode item: def.getBody()) {
+			if(item instanceof MethodDefNode) {
+				MethodDefNode methodDef = (MethodDefNode)item;
+				newClass.addMethod(methodDef.getName(),new HbNormalMethod(methodDef));
+			} // else... anything else allowed in class body?
 		}
 	}
 
