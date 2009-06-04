@@ -79,12 +79,11 @@ public class HbClass extends HbObject {
 		methods.put(name, method);
 	}
 	
-	@HobbesMethod(name="show",numArgs=0)
-	public HbString show() {
+	public String toString() {
 		StringBuilder ans = new StringBuilder("<Class ");
 		ans.append(name);
 		ans.append(">");
-		return new HbString(getObjSpace(),ans);
+		return ans.toString();
 	}
 	
 	@HobbesMethod(name="name",numArgs=0)

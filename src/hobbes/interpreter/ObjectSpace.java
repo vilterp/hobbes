@@ -1,5 +1,6 @@
 package hobbes.interpreter;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import hobbes.values.*;
@@ -10,14 +11,18 @@ public class ObjectSpace {
 	private HashMap<Integer,HbInt> intConstants;
 	//private HashMap<Float, HbFloat> floatConstants;
 	private HashMap<String,HbClass> classes;
+	private ArrayList<Integer> created;
 	private int nextId;
 	private int trueId;
 	private int falseId;
 	private int nilId;
+	private boolean verboseGC;
 
-	public ObjectSpace() {
+	public ObjectSpace(boolean vgc) {
+		verboseGC = vgc;
 		objects = new HashMap<Integer,ValueRecord>();
 		classes = new HashMap<String,HbClass>();
+		created = new ArrayList<Integer>();
 		intConstants = new HashMap<Integer,HbInt>();
 		//floatConstants = new HashMap<Float, HbFloat>();
 		nextId = 0;
@@ -76,10 +81,11 @@ public class ObjectSpace {
 	public int add(HbObject val) {
 		int id = getId();
 		set(id, val);
+		created.add(id);
 		return id;
 	}
 
-	public void set(int id, HbObject val) {
+	private void set(int id, HbObject val) {
 		objects.put(id, new ValueRecord(val));
 	}
 	
@@ -129,9 +135,46 @@ public class ObjectSpace {
 //		}
 //	}
 	
-	public void garbageCollect(int id) {
-		if(!objects.get(id).isReferenced())
+	public void incRefs(int id) {
+		objects.get(id).incRefs();
+	}
+	
+	public void decRefs(int id) {
+		objects.get(id).decRefs();
+	}
+	
+	public boolean garbageCollect(int id) {
+		if(!objects.get(id).isReferenced()) {
+			if(get(id) instanceof HbInt)
+				intConstants.remove(((HbInt)get(id)).getValue());
+			if(verboseGC)
+				System.out.println("Collected " + get(id));
 			objects.remove(id);
+			return true;
+		} else
+			return false;
+	}
+	
+	public int garbageCollectCreated() {
+		int collected = 0;
+		for(int id: created) {
+			if(garbageCollect(id))
+				collected++;
+		}
+		resetCreated();
+		return collected;
+	}
+	
+	public void resetCreated() {
+		created.clear();
+	}
+	
+	public int getNumCreated() {
+		return created.size();
+	}
+
+	public int size() {
+		return objects.size();
 	}
 
 }

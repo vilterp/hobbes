@@ -19,9 +19,8 @@ public class HbList extends HbObject {
 		elements = initValues;
 	}
 	
-	@HobbesMethod(name="show",numArgs=0)
-	public HbString show() {
-		return new HbString(getObjSpace(),elements.toString());
+	public String toString() {
+		return elements.toString();
 	}
 	
 	@HobbesMethod(name="[]",numArgs=1)
@@ -64,7 +63,11 @@ public class HbList extends HbObject {
 			StringBuilder ans = new StringBuilder();
 			Iterator<HbObject> it = elements.iterator();
 			while(it.hasNext()) {
-				ans.append(it.next());
+				HbObject next = it.next();
+				if(next instanceof HbString)
+					ans.append(((HbString)next).getValue());
+				else
+					ans.append(next);
 				if(it.hasNext())
 					ans.append(j);
 			}

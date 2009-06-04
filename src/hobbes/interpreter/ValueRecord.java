@@ -12,8 +12,16 @@ public class ValueRecord {
 		numRefs = 0;
 	}
 	
+	public String toString() {
+		return "Value[" + value + ",refs=" + numRefs + "]";
+	}
+	
 	public void incRefs() {
 		numRefs++;
+	}
+	
+	public void decRefs() {
+		numRefs--;
 	}
 	
 	public HbObject getValue() {

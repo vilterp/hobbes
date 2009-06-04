@@ -18,7 +18,7 @@ public class Interpreter {
 	public static void main(String[] args) {
 		if(args.length == 0) { // interactive console
 			Scanner s = new Scanner(System.in);
-			Interpreter i = new Interpreter("<console>");
+			Interpreter i = new Interpreter("<console>",true);
 			while(true) {
 				if(i.needsMore())
 					System.out.print(i.getLastOpener() + "> ");
@@ -72,17 +72,26 @@ public class Interpreter {
 	private String fileName;
 	private Parser parser;
 	private Tokenizer tokenizer;
+	private boolean verboseGC;
 	
 	private static final int MAX_STACK_SIZE = 500;
 	
-	public Interpreter(String fn) {
-		objSpace = new ObjectSpace();
+	public Interpreter(String fn, boolean vgc) {
+		verboseGC = vgc;
+		objSpace = new ObjectSpace(true);
+		objSpace.resetCreated();
+		if(verboseGC)
+			System.out.println("initial object space size: " + objSpace.size());
 		stack = new Stack<ExecutionFrame>();
 		lineNo = 1;
 		fileName = fn;
 		stack.push(new ModuleFrame(objSpace,fileName));
 		parser = new Parser();
 		tokenizer = new Tokenizer();
+	}
+	
+	public Interpreter(String fn) {
+		this(fn,false);
 	}
 	
 	public void add(String line) {
@@ -115,19 +124,14 @@ public class Interpreter {
 		}
 	}
 	
-	private void handleSyntaxError(SyntaxError e) {
-		ErrorWrapper error = new ErrorWrapper(
-				new HbSyntaxError(objSpace,e.getMessage()),e.getLocation());
-		error.addFrame((ModuleFrame)getCurrentFrame());
-		error.printStackTrace();
-		tokenizer.reset();
-		parser.reset();
-	}
-	
 	private HbObject interpret(SyntaxNode tree) {
 		if(tree != null) {
 			try {
-				return run(tree);
+				HbObject result = run(tree);
+				objSpace.garbageCollectCreated();
+				if(verboseGC)
+					System.out.println("object space size: " + objSpace.size());
+				return result;
 			} catch(ErrorWrapper e) {
 				while(canPop())
 					e.addFrame(popFrame());
@@ -160,13 +164,7 @@ public class Interpreter {
 	
 	private HbObject eval(ExpressionNode expr) throws ErrorWrapper {
 		if(expr instanceof NumberNode) {
-			try {
-				int value = Integer.parseInt(((NumberNode)expr).getValue());
-				return objSpace.getInt(value);
-			} catch(NumberFormatException e) {
-				System.err.println("only ints for now");
-				return null;
-			}
+			return evalNumber((NumberNode)expr);
 		} else if(expr instanceof VariableNode)
 			return evalVariable((VariableNode)expr);
 		else if(expr instanceof NewInstanceNode)
@@ -183,6 +181,16 @@ public class Interpreter {
 		}
 	}
 	
+	private HbObject evalNumber(NumberNode num) {
+		try {
+			int value = Integer.parseInt(num.getValue());
+			return objSpace.getInt(value);
+		} catch(NumberFormatException e) {
+			System.err.println("only ints for now");
+			return null;
+		}
+	}
+
 	private HbObject evalList(ListNode expr) throws ErrorWrapper {
 		ArrayList<HbObject> elements = new ArrayList<HbObject>();
 		for(ExpressionNode elem: expr.getElements())
@@ -307,6 +315,8 @@ public class Interpreter {
 	private void exec(StatementNode stmt) throws ErrorWrapper, Return {
 		if(stmt instanceof AssignmentNode)
 			assign((AssignmentNode)stmt);
+		else if(stmt instanceof DeletionNode)
+			delete((DeletionNode)stmt);
 		else if(stmt instanceof ReturnNode)
 			execReturn((ReturnNode)stmt);
 		else
@@ -325,6 +335,25 @@ public class Interpreter {
 			throw new ErrorWrapper(
 							new HbReadOnlyError(objSpace,e.getNameInQuestion()),
 							stmt.getEqualsToken().getStart());
+		}
+	}
+	
+	private void delete(DeletionNode del) throws ErrorWrapper {
+		try {
+			// garbage collect
+			int deletedId = eval(del.getVar()).getId();
+			objSpace.decRefs(deletedId);
+			objSpace.garbageCollect(deletedId);
+			// delete from scope
+			getCurrentFrame().getScope().delete(del.getVar().getName());
+		} catch(ReadOnlyNameException e) {
+			throw new ErrorWrapper(
+					new HbReadOnlyError(objSpace,e.getNameInQuestion()),
+					del.getOrigin().getStart());
+		} catch (UndefinedNameException e) {
+			throw new ErrorWrapper(
+					new HbUndefinedNameError(objSpace,del.getVar().getName()),
+					del.getVar().getOrigin().getStart());
 		}
 	}
 	
@@ -368,6 +397,15 @@ public class Interpreter {
 
 	private boolean canPop() {
 		return stack.size() > 1;
+	}
+
+	private void handleSyntaxError(SyntaxError e) {
+		ErrorWrapper error = new ErrorWrapper(
+				new HbSyntaxError(objSpace,e.getMessage()),e.getLocation());
+		error.addFrame((ModuleFrame)getCurrentFrame());
+		error.printStackTrace();
+		tokenizer.reset();
+		parser.reset();
 	}
 	
 }

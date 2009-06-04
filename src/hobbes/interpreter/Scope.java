@@ -74,7 +74,8 @@ public class Scope {
 		if(readOnlys.contains(name))
 			throw new ReadOnlyNameException(name);
 		// set
-		names.put(name, val.getId());
+		names.put(name,val.getId());
+		objSpace.incRefs(val.getId());
 		// garbage collect on overwritten object
 		if(prevId != null)
 			objSpace.garbageCollect(prevId);
@@ -91,16 +92,17 @@ public class Scope {
 	
 	public void setGlobalForce(String name, HbObject val) {
 		names.put(name, val.getId());
+		objSpace.incRefs(val.getId());
 		globals.add(name);
 	}
 	
-	public void delete(String name) throws ReadOnlyNameException {
+	public void delete(String name) throws ReadOnlyNameException, UndefinedNameException {
 		if(readOnlys.contains(name))
 			throw new ReadOnlyNameException(name);
-		else {
-			int id = names.remove(name);
-			objSpace.garbageCollect(id);
-		}
+		else if(names.containsKey(name))
+			names.remove(name);
+		else
+			throw new UndefinedNameException(name);
 	}
 	
 	public boolean isDefined(String name) {

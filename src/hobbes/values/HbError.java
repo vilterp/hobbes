@@ -19,9 +19,8 @@ public class HbError extends HbObject {
 	public String getMessage() {
 		return errorMessage;
 	}
-
-	@HobbesMethod(name="show",numArgs=0)
-	public HbString show() {
+	
+	public String toString() {
 		StringBuilder ans = new StringBuilder("<Error");
 		if(getMessage() != null) {
 			ans.append(" ");
@@ -31,7 +30,7 @@ public class HbError extends HbObject {
 			ans.append("\"");
 		}
 		ans.append(">");
-		return new HbString(getObjSpace(),ans);
+		return ans.toString();
 	}
 	
 }

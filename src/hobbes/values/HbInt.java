@@ -15,10 +15,9 @@ public class HbInt extends HbObject {
 	public int getValue() {
 		return value;
 	}
-
-	@HobbesMethod(name="show",numArgs=0)
-	public HbString show() {
-		return new HbString(getObjSpace(),new Integer(value).toString());
+	
+	public String toString() {
+		return new Integer(value).toString();
 	}
 	
 }

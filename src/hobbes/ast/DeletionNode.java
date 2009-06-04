@@ -16,8 +16,8 @@ public class DeletionNode implements StatementNode {
 		return "del(" + var + ")";
 	}
 	
-	public String getVarName() {
-		return var.getName();
+	public VarNode getVar() {
+		return var;
 	}
 	
 	public Token getOrigin() {

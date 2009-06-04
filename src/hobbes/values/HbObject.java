@@ -39,7 +39,12 @@ public class HbObject extends Throwable {
 	}
 	
 	public String toString() {
-		return show().getValue().toString();
+		StringBuilder repr = new StringBuilder("<");
+		repr.append(getClassInstance().getName());
+		repr.append(" @ ");
+		repr.append(getId());
+		repr.append(">");
+		return repr.toString();
 	}
 	
 	public int hashCode() {
@@ -69,7 +74,7 @@ public class HbObject extends Throwable {
 	
 	@HobbesMethod(name="object_id",numArgs=0)
 	public HbInt objectId() {
-		return getObjSpace().getInt(id);
+		return new HbInt(getObjSpace(),id);
 	}
 	
 	@HobbesMethod(name="hash_code",numArgs=0)
@@ -79,12 +84,7 @@ public class HbObject extends Throwable {
 	
 	@HobbesMethod(name="show",numArgs=0)
 	public HbString show() {
-		StringBuilder repr = new StringBuilder("<");
-		repr.append(getClassInstance().getName());
-		repr.append(" @ ");
-		repr.append(Integer.toHexString(getId()));
-		repr.append(">");
-		return new HbString(getObjSpace(),repr);
+		return new HbString(getObjSpace(),toString());
 	}
 	
 }

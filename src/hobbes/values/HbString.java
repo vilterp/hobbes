@@ -20,9 +20,8 @@ public class HbString extends HbObject {
 		return value;
 	}
 	
-	@HobbesMethod(name="show",numArgs=0)
-	public HbString show() {
-		return new HbString(getObjSpace(),"\"" + value.toString() + "\"");
+	public String toString() {
+		return "\"" + value.toString() + "\"";
 	}
 
 }
