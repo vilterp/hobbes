@@ -28,14 +28,17 @@ public class ObjectSpace {
 		addClass(HbFalse.class);
 		addClass(HbNil.class);
 		addClass(HbInt.class);
-//		addClass(HbFloat.class);
 		addClass(HbString.class);
+		// collections
+		addClass(HbList.class);
+		// errors
 		addClass(HbError.class);
 		addClass(HbSyntaxError.class);
 		addClass(HbMissingMethodError.class);
 		addClass(HbUndefinedNameError.class);
 		addClass(HbArgumentError.class);
 		addClass(HbReadOnlyError.class);
+		addClass(HbKeyError.class);
 		// add builtin globals
 		nilId = new HbNil(this).getId();
 		trueId = new HbTrue(this).getId();
@@ -48,8 +51,8 @@ public class ObjectSpace {
 			classes.put(name,new HbClass(this,klass));
 			classes.get(name).setClass(classes.get("Class"));
 		} else
-			throw new IllegalArgumentException("Supplied class has no " +
-													"HobbesClass annotation");
+			throw new IllegalArgumentException("Supplied class \""+ klass.getName()
+												+ "\" has no HobbesClass annotation");
 	}
 	
 	public HashMap<String,HbClass> getClasses() {

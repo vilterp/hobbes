@@ -6,8 +6,8 @@ import hobbes.parser.SourceLocation;
 @HobbesClass(name="MissingMethodError")
 public class HbMissingMethodError extends HbError {
 
-	public HbMissingMethodError(ObjectSpace o, String m, SourceLocation l) {
-		super(o, m, l);
+	public HbMissingMethodError(ObjectSpace o, String m) {
+		super(o, m);
 	}
 
 }

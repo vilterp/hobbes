@@ -5,7 +5,7 @@ import java.util.HashMap;
 import hobbes.interpreter.ObjectSpace;
 
 @HobbesClass(name="Object")
-public abstract class HbObject extends Throwable {
+public class HbObject extends Throwable {
 	
 	private int id;
 	private HbClass klass;
@@ -22,8 +22,8 @@ public abstract class HbObject extends Throwable {
 			if(!className.equals("Class"))
 				klass = getObjSpace().getClass(className);
 		} else
-			throw new IllegalArgumentException("\"" + getClass().getName() + "\" extends " +
-											"HbObject but doesn't have a HbClass annotation");
+			throw new IllegalArgumentException("\"" + getClass().getName()
+					+ "\" extends HbObject but doesn't have a HbClass annotation");
 	}
 	
 	public HbObject(ObjectSpace o, HbClass c) {
@@ -40,6 +40,10 @@ public abstract class HbObject extends Throwable {
 	
 	public String toString() {
 		return show().getValue().toString();
+	}
+	
+	public int hashCode() {
+		return getId();
 	}
 	
 	public int getId() {
@@ -66,6 +70,11 @@ public abstract class HbObject extends Throwable {
 	@HobbesMethod(name="object_id",numArgs=0)
 	public HbInt objectId() {
 		return getObjSpace().getInt(id);
+	}
+	
+	@HobbesMethod(name="hash_code",numArgs=0)
+	public HbInt getHashCode() {
+		return objectId();
 	}
 	
 	@HobbesMethod(name="show",numArgs=0)

@@ -18,4 +18,8 @@ public class ListNode implements AtomNode {
 		return elements.toString();
 	}
 	
+	public ArrayList<ExpressionNode> getElements() {
+		return elements;
+	}
+	
 }

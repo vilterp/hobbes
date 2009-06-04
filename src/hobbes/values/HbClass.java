@@ -3,7 +3,12 @@ package hobbes.values;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 
+import hobbes.ast.ExpressionNode;
 import hobbes.interpreter.ObjectSpace;
+import hobbes.parser.SourceLine;
+import hobbes.parser.SyntaxError;
+import hobbes.parser.Tokenizer;
+import hobbes.parser.Parser;
 
 @HobbesClass(name="Class")
 public class HbClass extends HbObject {
@@ -26,17 +31,37 @@ public class HbClass extends HbObject {
 		this(o,HbObject.class,name);
 	}
 	
-	public HbClass(ObjectSpace o, Class<? extends HbObject> methodSource, String na) {
+	public HbClass(ObjectSpace o, Class<? extends HbObject> methodSource,
+																	String na) {
 		super(o);
 		name = na;
 		// add methods
 		methods = new HashMap<String,HbMethod>();
 		for(Method m: methodSource.getMethods()) {
+			// get method information
 			if(m.isAnnotationPresent(HobbesMethod.class)) {
 				HobbesMethod ann = m.getAnnotation(HobbesMethod.class);
 				String n = ann.name();
 				HbNativeMethod meth =
-								new HbNativeMethod(n,ann.numArgs(),m); 
+								new HbNativeMethod(n,ann.numArgs(),m);
+				// get defaults
+				if(m.isAnnotationPresent(Default.class)) {
+					Default d = m.getAnnotation(Default.class);
+					Tokenizer t = new Tokenizer();
+					Parser p = new Parser();
+					try {
+						t.addLine(new SourceLine(d.expr(),"<defaultSpec>",1));
+						meth.setDefault(d.argInd(),
+										(ExpressionNode)p.parse(t.getTokens()));
+					} catch (SyntaxError e) {
+						throw new IllegalArgumentException(
+										"Invalid default expression "
+										+ "(" + d.expr() + ") "
+										+ "for method \""
+										+ meth.getName() + "\" in class \""
+										+ methodSource.getName() + "\"");
+					}
+				}
 				methods.put(n,meth);
 			}
 		}

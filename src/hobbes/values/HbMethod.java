@@ -1,8 +1,26 @@
 package hobbes.values;
 
-public interface HbMethod {
+import java.util.HashMap;
+
+import hobbes.ast.ExpressionNode;
+
+public abstract class HbMethod {
 	
-	String getName();
-	int getNumArgs();
+	private HashMap<Integer,ExpressionNode> defaults;
+	
+	public HbMethod() {
+		defaults = new HashMap<Integer,ExpressionNode>();
+	}
+	
+	public abstract String getName();
+	public abstract int getNumArgs();
+
+	public ExpressionNode getDefault(int argInd) {
+		return defaults.get(argInd);
+	}
+
+	public void setDefault(int argInd, ExpressionNode expr) {
+		defaults.put(argInd, expr);
+	}
 	
 }

@@ -2,15 +2,15 @@ package hobbes.values;
 
 import java.util.ArrayList;
 
+import hobbes.ast.ArgSpecNode;
 import hobbes.ast.BlockNode;
 import hobbes.ast.MethodDefNode;
-import hobbes.ast.VariableNode;
 
-public class HbNormalMethod implements HbMethod {
+public class HbNormalMethod extends HbMethod {
 	
 	private String name;
 	private BlockNode block;
-	private ArrayList<VariableNode> args;
+	private ArrayList<ArgSpecNode> args;
 	
 	public HbNormalMethod(MethodDefNode def) {
 		name = def.getName();
@@ -30,7 +30,7 @@ public class HbNormalMethod implements HbMethod {
 		return args.size();
 	}
 	
-	public ArrayList<VariableNode> getArgs() {
+	public ArrayList<ArgSpecNode> getArgs() {
 		return args;
 	}
 	

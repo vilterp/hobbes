@@ -7,20 +7,28 @@ import hobbes.parser.Token;
 public class MethodDefNode implements DefNode {
 	
 	private Token name;
-	private ArrayList<VariableNode> args;
+	private ArrayList<ArgSpecNode> args;
 	private BlockNode block;
 	
 	public MethodDefNode(Token n, ArgsSpecNode a, BlockNode b) {
 		name = n;
-		args = a.getVars();
+		if(a != null)
+			args = a.getArgs();
+		else
+			args = new ArrayList<ArgSpecNode>();
 		block = b;
 	}
 	
 	public String toString() {
-		return "def "
-				+ name.getValue()
-				+ "(" + "(" + args + ")" + ","
-				+ block + ")";
+		StringBuilder sb = new StringBuilder();
+		sb.append("def ");
+		sb.append(name.getValue());
+		sb.append('(');
+		sb.append(args);
+		sb.append(',');
+		sb.append(block);
+		sb.append(')');
+		return sb.toString();
 	}
 	
 	public String getName() {
@@ -31,7 +39,7 @@ public class MethodDefNode implements DefNode {
 		return name;
 	}
 	
-	public ArrayList<VariableNode> getArgs() {
+	public ArrayList<ArgSpecNode> getArgs() {
 		return args;
 	}
 	

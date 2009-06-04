@@ -2,7 +2,9 @@ package hobbes.values;
 
 import java.lang.reflect.Method;
 
-public class HbNativeMethod implements HbMethod {
+import hobbes.ast.ExpressionNode;
+
+public class HbNativeMethod extends HbMethod {
 	
 	private String name;
 	private int numArgs;

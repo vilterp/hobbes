@@ -38,7 +38,8 @@ public class Interpreter {
 			}
 		} else if(args.length == 1) {
 			if(args[0].equals("-h")) {
-				System.out.println("Run with no args to use the interactive console,\n"
+				System.out.println("Run with no args to "
+									+ "use the interactive console,\n"
 									+ "or with a file name to run that file");
 			} else { // run file
 				File f = new File(args[0]);
@@ -56,8 +57,9 @@ public class Interpreter {
 						i.getResult();
 				}
 				if(i.needsMore())
-					System.err.println("Unexpected end of file in \"" + args[0] + "\": "+
-										"still waiting to close " + i.getLastOpener());
+					System.err.println("Unexpected end of file in "
+							+ "\"" + args[0] + "\": "
+							+ "still waiting to close " + i.getLastOpener());
 			}
 		} else {
 			System.out.print("Too many args. Run hobbes -h for help.");
@@ -114,8 +116,8 @@ public class Interpreter {
 	}
 	
 	private void handleSyntaxError(SyntaxError e) {
-		HbSyntaxError error =
-				new HbSyntaxError(objSpace,e.getMessage(),e.getLocation());
+		ErrorWrapper error = new ErrorWrapper(
+				new HbSyntaxError(objSpace,e.getMessage()),e.getLocation());
 		error.addFrame((ModuleFrame)getCurrentFrame());
 		error.printStackTrace();
 		tokenizer.reset();
@@ -126,7 +128,7 @@ public class Interpreter {
 		if(tree != null) {
 			try {
 				return run(tree);
-			} catch(HbError e) {
+			} catch(ErrorWrapper e) {
 				while(canPop())
 					e.addFrame(popFrame());
 				e.addFrame(getCurrentFrame());
@@ -134,7 +136,8 @@ public class Interpreter {
 				return null;
 			} catch(Return r) {
 				SyntaxError e = new SyntaxError("Unexpected return statment - " +
-							"not inside function or method",r.getOrigin().getStart());
+												"not inside function or method",
+													r.getOrigin().getStart());
 				handleSyntaxError(e);
 				return null;
 			}
@@ -142,7 +145,7 @@ public class Interpreter {
 			return null;
 	}
 	
-	private HbObject run(SyntaxNode tree) throws HbError, Return {
+	private HbObject run(SyntaxNode tree) throws ErrorWrapper, Return {
 		if(tree instanceof ExpressionNode)
 			return eval((ExpressionNode)tree);
 		else if(tree instanceof StatementNode) {
@@ -155,7 +158,7 @@ public class Interpreter {
 			return null;
 	}
 	
-	private HbObject eval(ExpressionNode expr) throws HbError {
+	private HbObject eval(ExpressionNode expr) throws ErrorWrapper {
 		if(expr instanceof NumberNode) {
 			try {
 				int value = Integer.parseInt(((NumberNode)expr).getValue());
@@ -170,21 +173,32 @@ public class Interpreter {
 			return evalNewInstance((NewInstanceNode)expr);
 		else if(expr instanceof MethodCallNode)
 			return evalMethodCall((MethodCallNode)expr);
+		else if(expr instanceof ListNode)
+			return evalList((ListNode)expr);
+		else if(expr instanceof StringNode)
+			return new HbString(objSpace,((StringNode)expr).getValue());
 		else {
 			System.err.println("doesn't do that kind of expression");
 			return null;
 		}
 	}
 	
-	private HbObject evalNewInstance(NewInstanceNode expr) throws HbError {
+	private HbObject evalList(ListNode expr) throws ErrorWrapper {
+		ArrayList<HbObject> elements = new ArrayList<HbObject>();
+		for(ExpressionNode elem: expr.getElements())
+			elements.add(eval(elem));
+		return new HbList(objSpace,elements);
+	}
+
+	private HbObject evalNewInstance(NewInstanceNode expr) throws ErrorWrapper {
 		String className = expr.getClassVar().getName();
 		// get HbClass instance
 		HbClass klass = null;
 		try {
 			klass = (HbClass)eval(expr.getClassVar());
 		} catch(ClassCastException e) {
-			throw new HbNotAClassError(objSpace,className,
-										expr.getClassVar().getOrigin().getStart());
+			throw new ErrorWrapper(new HbNotAClassError(objSpace,className),
+									expr.getClassVar().getOrigin().getStart());
 		}
 		// instantiate
 		if(objSpace.getClasses().containsKey(className)) { // native class
@@ -197,50 +211,64 @@ public class Interpreter {
 		}
 	}
 
-	private HbObject evalVariable(VariableNode var) throws HbError {
+	private HbObject evalVariable(VariableNode var) throws ErrorWrapper {
 		try {
 			return getCurrentFrame().getScope().get(var.getName());
 		} catch (UndefinedNameException e) {
-			throw new HbUndefinedNameError(objSpace,var.getName(),
-											var.getOrigin().getStart());
+			throw new ErrorWrapper(new HbUndefinedNameError(objSpace,var.getName()),
+									var.getOrigin().getStart());
 		}
 	}
 
-	private HbObject evalMethodCall(MethodCallNode call) throws HbError {
+	private HbObject evalMethodCall(MethodCallNode call) throws ErrorWrapper {
 		HbObject receiver = eval(call.getReceiver());
 		HbClass receiverClass = receiver.getClassInstance();
 		HbMethod method = receiverClass.getMethod(call.getMethodName());
 		// check that method exists
 		if(method == null)
-			throw new HbMissingMethodError(objSpace,call.getMethodName(),
-											call.getOrigin().getStart());
-		// check correct # args
-		if(method.getNumArgs() != call.getNumArgs()) {
+			throw new ErrorWrapper(
+						new HbMissingMethodError(objSpace,call.getMethodName()),
+						call.getOrigin().getStart());
+		// check not too many args
+		if(call.getNumArgs() > method.getNumArgs()) {
 			StringBuilder msg = new StringBuilder(call.getMethodName());
-			msg.append(" takes ");
-			msg.append(method.getNumArgs());
-			msg.append(" args, but got ");
+			msg.append(" got ");
 			msg.append(call.getNumArgs());
-			throw new HbArgumentError(objSpace,msg,call.getOrigin().getStart());
+			msg.append(" args, takes");
+			msg.append(method.getNumArgs());
+			throw new ErrorWrapper(new HbArgumentError(objSpace,msg.toString()),
+									call.getOrigin().getStart());
 		}
 		// eval args
-		HbObject[] args = new HbObject[call.getNumArgs()];
-		for(int i=0; i < args.length; i++)
-			args[i] = eval(call.getArgs().get(i));
+		HbObject[] argValues = new HbObject[method.getNumArgs()];
+		for(int i=0; i < argValues.length; i++) {
+			if(i < call.getNumArgs())
+				argValues[i] = eval(call.getArgs().get(i));
+			else if(method.getDefault(i) != null)
+				argValues[i] = eval(method.getDefault(i));
+			else
+				throw new ErrorWrapper(new HbArgumentError(objSpace,
+										call.getMethodName() + "needs more arguments"),
+										call.getOrigin().getStart());
+				// TODO: more detailed error message
+		}
 		if(method instanceof HbNativeMethod)
-			return evalNativeMethodCall(receiver,(HbNativeMethod)method,args);
+			return evalNativeMethodCall(receiver,(HbNativeMethod)method,argValues,
+													call.getOrigin().getStart());
 		else {
 			try {
 				return evalNormalMethodCall(receiver,(HbNormalMethod)method,
-															args,call.getOrigin());
+															argValues,call.getOrigin());
 			} catch (StackOverflow e) {
-				throw new HbStackOverflow(objSpace,call.getOrigin().getStart());
+				throw new ErrorWrapper(new HbStackOverflow(objSpace),
+										call.getOrigin().getStart());
 			}
 		}
 	}
 	
 	private HbObject evalNormalMethodCall(HbObject receiver, HbNormalMethod method,
-								HbObject[] args, Token origin) throws StackOverflow, HbError {
+													HbObject[] args, Token origin)
+												throws StackOverflow, ErrorWrapper {
 		// add frame
 		pushFrame(new FunctionFrame(objSpace,getCurrentFrame().getScope(),
 									method.getName(),origin.getStart()));
@@ -258,8 +286,8 @@ public class Interpreter {
 		return objSpace.nilIfNull(lastResult);
 	}
 
-	private HbObject evalNativeMethodCall(HbObject receiver,
-						HbNativeMethod method, HbObject[] args) {
+	private HbObject evalNativeMethodCall(HbObject receiver, HbNativeMethod method,
+						HbObject[] args, SourceLocation loc) throws ErrorWrapper {
 		try {
 			return (HbObject)method.getMethod().invoke(receiver,args);
 		} catch (IllegalArgumentException e) {
@@ -267,13 +295,16 @@ public class Interpreter {
 		} catch (IllegalAccessException e) {
 			e.printStackTrace();
 		} catch (InvocationTargetException e) {
-			e.printStackTrace();
+			if(e.getCause() instanceof HbError) {
+				throw new ErrorWrapper((HbError)e.getCause(),loc);
+			} else
+				e.printStackTrace();
 		}
 		System.exit(1);
 		return null;
 	}
 	
-	private void exec(StatementNode stmt) throws HbError, Return {
+	private void exec(StatementNode stmt) throws ErrorWrapper, Return {
 		if(stmt instanceof AssignmentNode)
 			assign((AssignmentNode)stmt);
 		else if(stmt instanceof ReturnNode)
@@ -282,34 +313,37 @@ public class Interpreter {
 			System.out.println("doesn't do that statement yet");
 	}
 
-	private void execReturn(ReturnNode stmt) throws HbError, Return {
+	private void execReturn(ReturnNode stmt) throws ErrorWrapper, Return {
 		throw new Return(stmt.getOrigin(),eval(stmt.getExpr()));
 	}
 
-	private void assign(AssignmentNode stmt) throws HbError {
+	private void assign(AssignmentNode stmt) throws ErrorWrapper {
 		try {
-			getCurrentFrame().getScope().set(stmt.getVar().getName(),eval(stmt.getExpr()));
+			getCurrentFrame().getScope().set(stmt.getVar().getName(),
+													eval(stmt.getExpr()));
 		} catch (ReadOnlyNameException e) {
-			throw new HbReadOnlyError(objSpace,e.getNameInQuestion(),
-												stmt.getEqualsToken().getStart());
+			throw new ErrorWrapper(
+							new HbReadOnlyError(objSpace,e.getNameInQuestion()),
+							stmt.getEqualsToken().getStart());
 		}
 	}
 	
-	private void defineClass(ClassDefNode def) throws HbReadOnlyError {
+	private void defineClass(ClassDefNode def) throws ErrorWrapper {
 		// make HbClass instance
 		HbClass newClass = new HbClass(objSpace,def.getName());
 		// add class to object
 		try {
 			getCurrentFrame().getScope().set(def.getName(),newClass);
 		} catch (ReadOnlyNameException e) {
-			throw new HbReadOnlyError(objSpace,def.getName(),
+			throw new ErrorWrapper(new HbReadOnlyError(objSpace,def.getName()),
 											def.getClassNameToken().getStart());
 		}
 		// define new class
 		for(SyntaxNode item: def.getBody()) {
 			if(item instanceof MethodDefNode) {
 				MethodDefNode methodDef = (MethodDefNode)item;
-				newClass.addMethod(methodDef.getName(),new HbNormalMethod(methodDef));
+				newClass.addMethod(methodDef.getName(),
+										new HbNormalMethod(methodDef));
 			} // else... anything else allowed in class body?
 		}
 	}

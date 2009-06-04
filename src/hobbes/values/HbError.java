@@ -10,28 +10,10 @@ import hobbes.parser.SourceLocation;
 public class HbError extends HbObject {
 	
 	private String errorMessage;
-	private SourceLocation location;
-	private ArrayList<ExecutionFrame> trace;
 	
-	public HbError(ObjectSpace o, String m, SourceLocation l) {
+	public HbError(ObjectSpace o, String m) {
 		super(o);
 		errorMessage = m;
-		location = l;
-		trace = new ArrayList<ExecutionFrame>();
-	}
-	
-	public void addFrame(ExecutionFrame f) {
-		trace.add(f);
-	}
-	
-	public void printStackTrace() {
-		System.err.print(getClassInstance().getName());
-		if(getMessage() != null)
-			System.err.print(": " + getMessage());
-		System.err.println();
-		System.err.println(location.show());
-		for(ExecutionFrame f: trace)
-			System.err.println(f.show());
 	}
 
 	public String getMessage() {
