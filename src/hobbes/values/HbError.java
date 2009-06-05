@@ -21,7 +21,8 @@ public class HbError extends HbObject {
 	}
 	
 	public String toString() {
-		StringBuilder ans = new StringBuilder("<Error");
+		StringBuilder ans = new StringBuilder("<");
+		ans.append(getClassInstance().getName());
 		if(getMessage() != null) {
 			ans.append(" ");
 			ans.append("msg=");
