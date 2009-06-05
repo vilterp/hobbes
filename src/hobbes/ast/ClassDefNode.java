@@ -6,13 +6,11 @@ public class ClassDefNode implements DefNode {
 	
 	private Token nameToken;
 	private ObjectNode superclass;
-	private ArgsSpecNode args;
 	private BlockNode body;
 	
-	public ClassDefNode(Token n, ArgsSpecNode a, ObjectNode sc, BlockNode b) {
+	public ClassDefNode(Token n, ObjectNode sc, BlockNode b) {
 		nameToken = n;
 		superclass = sc;
-		args = a;
 		body = b;
 	}
 	
@@ -20,7 +18,6 @@ public class ClassDefNode implements DefNode {
 		return "class "
 				+ nameToken.getValue()
 				+ "("
-				+ "(" + (args == null ? "" : args) + ")" + ","
 				+ (superclass == null ? "" : "[" + superclass + "]") + ","
 				+ (body == null ? "" : body)
 				+ ")";

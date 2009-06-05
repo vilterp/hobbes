@@ -2,6 +2,7 @@ package hobbes.interpreter;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 
 import hobbes.values.*;
 
@@ -11,6 +12,7 @@ public class ObjectSpace {
 	private HashMap<Integer,HbInt> intConstants;
 	//private HashMap<Float, HbFloat> floatConstants;
 	private HashMap<String,HbClass> classes;
+	private HashSet<String> builtinClasses;
 	private ArrayList<Integer> created;
 	private int nextId;
 	private int trueId;
@@ -21,36 +23,40 @@ public class ObjectSpace {
 	public ObjectSpace(boolean vgc) {
 		verboseGC = vgc;
 		objects = new HashMap<Integer,ValueRecord>();
+		builtinClasses = new HashSet<String>();
 		classes = new HashMap<String,HbClass>();
 		created = new ArrayList<Integer>();
 		intConstants = new HashMap<Integer,HbInt>();
 		//floatConstants = new HashMap<Float, HbFloat>();
 		nextId = 0;
 		// add builtin classes
-		addClass(HbClass.class);
-		addClass(HbObject.class);
-		addClass(HbTrue.class);
-		addClass(HbFalse.class);
-		addClass(HbNil.class);
-		addClass(HbInt.class);
-		addClass(HbString.class);
+		addNativeClass(HbClass.class);
+		addNativeClass(HbObject.class);
+		addNativeClass(HbTrue.class);
+		addNativeClass(HbFalse.class);
+		addNativeClass(HbNil.class);
+		addNativeClass(HbInt.class);
+		addNativeClass(HbString.class);
 		// collections
-		addClass(HbList.class);
+		addNativeClass(HbList.class);
 		// errors
-		addClass(HbError.class);
-		addClass(HbSyntaxError.class);
-		addClass(HbMissingMethodError.class);
-		addClass(HbUndefinedNameError.class);
-		addClass(HbArgumentError.class);
-		addClass(HbReadOnlyError.class);
-		addClass(HbKeyError.class);
+		addNativeClass(HbError.class);
+		addNativeClass(HbSyntaxError.class);
+		addNativeClass(HbMissingMethodError.class);
+		addNativeClass(HbUndefinedNameError.class);
+		addNativeClass(HbArgumentError.class);
+		addNativeClass(HbReadOnlyError.class);
+		addNativeClass(HbKeyError.class);
+		// set builtin classes
+		for(String className: classes.keySet())
+			builtinClasses.add(className);
 		// add builtin globals
 		nilId = new HbNil(this).getId();
 		trueId = new HbTrue(this).getId();
 		falseId = new HbFalse(this).getId();
 	}
 	
-	private void addClass(Class<? extends HbObject> klass) {
+	private void addNativeClass(Class<? extends HbObject> klass) {
 		if(klass.isAnnotationPresent(HobbesClass.class)) {
 			String name = ((HobbesClass)klass.getAnnotation(HobbesClass.class)).name();
 			classes.put(name,new HbClass(this,klass));
@@ -60,8 +66,16 @@ public class ObjectSpace {
 												+ "\" has no HobbesClass annotation");
 	}
 	
+	public void addClass(HbClass klass) {
+		classes.put(klass.getName(),klass);
+	}
+	
 	public HashMap<String,HbClass> getClasses() {
 		return classes;
+	}
+	
+	public HashSet<String> getBuiltinClasses() {
+		return builtinClasses;
 	}
 	
 	public HbClass getClass(String name) {

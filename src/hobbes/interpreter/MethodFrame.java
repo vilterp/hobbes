@@ -1,19 +1,26 @@
 package hobbes.interpreter;
 
 import hobbes.parser.SourceLocation;
+import hobbes.values.HbObject;
 
 public class MethodFrame extends ExecutionFrame {
 	
-	public String name;
-	public String className;
-	public SourceLocation loc;
+	private String methodName;
+	private String className;
+	private SourceLocation loc;
+	private HbObject receiver;
 	
-	public MethodFrame(ObjectSpace o, Scope adoptGlobals,
-						String na, String cn, SourceLocation p) {
+	public MethodFrame(ObjectSpace o, Scope adoptGlobals, HbObject rec,
+						String mn, SourceLocation p) {
 		super(new Scope(o,adoptGlobals));
-		name = na;
-		className = cn;
+		methodName = mn;
 		loc = p;
+		receiver = rec;
+		className = rec.getHbClass().getName();
+	}
+	
+	public HbObject getReceiver() {
+		return receiver;
 	}
 	
 	public SourceLocation getLoc() {
@@ -21,7 +28,7 @@ public class MethodFrame extends ExecutionFrame {
 	}
 	
 	public String show() {
-		return "  in " + className + "#" + name + "\n"
+		return "  in " + className + "#" + methodName + "\n"
 				+ loc.show();
 	}
 	

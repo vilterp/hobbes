@@ -34,4 +34,8 @@ public class HbNormalMethod extends HbMethod {
 		return args;
 	}
 	
+	public String getArgName(int ind) {
+		return args.get(ind).getVar().getName();
+	}
+	
 }

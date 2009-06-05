@@ -71,7 +71,7 @@ public class Scope {
 		if(names.containsKey(name))
 			prevId = names.get(name);
 		// ensure this name is not read-only
-		if(readOnlys.contains(name))
+		if(isReadOnly(name))
 			throw new ReadOnlyNameException(name);
 		// set
 		names.put(name,val.getId());
@@ -82,10 +82,10 @@ public class Scope {
 	}
 	
 	public void setGlobal(String name, HbObject val) throws ReadOnlyNameException {
-		if(readOnlys.contains(name))
+		if(isReadOnly(name))
 			throw new ReadOnlyNameException(name);
 		else {
-			names.put(name, val.getId());
+			assign(name,val);
 			globals.add(name);
 		}
 	}
@@ -111,6 +111,11 @@ public class Scope {
 	
 	public boolean isDefined(String name) {
 		return names.containsKey(name);
+	}
+	
+	private boolean isReadOnly(String name) {
+		return readOnlys.contains(name) ||
+				objSpace.getBuiltinClasses().contains(name);
 	}
 	
 }

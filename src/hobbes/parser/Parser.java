@@ -463,17 +463,16 @@ public class Parser {
 			Token classWord = getLastToken();
 			if(wordWithPattern(classNamePattern)) {
 				Token name = getLastToken();
-				ArgsSpecNode args = null;
-				if(argsSpec("(",")"))
-					args = (ArgsSpecNode)stack.pop();
 				ObjectNode superclass = null;
 				if(superclassDef())
 					superclass = (ObjectNode)stack.pop();
-				BlockNode block = null;
-				if(block())
-					block = (BlockNode)stack.pop();
-				stack.push(new ClassDefNode(name,args,superclass,block));
-				return true;
+				if(block()) {
+					BlockNode block = (BlockNode)stack.pop();
+					stack.push(new ClassDefNode(name,superclass,block));
+					return true;
+				} else
+					throw new SyntaxError("No body after class heading",
+							classWord.getEnd().getLine().getEnd().next());
 			} else
 				throw new SyntaxError("No class name after \"class\" " +
 										"(must start with a capital letter)",
@@ -506,10 +505,10 @@ public class Parser {
 	}
 	
 	private boolean superclassDef() throws SyntaxError {
-		if(symbol("[")) {
+		if(symbol("(")) {
 			Token opener = getLastToken();
 			if(object()) {
-				if(symbol("]")) {
+				if(symbol(")")) {
 					stack.pop();
 					return true;
 				} else

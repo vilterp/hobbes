@@ -1,8 +1,8 @@
 package hobbes.values;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.Set;
 
 import hobbes.ast.ExpressionNode;
 import hobbes.interpreter.ObjectSpace;
@@ -38,6 +38,7 @@ public class HbClass extends HbObject {
 	public HbClass(ObjectSpace o, String name) {
 		this(o,HbObject.class,name);
 		javaClass = HbObject.class;
+		setClass(getObjSpace().getClass("Class"));
 	}
 	
 	public HbClass(ObjectSpace o, Class<? extends HbObject> methodSource,
@@ -122,6 +123,10 @@ public class HbClass extends HbObject {
 	@HobbesMethod(name="superclass")
 	public HbClass getSuperClass() {
 		return getObjSpace().getClass("Object");
+	}
+	
+	public Set<String> getMethodNames() {
+		return methods.keySet();
 	}
 
 }

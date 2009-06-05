@@ -1,5 +1,6 @@
 package hobbes.values;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import hobbes.interpreter.ObjectSpace;
@@ -8,7 +9,7 @@ import hobbes.interpreter.ObjectSpace;
 public class HbObject extends Throwable {
 	
 	private int id;
-	private HbClass klass;
+	private HbClass hobbesClass;
 	private ObjectSpace objSpace;
 	private HashMap<String,Integer> instanceVars;
 	
@@ -20,7 +21,7 @@ public class HbObject extends Throwable {
 		if(getClass().isAnnotationPresent(HobbesClass.class)) {
 			String className = getClass().getAnnotation(HobbesClass.class).name();
 			if(!className.equals("Class"))
-				klass = getObjSpace().getClass(className);
+				hobbesClass = getObjSpace().getClass(className);
 		} else
 			throw new IllegalArgumentException("\"" + getClass().getName()
 					+ "\" extends HbObject but doesn't have a HbClass annotation");
@@ -31,17 +32,17 @@ public class HbObject extends Throwable {
 		objSpace = o;
 		id = objSpace.add(this);
 		instanceVars = new HashMap<String,Integer>();
-		klass = c;
+		hobbesClass = c;
 	}
 	
 	public void setClass(HbClass c) {
-		klass = c;
+		hobbesClass = c;
 	}
 	
 	public String toString() {
 		StringBuilder repr = new StringBuilder("<");
 		repr.append(getHbClass().getName());
-		repr.append(" @ ");
+		repr.append("@");
 		repr.append(getId());
 		repr.append(">");
 		return repr.toString();
@@ -82,12 +83,21 @@ public class HbObject extends Throwable {
 	
 	@HobbesMethod(name="class")
 	public HbClass getHbClass() {
-		return klass;
+		return hobbesClass;
 	}
 	
 	@HobbesMethod(name="object_id")
 	public HbInt objectId() {
 		return new HbInt(getObjSpace(),id);
+	}
+	
+	@HobbesMethod(name="methods")
+	public HbList getMethods() {
+		// TODO: should return HbSet
+		ArrayList<HbObject> methods = new ArrayList<HbObject>();
+		for(String methodName: getHbClass().getMethodNames())
+			methods.add(new HbString(getObjSpace(),methodName));
+		return new HbList(getObjSpace(),methods);
 	}
 	
 }

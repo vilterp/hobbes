@@ -145,12 +145,15 @@ public class Interpreter {
 													r.getOrigin().getStart());
 				handleSyntaxError(e);
 				return null;
+			} catch (SyntaxError e) {
+				handleSyntaxError(e);
+				return null;
 			}
 		} else
 			return null;
 	}
 	
-	private HbObject run(SyntaxNode tree) throws ErrorWrapper, Return {
+	private HbObject run(SyntaxNode tree) throws ErrorWrapper, Return, SyntaxError {
 		if(tree instanceof ExpressionNode)
 			return eval((ExpressionNode)tree);
 		else if(tree instanceof StatementNode) {
@@ -159,15 +162,19 @@ public class Interpreter {
 		} else if(tree instanceof ClassDefNode) {
 			defineClass((ClassDefNode)tree);
 			return null;
-		} else
+		} else {
+			System.out.println("doesn't do " + tree.getClass().getName() + "s yet");
 			return null;
+		}
 	}
 	
-	private HbObject eval(ExpressionNode expr) throws ErrorWrapper {
-		if(expr instanceof NumberNode) {
+	private HbObject eval(ExpressionNode expr) throws ErrorWrapper, SyntaxError {
+		if(expr instanceof NumberNode)
 			return evalNumber((NumberNode)expr);
-		} else if(expr instanceof VariableNode)
+		else if(expr instanceof VariableNode)
 			return evalVariable((VariableNode)expr);
+		else if(expr instanceof InstanceVarNode)
+			return evalInstanceVar((InstanceVarNode)expr);
 		else if(expr instanceof NewInstanceNode)
 			return evalNewInstance((NewInstanceNode)expr);
 		else if(expr instanceof MethodCallNode)
@@ -182,6 +189,14 @@ public class Interpreter {
 		}
 	}
 	
+	private HbObject evalInstanceVar(InstanceVarNode expr) throws SyntaxError {
+		if(getCurrentFrame() instanceof MethodFrame) {
+			return ((MethodFrame)getCurrentFrame()).getReceiver().getInstVar(expr.getName());
+		} else
+			throw new SyntaxError("Unexpected instance variable: not inside a method",
+									expr.getOrigin().getStart());
+	}
+
 	private HbObject evalNumber(NumberNode num) {
 		try {
 			int value = Integer.parseInt(num.getValue());
@@ -192,14 +207,14 @@ public class Interpreter {
 		}
 	}
 
-	private HbObject evalList(ListNode expr) throws ErrorWrapper {
+	private HbObject evalList(ListNode expr) throws ErrorWrapper, SyntaxError {
 		ArrayList<HbObject> elements = new ArrayList<HbObject>();
 		for(ExpressionNode elem: expr.getElements())
 			elements.add(eval(elem));
 		return new HbList(objSpace,elements);
 	}
 
-	private HbObject evalNewInstance(NewInstanceNode expr) throws ErrorWrapper {
+	private HbObject evalNewInstance(NewInstanceNode expr) throws ErrorWrapper, SyntaxError {
 		String className = expr.getClassVar().getName();
 		// get HbClass instance
 		HbClass hobbesClass = null;
@@ -209,53 +224,48 @@ public class Interpreter {
 			throw new ErrorWrapper(new HbNotAClassError(objSpace,className),
 									expr.getClassVar().getOrigin().getStart());
 		}
-		// instantiate
-		if(objSpace.getClasses().containsKey(className)) { // native class
-			// get Java class
-			Class<?extends HbObject> javaClass =
-									objSpace.getClass(className).getJavaClass();
-			Constructor constructor = null;
-			HbObject newObj = null;
-			try {
-				// get one-arg (ObjectSpace) constructor
-				constructor = javaClass.getConstructor(ObjectSpace.class);
-				// make new instance
-				newObj = (HbObject)constructor.newInstance(objSpace);
-			} catch (SecurityException e) {
+		// get Java class
+		Class<?extends HbObject> javaClass =
+								objSpace.getClass(className).getJavaClass();
+		Constructor constructor = null;
+		HbObject newObj = null;
+		try {
+			// get one-arg (ObjectSpace) constructor
+			constructor = javaClass.getConstructor(ObjectSpace.class);
+			// make new instance
+			newObj = (HbObject)constructor.newInstance(objSpace);
+		} catch (SecurityException e) {
+			e.printStackTrace();
+			System.exit(1);
+		} catch (NoSuchMethodException e) {
+			System.err.println("Class " + javaClass.getName() + " has no constructor " +
+					"that takes an ObjectSpace as the sole parameter");
+			e.printStackTrace();
+			System.exit(1);
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+			System.exit(1);
+		} catch (InstantiationException e) {
+			e.printStackTrace();
+			System.exit(1);
+		} catch (IllegalAccessException e) {
+			e.printStackTrace();
+			System.exit(1);
+		} catch (InvocationTargetException e) {
+			if(e.getCause() instanceof HbError)
+				throw new ErrorWrapper((HbError)e.getCause(),
+										expr.getNewWord().getStart());
+			else {
 				e.printStackTrace();
 				System.exit(1);
-			} catch (NoSuchMethodException e) {
-				System.err.println("Class " + javaClass.getName() + " has no constructor " +
-						"that takes an ObjectSpace as the sole parameter");
-				e.printStackTrace();
-				System.exit(1);
-			} catch (IllegalArgumentException e) {
-				e.printStackTrace();
-				System.exit(1);
-			} catch (InstantiationException e) {
-				e.printStackTrace();
-				System.exit(1);
-			} catch (IllegalAccessException e) {
-				e.printStackTrace();
-				System.exit(1);
-			} catch (InvocationTargetException e) {
-				if(e.getCause() instanceof HbError)
-					throw new ErrorWrapper((HbError)e.getCause(),
-											expr.getNewWord().getStart());
-				else {
-					e.printStackTrace();
-					System.exit(1);
-				}
 			}
-			// call init
-			HbMethod initMethod = hobbesClass.getMethod("init");
-			SourceLocation loc = expr.getNewWord().getStart();
-			evalMethodCall(newObj,initMethod,expr.getArgs(),loc);
-			return newObj;
-		} else { // class defined in Hobbes
-			return new HbNormalClass(objSpace,hobbesClass);
-			// TODO: call constructor
 		}
+		newObj.setClass(hobbesClass);
+		// call init
+		HbMethod initMethod = hobbesClass.getMethod("init");
+		SourceLocation loc = expr.getNewWord().getStart();
+		evalMethodCall(newObj,initMethod,expr.getArgs(),loc);
+		return newObj;
 	}
 
 	private HbObject evalVariable(VariableNode var) throws ErrorWrapper {
@@ -267,7 +277,7 @@ public class Interpreter {
 		}
 	}
 	
-	private HbObject evalMethodCall(MethodCallNode call) throws ErrorWrapper {
+	private HbObject evalMethodCall(MethodCallNode call) throws ErrorWrapper, SyntaxError {
 		HbObject receiver = eval(call.getReceiver());
 		HbClass receiverClass = receiver.getHbClass();
 		HbMethod method = receiverClass.getMethod(call.getMethodName());
@@ -282,7 +292,7 @@ public class Interpreter {
 
 	private HbObject evalMethodCall(HbObject receiver, HbMethod method,
 				ArrayList<ExpressionNode> args, SourceLocation origin)
-													throws ErrorWrapper {
+													throws ErrorWrapper, SyntaxError {
 		HbClass receiverClass = receiver.getHbClass();
 		HbObject[] argValues = evalArgs(args,method,origin);
 		if(method instanceof HbNativeMethod)
@@ -300,7 +310,7 @@ public class Interpreter {
 	}
 	
 	private HbObject[] evalArgs(ArrayList<ExpressionNode> args, HbMethod method,
-									SourceLocation origin) throws ErrorWrapper {
+									SourceLocation origin) throws ErrorWrapper, SyntaxError {
 		// check not too many args
 		if(args.size() > method.getNumArgs()) {
 			StringBuilder msg = new StringBuilder(method.getName());
@@ -323,7 +333,7 @@ public class Interpreter {
 				argValues[i] = eval(method.getDefault(i));
 			else
 				throw new ErrorWrapper(new HbArgumentError(objSpace,
-									method.getName() + "needs more arguments"),
+									method.getName() + " needs more arguments"),
 									origin);
 				// TODO: more helpful error message
 		}
@@ -333,11 +343,19 @@ public class Interpreter {
 	private HbObject evalNormalMethodCall(HbObject receiver, HbNormalMethod method,
 													HbObject[] args,
 													SourceLocation origin)
-												throws StackOverflow, ErrorWrapper {
+												throws StackOverflow, ErrorWrapper, SyntaxError {
 		// add frame
 		pushFrame(new MethodFrame(objSpace,getCurrentFrame().getScope(),
-									receiver.getHbClass().getName(),
-									method.getName(),origin));
+									receiver,method.getName(),origin));
+		// set variables in scope
+		for(int i=0; i < args.length; i++) {
+			try {
+				getCurrentFrame().getScope().assign(method.getArgName(i),args[i]);
+			} catch (ReadOnlyNameException e) {
+				throw new ErrorWrapper(new HbReadOnlyError(objSpace,method.getArgName(i)),
+							method.getArgs().get(i).getVar().getOrigin().getStart());
+			}
+		}
 		// run method
 		HbObject lastResult = null;
 		for(SyntaxNode item: method.getBlock()) {
@@ -370,7 +388,7 @@ public class Interpreter {
 		return null;
 	}
 	
-	private void exec(StatementNode stmt) throws ErrorWrapper, Return {
+	private void exec(StatementNode stmt) throws ErrorWrapper, Return, SyntaxError {
 		if(stmt instanceof AssignmentNode)
 			assign((AssignmentNode)stmt);
 		else if(stmt instanceof DeletionNode)
@@ -381,19 +399,26 @@ public class Interpreter {
 			System.out.println("doesn't do that statement yet");
 	}
 
-	private void execReturn(ReturnNode stmt) throws ErrorWrapper, Return {
+	private void execReturn(ReturnNode stmt) throws ErrorWrapper, Return, SyntaxError {
 		throw new Return(stmt.getOrigin(),eval(stmt.getExpr()));
 	}
 
-	private void assign(AssignmentNode stmt) throws ErrorWrapper {
-		try {
-			getCurrentFrame().getScope().assign(stmt.getVar().getName(),
-													eval(stmt.getExpr()));
-		} catch (ReadOnlyNameException e) {
-			throw new ErrorWrapper(
-							new HbReadOnlyError(objSpace,e.getNameInQuestion()),
-							stmt.getEqualsToken().getStart());
-		}
+	private void assign(AssignmentNode stmt) throws ErrorWrapper, SyntaxError {
+		if(stmt.getVar() instanceof VariableNode) {
+			try {
+				getCurrentFrame().getScope().assign(stmt.getVar().getName(),
+														eval(stmt.getExpr()));
+			} catch (ReadOnlyNameException e) {
+				throw new ErrorWrapper(
+								new HbReadOnlyError(objSpace,e.getNameInQuestion()),
+								stmt.getEqualsToken().getStart());
+			}
+		} else if(getCurrentFrame() instanceof MethodFrame) {
+			((MethodFrame)getCurrentFrame()).getReceiver().putInstVar(stmt.getVar().getName(),
+																eval(stmt.getExpr()));
+		} else
+			throw new SyntaxError("Unexpected instance variable: not inside a method",
+							stmt.getVar().getOrigin().getStart());
 	}
 	
 	private void delete(DeletionNode del) throws ErrorWrapper {
@@ -413,9 +438,11 @@ public class Interpreter {
 	private void defineClass(ClassDefNode def) throws ErrorWrapper {
 		// make HbClass instance
 		HbClass newClass = new HbClass(objSpace,def.getName());
-		// add class to object
+		// add class to ObjectSpace's classes HashMap
+		objSpace.addClass(newClass);
+		// add class to scope
 		try {
-			getCurrentFrame().getScope().assign(def.getName(),newClass);
+			getCurrentFrame().getScope().setGlobal(def.getName(),newClass);
 		} catch (ReadOnlyNameException e) {
 			throw new ErrorWrapper(new HbReadOnlyError(objSpace,def.getName()),
 											def.getClassNameToken().getStart());
