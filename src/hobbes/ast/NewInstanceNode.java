@@ -8,12 +8,15 @@ public class NewInstanceNode implements AtomNode {
 	
 	private VariableNode classVar;
 	private ArrayList<ExpressionNode> args;
-	private Token opener;
+	private Token newWord;
 	
 	public NewInstanceNode(VariableNode c, Token t, ArrayList<ExpressionNode> a) {
 		classVar = c;
-		opener = t;
-		args = a;
+		newWord = t;
+		if(a != null)
+			args = a;
+		else
+			args = new ArrayList<ExpressionNode>();
 	}
 	
 	public ArrayList<ExpressionNode> getArgs() {
@@ -24,8 +27,8 @@ public class NewInstanceNode implements AtomNode {
 		return classVar;
 	}
 	
-	public Token getOpener() {
-		return opener;
+	public Token getNewWord() {
+		return newWord;
 	}
 	
 }

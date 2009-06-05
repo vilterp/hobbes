@@ -2,6 +2,7 @@ package hobbes.interpreter;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -18,7 +19,7 @@ public class Interpreter {
 	public static void main(String[] args) {
 		if(args.length == 0) { // interactive console
 			Scanner s = new Scanner(System.in);
-			Interpreter i = new Interpreter("<console>",true);
+			Interpreter i = new Interpreter("<console>");
 			while(true) {
 				if(i.needsMore())
 					System.out.print(i.getLastOpener() + "> ");
@@ -78,7 +79,7 @@ public class Interpreter {
 	
 	public Interpreter(String fn, boolean vgc) {
 		verboseGC = vgc;
-		objSpace = new ObjectSpace(true);
+		objSpace = new ObjectSpace(vgc);
 		objSpace.resetCreated();
 		if(verboseGC)
 			System.out.println("initial object space size: " + objSpace.size());
@@ -201,20 +202,58 @@ public class Interpreter {
 	private HbObject evalNewInstance(NewInstanceNode expr) throws ErrorWrapper {
 		String className = expr.getClassVar().getName();
 		// get HbClass instance
-		HbClass klass = null;
+		HbClass hobbesClass = null;
 		try {
-			klass = (HbClass)eval(expr.getClassVar());
+			hobbesClass = (HbClass)eval(expr.getClassVar());
 		} catch(ClassCastException e) {
 			throw new ErrorWrapper(new HbNotAClassError(objSpace,className),
 									expr.getClassVar().getOrigin().getStart());
 		}
 		// instantiate
 		if(objSpace.getClasses().containsKey(className)) { // native class
-			System.err.println("native class constructors don't work yet");
-			// TODO: HobbesConstructor annotation?
-			return null; // TODO
+			// get Java class
+			Class<?extends HbObject> javaClass =
+									objSpace.getClass(className).getJavaClass();
+			Constructor constructor = null;
+			HbObject newObj = null;
+			try {
+				// get one-arg (ObjectSpace) constructor
+				constructor = javaClass.getConstructor(ObjectSpace.class);
+				// make new instance
+				newObj = (HbObject)constructor.newInstance(objSpace);
+			} catch (SecurityException e) {
+				e.printStackTrace();
+				System.exit(1);
+			} catch (NoSuchMethodException e) {
+				System.err.println("Class " + javaClass.getName() + " has no constructor " +
+						"that takes an ObjectSpace as the sole parameter");
+				e.printStackTrace();
+				System.exit(1);
+			} catch (IllegalArgumentException e) {
+				e.printStackTrace();
+				System.exit(1);
+			} catch (InstantiationException e) {
+				e.printStackTrace();
+				System.exit(1);
+			} catch (IllegalAccessException e) {
+				e.printStackTrace();
+				System.exit(1);
+			} catch (InvocationTargetException e) {
+				if(e.getCause() instanceof HbError)
+					throw new ErrorWrapper((HbError)e.getCause(),
+											expr.getNewWord().getStart());
+				else {
+					e.printStackTrace();
+					System.exit(1);
+				}
+			}
+			// call init
+			HbMethod initMethod = hobbesClass.getMethod("init");
+			SourceLocation loc = expr.getNewWord().getStart();
+			evalMethodCall(newObj,initMethod,expr.getArgs(),loc);
+			return newObj;
 		} else { // class defined in Hobbes
-			return new HbNormalClass(objSpace,klass);
+			return new HbNormalClass(objSpace,hobbesClass);
 			// TODO: call constructor
 		}
 	}
@@ -227,59 +266,78 @@ public class Interpreter {
 									var.getOrigin().getStart());
 		}
 	}
-
+	
 	private HbObject evalMethodCall(MethodCallNode call) throws ErrorWrapper {
 		HbObject receiver = eval(call.getReceiver());
-		HbClass receiverClass = receiver.getClassInstance();
+		HbClass receiverClass = receiver.getHbClass();
 		HbMethod method = receiverClass.getMethod(call.getMethodName());
 		// check that method exists
 		if(method == null)
 			throw new ErrorWrapper(
 						new HbMissingMethodError(objSpace,call.getMethodName()),
 						call.getOrigin().getStart());
-		// check not too many args
-		if(call.getNumArgs() > method.getNumArgs()) {
-			StringBuilder msg = new StringBuilder(call.getMethodName());
-			msg.append(" got ");
-			msg.append(call.getNumArgs());
-			msg.append(" args, takes");
-			msg.append(method.getNumArgs());
-			throw new ErrorWrapper(new HbArgumentError(objSpace,msg.toString()),
+		return evalMethodCall(receiver,method,call.getArgs(),
 									call.getOrigin().getStart());
-		}
-		// eval args
-		HbObject[] argValues = new HbObject[method.getNumArgs()];
-		for(int i=0; i < argValues.length; i++) {
-			if(i < call.getNumArgs())
-				argValues[i] = eval(call.getArgs().get(i));
-			else if(method.getDefault(i) != null)
-				argValues[i] = eval(method.getDefault(i));
-			else
-				throw new ErrorWrapper(new HbArgumentError(objSpace,
-										call.getMethodName() + "needs more arguments"),
-										call.getOrigin().getStart());
-				// TODO: more detailed error message
-		}
+	}
+
+	private HbObject evalMethodCall(HbObject receiver, HbMethod method,
+				ArrayList<ExpressionNode> args, SourceLocation origin)
+													throws ErrorWrapper {
+		HbClass receiverClass = receiver.getHbClass();
+		HbObject[] argValues = evalArgs(args,method,origin);
 		if(method instanceof HbNativeMethod)
 			return evalNativeMethodCall(receiver,(HbNativeMethod)method,argValues,
-													call.getOrigin().getStart());
+													origin);
 		else {
 			try {
 				return evalNormalMethodCall(receiver,(HbNormalMethod)method,
-															argValues,call.getOrigin());
+															argValues,origin);
 			} catch (StackOverflow e) {
 				throw new ErrorWrapper(new HbStackOverflow(objSpace),
-										call.getOrigin().getStart());
+										origin);
 			}
 		}
 	}
 	
+	private HbObject[] evalArgs(ArrayList<ExpressionNode> args, HbMethod method,
+									SourceLocation origin) throws ErrorWrapper {
+		// check not too many args
+		if(args.size() > method.getNumArgs()) {
+			StringBuilder msg = new StringBuilder(method.getName());
+			msg.append(" got ");
+			msg.append(args.size());
+			if(args.size() == 1)
+				msg.append(" arg, takes ");
+			else
+				msg.append(" args, takes ");
+			msg.append(method.getNumArgs());
+			throw new ErrorWrapper(new HbArgumentError(objSpace,msg.toString()),
+									origin);
+		}
+		// eval args
+		HbObject[] argValues = new HbObject[method.getNumArgs()];
+		for(int i=0; i < argValues.length; i++) {
+			if(i < args.size())
+				argValues[i] = eval(args.get(i));
+			else if(method.getDefault(i) != null)
+				argValues[i] = eval(method.getDefault(i));
+			else
+				throw new ErrorWrapper(new HbArgumentError(objSpace,
+									method.getName() + "needs more arguments"),
+									origin);
+				// TODO: more helpful error message
+		}
+		return argValues;
+	}
+	
 	private HbObject evalNormalMethodCall(HbObject receiver, HbNormalMethod method,
-													HbObject[] args, Token origin)
+													HbObject[] args,
+													SourceLocation origin)
 												throws StackOverflow, ErrorWrapper {
 		// add frame
-		pushFrame(new FunctionFrame(objSpace,getCurrentFrame().getScope(),
-									method.getName(),origin.getStart()));
+		pushFrame(new MethodFrame(objSpace,getCurrentFrame().getScope(),
+									receiver.getHbClass().getName(),
+									method.getName(),origin));
 		// run method
 		HbObject lastResult = null;
 		for(SyntaxNode item: method.getBlock()) {
@@ -329,7 +387,7 @@ public class Interpreter {
 
 	private void assign(AssignmentNode stmt) throws ErrorWrapper {
 		try {
-			getCurrentFrame().getScope().set(stmt.getVar().getName(),
+			getCurrentFrame().getScope().assign(stmt.getVar().getName(),
 													eval(stmt.getExpr()));
 		} catch (ReadOnlyNameException e) {
 			throw new ErrorWrapper(
@@ -340,11 +398,6 @@ public class Interpreter {
 	
 	private void delete(DeletionNode del) throws ErrorWrapper {
 		try {
-			// garbage collect
-			int deletedId = eval(del.getVar()).getId();
-			objSpace.decRefs(deletedId);
-			objSpace.garbageCollect(deletedId);
-			// delete from scope
 			getCurrentFrame().getScope().delete(del.getVar().getName());
 		} catch(ReadOnlyNameException e) {
 			throw new ErrorWrapper(
@@ -362,7 +415,7 @@ public class Interpreter {
 		HbClass newClass = new HbClass(objSpace,def.getName());
 		// add class to object
 		try {
-			getCurrentFrame().getScope().set(def.getName(),newClass);
+			getCurrentFrame().getScope().assign(def.getName(),newClass);
 		} catch (ReadOnlyNameException e) {
 			throw new ErrorWrapper(new HbReadOnlyError(objSpace,def.getName()),
 											def.getClassNameToken().getStart());

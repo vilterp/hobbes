@@ -5,7 +5,12 @@ import hobbes.parser.SourceLocation;
 
 @HobbesClass(name="ArgumentError")
 public class HbArgumentError extends HbError {
-
+	
+	public HbArgumentError(ObjectSpace o) throws HbArgumentError {
+		super(o);
+		throw getNoMessageError();
+	}
+	
 	public HbArgumentError(ObjectSpace o, String m) {
 		super(o, m);
 	}

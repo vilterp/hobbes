@@ -11,9 +11,19 @@ public class HbError extends HbObject {
 	
 	private String errorMessage;
 	
+	public HbError(ObjectSpace o) {
+		super(o);
+		errorMessage = null;
+	}
+	
 	public HbError(ObjectSpace o, String m) {
 		super(o);
 		errorMessage = m;
+	}
+	
+	protected HbArgumentError getNoMessageError() {
+		return new HbArgumentError(getObjSpace(),
+				getHbClass().getName() + " needs a message");
 	}
 
 	public String getMessage() {
@@ -22,11 +32,9 @@ public class HbError extends HbObject {
 	
 	public String toString() {
 		StringBuilder ans = new StringBuilder("<");
-		ans.append(getClassInstance().getName());
+		ans.append(getHbClass().getName());
 		if(getMessage() != null) {
-			ans.append(" ");
-			ans.append("msg=");
-			ans.append("\"");
+			ans.append(": \"");
 			ans.append(getMessage());
 			ans.append("\"");
 		}

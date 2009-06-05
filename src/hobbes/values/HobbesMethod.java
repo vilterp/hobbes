@@ -10,6 +10,7 @@ import java.lang.annotation.RetentionPolicy;
 public @interface HobbesMethod {
 	
 	String name();
-	int numArgs();
+	int numArgs() default 0;
+	String[] defaults() default {};
 	
 }

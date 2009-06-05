@@ -65,7 +65,7 @@ public class Scope {
 			throw new UndefinedNameException(name);
 	}
 	
-	public void set(String name, HbObject val) throws ReadOnlyNameException {
+	public void assign(String name, HbObject val) throws ReadOnlyNameException {
 		// get id of whatever is already there
 		Integer prevId = null;
 		if(names.containsKey(name))
@@ -96,12 +96,16 @@ public class Scope {
 		globals.add(name);
 	}
 	
-	public void delete(String name) throws ReadOnlyNameException, UndefinedNameException {
+	public void delete(String name) throws ReadOnlyNameException,
+												UndefinedNameException {
 		if(readOnlys.contains(name))
 			throw new ReadOnlyNameException(name);
-		else if(names.containsKey(name))
+		else if(names.containsKey(name)) {
+			int deletedId = names.get(name);
+			objSpace.decRefs(deletedId);
+			objSpace.garbageCollect(deletedId);
 			names.remove(name);
-		else
+		} else
 			throw new UndefinedNameException(name);
 	}
 	

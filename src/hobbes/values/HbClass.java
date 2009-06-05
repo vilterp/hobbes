@@ -1,5 +1,6 @@
 package hobbes.values;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 
@@ -14,13 +15,20 @@ import hobbes.parser.Parser;
 public class HbClass extends HbObject {
 	
 	private String name;
+	private Class<?extends HbObject> javaClass;
 	private HashMap<String,HbMethod> methods;
+	
+	public HbClass(ObjectSpace o) throws HbArgumentError {
+		super(o);
+		throw new HbArgumentError(getObjSpace(),"Use class ClassName {...} to make a new class");
+	}
 	
 	/*
 	 * For native classes: class name is determined by HobbesClass annotation. 
 	 */
 	public HbClass(ObjectSpace o, Class<? extends HbObject> c) {
 		this(o,c,((HobbesClass)c.getAnnotation(HobbesClass.class)).name());
+		javaClass = c;
 	}
 	
 	/*
@@ -29,12 +37,24 @@ public class HbClass extends HbObject {
 	 */
 	public HbClass(ObjectSpace o, String name) {
 		this(o,HbObject.class,name);
+		javaClass = HbObject.class;
 	}
 	
 	public HbClass(ObjectSpace o, Class<? extends HbObject> methodSource,
 																	String na) {
 		super(o);
 		name = na;
+		javaClass = methodSource;
+		// check that it has a ObjectSpace constructor
+		try {
+			javaClass.getConstructor(ObjectSpace.class);
+		} catch (SecurityException e1) {
+			e1.printStackTrace();
+		} catch (NoSuchMethodException e1) {
+			System.err.println("Class " + javaClass.getName() + " needs a constructor " +
+					"that takes an ObjectSpace as the sole parameter");
+			System.exit(1);
+		}
 		// add methods
 		methods = new HashMap<String,HbMethod>();
 		for(Method m: methodSource.getMethods()) {
@@ -45,22 +65,26 @@ public class HbClass extends HbObject {
 				HbNativeMethod meth =
 								new HbNativeMethod(n,ann.numArgs(),m);
 				// get defaults
-				if(m.isAnnotationPresent(Default.class)) {
-					Default d = m.getAnnotation(Default.class);
-					Tokenizer t = new Tokenizer();
-					Parser p = new Parser();
-					try {
-						t.addLine(new SourceLine(d.expr(),"<defaultSpec>",1));
-						meth.setDefault(d.argInd(),
-										(ExpressionNode)p.parse(t.getTokens()));
-					} catch (SyntaxError e) {
-						throw new IllegalArgumentException(
-										"Invalid default expression "
-										+ "(" + d.expr() + ") "
-										+ "for method \""
-										+ meth.getName() + "\" in class \""
-										+ methodSource.getName() + "\"");
-					}
+				Tokenizer t = new Tokenizer();
+				Parser p = new Parser();
+				boolean specAlready = false;
+				for(int i=0; i < ann.defaults().length; i++) {
+					if(ann.defaults()[i] != null) {
+						try {
+							t.addLine(new SourceLine(ann.defaults()[i],"<default>",1));
+							meth.setDefault(i,(ExpressionNode)p.parse(t.getTokens()));
+							specAlready = true;
+						} catch(SyntaxError e) {
+							throw new IllegalArgumentException("Invalid expression ("
+										+ ann.defaults()[i]
+										+ ") for method "
+										+ ann.name()
+										+ " in class " + name);
+						}
+					} else if(specAlready)
+						throw new IllegalArgumentException("Defaults arguments must "
+								+ "come last (method: " + ann.name() + ", "
+								+ "class: " + name + ")");
 				}
 				methods.put(n,meth);
 			}
@@ -86,9 +110,18 @@ public class HbClass extends HbObject {
 		return ans.toString();
 	}
 	
-	@HobbesMethod(name="name",numArgs=0)
+	public Class<?extends HbObject> getJavaClass() {
+		return javaClass;
+	}
+	
+	@HobbesMethod(name="name")
 	public HbString name() {
 		return new HbString(getObjSpace(),name);
+	}
+	
+	@HobbesMethod(name="superclass")
+	public HbClass getSuperClass() {
+		return getObjSpace().getClass("Object");
 	}
 
 }

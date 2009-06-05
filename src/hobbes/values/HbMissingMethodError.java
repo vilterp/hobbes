@@ -5,7 +5,12 @@ import hobbes.parser.SourceLocation;
 
 @HobbesClass(name="MissingMethodError")
 public class HbMissingMethodError extends HbError {
-
+	
+	public HbMissingMethodError(ObjectSpace o) throws HbArgumentError {
+		super(o);
+		throw getNoMessageError();
+	}
+	
 	public HbMissingMethodError(ObjectSpace o, String m) {
 		super(o, m);
 	}

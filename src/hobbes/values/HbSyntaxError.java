@@ -5,7 +5,12 @@ import hobbes.parser.SourceLocation;
 
 @HobbesClass(name="SyntaxError")
 public class HbSyntaxError extends HbError {
-
+	
+	public HbSyntaxError(ObjectSpace o) throws HbArgumentError {
+		super(o);
+		throw getNoMessageError();
+	}
+	
 	public HbSyntaxError(ObjectSpace o, String m) {
 		super(o, m);
 	}

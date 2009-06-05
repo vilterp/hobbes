@@ -887,11 +887,10 @@ public class Parser {
 			Token newWord = getLastToken();
 			if(variable()) {
 				VariableNode classVar = (VariableNode)stack.pop();
-				ArgumentsNode args = null;
-				if(arguments()) {
-					args = (ArgumentsNode)stack.pop();
-				}
-				stack.push(new NewInstanceNode(classVar,args.getOpener(),args.getArgs()));
+				ArrayList<ExpressionNode> args = null;
+				if(arguments())
+					args = ((ArgumentsNode)stack.pop()).getArgs();
+				stack.push(new NewInstanceNode(classVar,newWord,args));
 				return true;
 			} else
 				throw new SyntaxError("No class expression after \"new\"",

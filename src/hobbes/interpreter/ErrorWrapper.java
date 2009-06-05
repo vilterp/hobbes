@@ -30,7 +30,7 @@ public class ErrorWrapper extends Exception {
 	}
 
 	public void printStackTrace() {
-		System.err.print(error.getClassInstance().getName());
+		System.err.print(error.getHbClass().getName());
 		if(error.getMessage() != null)
 			System.err.print(": " + error.getMessage());
 		System.err.println();

@@ -7,6 +7,12 @@ public class HbInt extends HbObject {
 	
 	private int value;
 	
+	public HbInt(ObjectSpace o) throws HbArgumentError {
+		super(o);
+		throw new HbArgumentError(getObjSpace(),
+				"Can't make an Int with no parameters");
+	}
+	
 	public HbInt(ObjectSpace o, int val) {
 		super(o);
 		value = val;

@@ -36,7 +36,7 @@ public class HbList extends HbObject {
 		} else
 			throw new HbArgumentError(getObjSpace(),
 									"[]",
-									index.getClassInstance().getName(),
+									index.getHbClass().getName(),
 									"HbInt");
 	}
 	
@@ -51,12 +51,11 @@ public class HbList extends HbObject {
 		} else
 			throw new HbArgumentError(getObjSpace(),
 									"get",
-									index.getClassInstance().getName(),
+									index.getHbClass().getName(),
 									"HbInt");
 	}
 	
-	@HobbesMethod(name="join",numArgs=1)
-	@Default(argInd=0,expr="\"\"")
+	@HobbesMethod(name="join",numArgs=1,defaults={"\"\""})
 	public HbString join(HbObject joiner) throws HbArgumentError {
 		if(joiner instanceof HbString) {
 			String j = ((HbString)joiner).getValue().toString();
@@ -74,7 +73,7 @@ public class HbList extends HbObject {
 			return new HbString(getObjSpace(),ans);
 		} else
 			throw new HbArgumentError(getObjSpace(),"join",
-								joiner.getClassInstance().getName(),
+								joiner.getHbClass().getName(),
 								"String");
 	}
 

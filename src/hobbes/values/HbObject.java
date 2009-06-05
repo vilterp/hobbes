@@ -40,13 +40,23 @@ public class HbObject extends Throwable {
 	
 	public String toString() {
 		StringBuilder repr = new StringBuilder("<");
-		repr.append(getClassInstance().getName());
+		repr.append(getHbClass().getName());
 		repr.append(" @ ");
 		repr.append(getId());
 		repr.append(">");
 		return repr.toString();
 	}
 	
+	@HobbesMethod(name="toString",numArgs=0)
+	public HbString hbToString() {
+		return new HbString(getObjSpace(),toString());
+	}
+
+	@HobbesMethod(name="hash_code")
+	public HbInt hbHashCode() {
+		return getObjSpace().getInt(hashCode());
+	}
+
 	public int hashCode() {
 		return getId();
 	}
@@ -67,24 +77,17 @@ public class HbObject extends Throwable {
 		return objSpace.get(instanceVars.get(name));
 	}
 	
-	@HobbesMethod(name="class",numArgs=0)
-	public HbClass getClassInstance() {
+	@HobbesMethod(name="init")
+	public void init() {}
+	
+	@HobbesMethod(name="class")
+	public HbClass getHbClass() {
 		return klass;
 	}
 	
-	@HobbesMethod(name="object_id",numArgs=0)
+	@HobbesMethod(name="object_id")
 	public HbInt objectId() {
 		return new HbInt(getObjSpace(),id);
-	}
-	
-	@HobbesMethod(name="hash_code",numArgs=0)
-	public HbInt getHashCode() {
-		return objectId();
-	}
-	
-	@HobbesMethod(name="show",numArgs=0)
-	public HbString show() {
-		return new HbString(getObjSpace(),toString());
 	}
 	
 }
