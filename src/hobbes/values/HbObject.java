@@ -44,7 +44,7 @@ public class HbObject extends Throwable {
 		StringBuilder repr = new StringBuilder("<");
 		repr.append(getHbClass().getName());
 		repr.append("@");
-		repr.append(Integer.toHexString(getId()));
+		repr.append(getId());
 		repr.append(">");
 		return new HbString(getObjSpace(),repr.toString());
 	}

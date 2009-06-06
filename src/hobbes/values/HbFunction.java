@@ -3,17 +3,17 @@ package hobbes.values;
 import java.util.HashMap;
 
 import hobbes.ast.ExpressionNode;
+import hobbes.interpreter.ObjectSpace;
 
-public abstract class HbMethod implements HbCallable {
+public abstract class HbFunction extends HbObject implements HbCallable {
 	
 	private HashMap<Integer,ExpressionNode> defaults;
 	
-	public HbMethod() {
+	public HbFunction(ObjectSpace o) {
+		super(o);
 		defaults = new HashMap<Integer,ExpressionNode>();
 	}
 	
-	public abstract String getName();
-	public abstract String getDeclaringClassName();
 	public abstract int getNumArgs();
 
 	public ExpressionNode getDefault(int argInd) {

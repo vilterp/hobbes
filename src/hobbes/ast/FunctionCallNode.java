@@ -24,4 +24,12 @@ public class FunctionCallNode implements FunctionNode {
 		return parenLoc;
 	}
 	
+	public ExpressionNode getFuncExpr() {
+		return function;
+	}
+	
+	public ArrayList<ExpressionNode> getArgs() {
+		return args;
+	}
+	
 }

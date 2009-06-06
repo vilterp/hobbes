@@ -13,6 +13,7 @@ public class ObjectSpace {
 	//private HashMap<Float, HbFloat> floatConstants;
 	private HashMap<String,HbClass> classes;
 	private HashSet<String> builtinClasses;
+	private HashMap<String,HbNativeFunction> functions;
 	private ArrayList<Integer> created;
 	private int nextId;
 	private int trueId;
@@ -25,6 +26,7 @@ public class ObjectSpace {
 		objects = new HashMap<Integer,ValueRecord>();
 		builtinClasses = new HashSet<String>();
 		classes = new HashMap<String,HbClass>();
+		functions = new HashMap<String,HbNativeFunction>();
 		created = new ArrayList<Integer>();
 		intConstants = new HashMap<Integer,HbInt>();
 		//floatConstants = new HashMap<Float, HbFloat>();
@@ -37,6 +39,9 @@ public class ObjectSpace {
 		addNativeClass(HbNil.class);
 		addNativeClass(HbInt.class);
 		addNativeClass(HbString.class);
+		addNativeClass(HbAnonymousFunction.class);
+		addNativeClass(HbNativeFunction.class);
+		addNativeClass(HbNormalFunction.class);
 		// collections
 		addNativeClass(HbList.class);
 		// errors
@@ -54,6 +59,17 @@ public class ObjectSpace {
 		nilId = new HbNil(this).getId();
 		trueId = new HbTrue(this).getId();
 		falseId = new HbFalse(this).getId();
+		// add native functions
+		addNativeFunction("print",new String[]{"object"});
+		addNativeFunction("get_input",new String[]{"prompt"});
+		addNativeFunction("eval",new String[]{"code"});
+	}
+	
+	private void addNativeFunction(String name, String[] args) {
+		ArrayList<String> a = new ArrayList<String>();
+		for(String s: args)
+			a.add(s);
+		functions.put(name,new HbNativeFunction(this,name,a));
 	}
 	
 	private void addNativeClass(Class<? extends HbObject> klass) {
@@ -80,6 +96,10 @@ public class ObjectSpace {
 	
 	public HbClass getClass(String name) {
 		return (HbClass)classes.get(name);
+	}
+	
+	public HashMap<String,HbNativeFunction> getNativeFunctions() {
+		return functions;
 	}
 
 	private int getId() {

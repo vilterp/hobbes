@@ -31,6 +31,10 @@ public class HbString extends HbObject {
 				.replaceAll("\"", "\\\\\"");
 	}
 	
+	public String getValue() {
+		return value.toString();
+	}
+	
 	@HobbesMethod(name="toString")
 	public HbString hbToString() {
 		return this;

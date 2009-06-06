@@ -127,6 +127,10 @@ public class Interpreter {
 		}
 	}
 	
+	private String show(HbObject obj) throws ErrorWrapper, SyntaxError {
+		return ((HbString)evalMethodCall(obj,"toString",emptyArgs,null)).getValue();
+	}
+	
 	private String interpret(SyntaxNode tree) {
 		if(tree != null) {
 			try {
@@ -171,6 +175,9 @@ public class Interpreter {
 		} else if(tree instanceof ClassDefNode) {
 			defineClass((ClassDefNode)tree);
 			return null;
+		} else if(tree instanceof MethodDefNode) {
+			defineFunction((MethodDefNode)tree);
+			return null;
 		} else {
 			System.out.println("doesn't do " + tree.getClass().getName() + "s yet");
 			return null;
@@ -178,6 +185,7 @@ public class Interpreter {
 	}
 	
 	private HbObject eval(ExpressionNode expr) throws ErrorWrapper, SyntaxError {
+		// atoms
 		if(expr instanceof NumberNode)
 			return evalNumber((NumberNode)expr);
 		else if(expr instanceof VariableNode)
@@ -186,18 +194,67 @@ public class Interpreter {
 			return evalInstanceVar((InstanceVarNode)expr);
 		else if(expr instanceof NewInstanceNode)
 			return evalNewInstance((NewInstanceNode)expr);
-		else if(expr instanceof MethodCallNode)
-			return evalMethodCall((MethodCallNode)expr);
 		else if(expr instanceof ListNode)
 			return evalList((ListNode)expr);
+		else if(expr instanceof AnonymousFunctionNode)
+			return evalAnonFunc((AnonymousFunctionNode)expr);
 		else if(expr instanceof StringNode)
 			return new HbString(objSpace,((StringNode)expr).getValue());
+		// calls
+		else if(expr instanceof MethodCallNode)
+			return evalMethodCall((MethodCallNode)expr);
+		else if(expr instanceof FunctionCallNode)
+			return evalFunctionCall((FunctionCallNode)expr);
 		else {
 			System.err.println("doesn't do that kind of expression");
 			return null;
 		}
 	}
 	
+	private HbObject evalFunctionCall(FunctionCallNode call) throws ErrorWrapper, SyntaxError {
+		HbFunction func = (HbFunction)eval(call.getFuncExpr());
+		HbObject[] args = evalArgs(call.getArgs(),func,
+							func.hbToString().getValue(),call.getParenLoc());
+		if(func instanceof HbNativeFunction)
+			return evalNativeFuncCall((HbNativeFunction)func,args,call.getParenLoc());
+		else if(func instanceof HbNormalFunction)
+			return evalNormalFuncCall((HbNormalFunction)func,args,call.getParenLoc());
+		else
+			return evalAnonFuncCall((HbAnonymousFunction)func,args,call.getParenLoc());
+	}
+
+	private HbObject evalAnonFuncCall(HbAnonymousFunction func,
+			HbObject[] args, SourceLocation parenLoc) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	private HbObject evalNormalFuncCall(HbNormalFunction func, HbObject[] args,
+			SourceLocation parenLoc) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	private HbObject evalNativeFuncCall(HbNativeFunction func, HbObject[] args,
+			SourceLocation parenLoc) throws ErrorWrapper, SyntaxError {
+		if(func.getName().equals("print")) {
+			System.out.println(show(args[0]));
+			return objSpace.getNil();
+		} else if(func.getName().equals("get_input")) {
+			System.out.print(show(args[0]));
+			Scanner in = new Scanner(System.in);
+			return new HbString(objSpace,in.nextLine());
+		} else if(func.getName().equals("eval")) {
+			System.err.println("eval hasn't been implemented yet");
+			return objSpace.getNil();
+		} else
+			throw new IllegalArgumentException("Nonexistent native function");
+	}
+
+	private HbObject evalAnonFunc(AnonymousFunctionNode func) {
+		return new HbAnonymousFunction(objSpace,func.getArgs(),func.getBlock());
+	}
+
 	private HbObject evalInstanceVar(InstanceVarNode expr) throws SyntaxError {
 		if(getCurrentFrame() instanceof MethodFrame) {
 			return ((MethodFrame)getCurrentFrame()).getReceiver().getInstVar(expr.getName());
@@ -279,9 +336,8 @@ public class Interpreter {
 	private HbObject evalVariable(VariableNode var) throws ErrorWrapper {
 		try {
 			return getCurrentFrame().getScope().get(var.getName());
-		} catch (UndefinedNameException e) {
-			throw new ErrorWrapper(new HbUndefinedNameError(objSpace,var.getName()),
-									var.getOrigin().getStart());
+		} catch (HbUndefinedNameError e) {
+			throw new ErrorWrapper(e,var.getOrigin().getStart());
 		}
 	}
 	
@@ -302,7 +358,9 @@ public class Interpreter {
 			throw new ErrorWrapper(
 						new HbMissingMethodError(objSpace,methodName),
 						origin);
-		HbObject[] argValues = evalArgs(args,method,origin);
+		HbObject[] argValues = evalArgs(args,method,
+									method.getDeclaringClassName() + "#" + method.getName(),
+									origin);
 		if(method instanceof HbNativeMethod)
 			return evalNativeMethodCall(receiver,(HbNativeMethod)method,argValues,
 													origin);
@@ -317,28 +375,27 @@ public class Interpreter {
 		}
 	}
 	
-	private HbObject[] evalArgs(ArrayList<ExpressionNode> args, HbMethod method,
+	private HbObject[] evalArgs(ArrayList<ExpressionNode> args, HbCallable func, String name,
 									SourceLocation loc) throws ErrorWrapper, SyntaxError {
 		// check not too many args
-		if(args.size() > method.getNumArgs())
-			throw getArgumentError(method,args.size(),loc);
+		if(args.size() > func.getNumArgs())
+			throw getArgumentError(name,args.size(),func.getNumArgs(),loc);
 		// eval args
-		HbObject[] argValues = new HbObject[method.getNumArgs()];
+		HbObject[] argValues = new HbObject[func.getNumArgs()];
 		for(int i=0; i < argValues.length; i++) {
 			if(i < args.size())
 				argValues[i] = eval(args.get(i));
-			else if(method.getDefault(i) != null)
-				argValues[i] = eval(method.getDefault(i));
+			else if(func.getDefault(i) != null)
+				argValues[i] = eval(func.getDefault(i));
 			else
-				throw getArgumentError(method,i+1,loc);
+				throw getArgumentError(name,i+1,func.getNumArgs(),loc);
 		}
 		return argValues;
 	}
 	
-	private ErrorWrapper getArgumentError(HbMethod method, int gotten, SourceLocation loc) {
-		StringBuilder msg = new StringBuilder(method.getDeclaringClassName());
-		msg.append("#");
-		msg.append(method.getName());
+	private ErrorWrapper getArgumentError(String name, int gotten, int needed,
+																SourceLocation loc) {
+		StringBuilder msg = new StringBuilder(name);
 		msg.append(" got ");
 		msg.append(gotten);
 		if(gotten == 1)
@@ -346,7 +403,7 @@ public class Interpreter {
 		else
 			msg.append(" args,");
 		msg.append(" but needs ");
-		msg.append(method.getNumArgs());
+		msg.append(needed);
 		return new ErrorWrapper(new HbArgumentError(objSpace,msg),loc);
 	}
 	
@@ -361,9 +418,9 @@ public class Interpreter {
 		for(int i=0; i < args.length; i++) {
 			try {
 				getCurrentFrame().getScope().assign(method.getArgName(i),args[i]);
-			} catch (ReadOnlyNameException e) {
-				throw new ErrorWrapper(new HbReadOnlyError(objSpace,method.getArgName(i)),
-							method.getArgs().get(i).getVar().getOrigin().getStart());
+			} catch (HbReadOnlyError e) {
+				throw new ErrorWrapper(e,
+						method.getArgs().get(i).getVar().getOrigin().getStart());
 			}
 		}
 		getCurrentFrame().getScope().assignForce("self",receiver);
@@ -419,10 +476,8 @@ public class Interpreter {
 			try {
 				getCurrentFrame().getScope().assign(stmt.getVar().getName(),
 														eval(stmt.getExpr()));
-			} catch (ReadOnlyNameException e) {
-				throw new ErrorWrapper(
-								new HbReadOnlyError(objSpace,e.getNameInQuestion()),
-								stmt.getEqualsToken().getStart());
+			} catch (HbReadOnlyError e) {
+				throw new ErrorWrapper(e,stmt.getEqualsToken().getStart());
 			}
 		} else if(getCurrentFrame() instanceof MethodFrame) {
 			((MethodFrame)getCurrentFrame()).getReceiver().putInstVar(stmt.getVar().getName(),
@@ -451,12 +506,10 @@ public class Interpreter {
 		HbClass newClass = new HbClass(objSpace,def.getName());
 		// add class to ObjectSpace's classes HashMap
 		objSpace.addClass(newClass);
-		// add class to scope
 		try {
 			getCurrentFrame().getScope().assignGlobal(def.getName(),newClass);
-		} catch (ReadOnlyNameException e) {
-			throw new ErrorWrapper(new HbReadOnlyError(objSpace,def.getName()),
-											def.getClassNameToken().getStart());
+		} catch (HbReadOnlyError e) {
+			throw new ErrorWrapper(e,def.getClassNameToken().getStart());
 		}
 		// define new class
 		for(SyntaxNode item: def.getBody()) {
@@ -465,6 +518,15 @@ public class Interpreter {
 				newClass.addMethod(methodDef.getName(),
 						new HbNormalMethod(def.getName(),methodDef));
 			}
+		}
+	}
+	
+	private void defineFunction(MethodDefNode def) throws ErrorWrapper {
+		try {
+			getCurrentFrame().getScope().assignGlobal(def.getName(),
+					new HbNormalFunction(objSpace,def.getName(),def.getArgs(),def.getBlock()));
+		} catch (HbReadOnlyError e) {
+			throw new ErrorWrapper(e,def.getNameToken().getStart());
 		}
 	}
 

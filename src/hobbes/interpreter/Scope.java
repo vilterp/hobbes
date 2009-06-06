@@ -2,6 +2,8 @@ package hobbes.interpreter;
 
 import hobbes.values.HbClass;
 import hobbes.values.HbObject;
+import hobbes.values.HbReadOnlyError;
+import hobbes.values.HbUndefinedNameError;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,9 +39,9 @@ public class Scope {
 			for(String global: inheritGlobalsFrom.getGlobals()) {
 				try {
 					assignGlobalForce(global,inheritGlobalsFrom.get(global));
-				} catch (UndefinedNameException e) {
+				} catch (HbUndefinedNameError e) {
 					throw new IllegalArgumentException("name \"" + global
-										+ "\" in globals not in scope object");
+							+ "\" in globals not in scope object");
 				}
 			}
 		}
@@ -49,6 +51,9 @@ public class Scope {
 		// classes
 		for(String className: objSpace.getClasses().keySet())
 			assignGlobalForce(className,objSpace.getClasses().get(className));
+		// functions
+		for(String funcName: objSpace.getNativeFunctions().keySet())
+			assignGlobalForce(funcName,objSpace.getNativeFunctions().get(funcName));
 		// variables
 		assignGlobalForce("true",objSpace.getTrue());
 		assignGlobalForce("false",objSpace.getFalse());
@@ -59,17 +64,17 @@ public class Scope {
 		return globals;
 	}
 	
-	public HbObject get(String name) throws UndefinedNameException {
+	public HbObject get(String name) throws HbUndefinedNameError {
 		if(names.containsKey(name))
 			return objSpace.get(names.get(name));
 		else
-			throw new UndefinedNameException(name);
+			throw new HbUndefinedNameError(objSpace,name);
 	}
 	
-	public void assign(String name, HbObject val) throws ReadOnlyNameException {
+	public void assign(String name, HbObject val) throws HbReadOnlyError {
 		// ensure this name is not read-only
 		if(isReadOnly(name))
-			throw new ReadOnlyNameException(name);
+			throw new HbReadOnlyError(objSpace,name);
 		else
 			doAssign(name,val);
 	}
@@ -91,7 +96,7 @@ public class Scope {
 			objSpace.garbageCollect(prevId);
 	}
 	
-	public void assignGlobal(String name, HbObject val) throws ReadOnlyNameException {
+	public void assignGlobal(String name, HbObject val) throws HbReadOnlyError {
 		assign(name,val);
 		globals.add(name);
 	}
