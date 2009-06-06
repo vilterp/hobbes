@@ -9,8 +9,9 @@ public class HbNil extends HbObject {
 		super(o);
 	}
 	
-	public String toString() {
-		return "nil";
+	@HobbesMethod(name="toString")
+	public HbString hbToString() {
+		return new HbString(getObjSpace(),"nil");
 	}
 
 }

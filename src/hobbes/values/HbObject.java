@@ -39,18 +39,14 @@ public class HbObject extends Throwable {
 		hobbesClass = c;
 	}
 	
-	public String toString() {
+	@HobbesMethod(name="toString",numArgs=0)
+	public HbString hbToString() {
 		StringBuilder repr = new StringBuilder("<");
 		repr.append(getHbClass().getName());
 		repr.append("@");
-		repr.append(getId());
+		repr.append(Integer.toHexString(getId()));
 		repr.append(">");
-		return repr.toString();
-	}
-	
-	@HobbesMethod(name="toString",numArgs=0)
-	public HbString hbToString() {
-		return new HbString(getObjSpace(),toString());
+		return new HbString(getObjSpace(),repr.toString());
 	}
 
 	@HobbesMethod(name="hash_code")

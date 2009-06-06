@@ -28,9 +28,9 @@ public class Interpreter {
 				try {
 					i.add(s.nextLine());
 					if(!i.needsMore()) {
-						HbObject result = i.getResult();
+						String result = i.getResult();
 						if(result != null)
-							System.out.println("=> " + result.toString());
+							System.out.println("=> " + result);
 					}
 				} catch(NoSuchElementException e) {
 					System.out.println();
@@ -74,6 +74,7 @@ public class Interpreter {
 	private Parser parser;
 	private Tokenizer tokenizer;
 	private boolean verboseGC;
+	private ArrayList<ExpressionNode> emptyArgs;
 	
 	private static final int MAX_STACK_SIZE = 500;
 	
@@ -89,6 +90,7 @@ public class Interpreter {
 		stack.push(new ModuleFrame(objSpace,fileName));
 		parser = new Parser();
 		tokenizer = new Tokenizer();
+		emptyArgs = new ArrayList<ExpressionNode>();
 	}
 	
 	public Interpreter(String fn) {
@@ -112,7 +114,7 @@ public class Interpreter {
 		return tokenizer.getLastOpener();
 	}
 	
-	public HbObject getResult() {
+	public String getResult() {
 		if(needsMore())
 			throw new IllegalStateException("More code needed");
 		else {
@@ -125,14 +127,21 @@ public class Interpreter {
 		}
 	}
 	
-	private HbObject interpret(SyntaxNode tree) {
+	private String interpret(SyntaxNode tree) {
 		if(tree != null) {
 			try {
 				HbObject result = run(tree);
+				// collect the garbage
 				objSpace.garbageCollectCreated();
 				if(verboseGC)
 					System.out.println("object space size: " + objSpace.size());
-				return result;
+				if(result == null)
+					return null;
+				if(result instanceof HbString)
+					return "\"" + ((HbString)result).sanitizedValue() + "\"";
+				else
+					return ((HbString)evalMethodCall(result,"toString",emptyArgs,null))
+									.sanitizedValue();
 			} catch(ErrorWrapper e) {
 				while(canPop())
 					e.addFrame(popFrame());
@@ -262,9 +271,8 @@ public class Interpreter {
 		}
 		newObj.setClass(hobbesClass);
 		// call init
-		HbMethod initMethod = hobbesClass.getMethod("init");
 		SourceLocation loc = expr.getNewWord().getStart();
-		evalMethodCall(newObj,initMethod,expr.getArgs(),loc);
+		evalMethodCall(newObj,"init",expr.getArgs(),loc);
 		return newObj;
 	}
 
@@ -280,20 +288,20 @@ public class Interpreter {
 	private HbObject evalMethodCall(MethodCallNode call) throws ErrorWrapper, SyntaxError {
 		HbObject receiver = eval(call.getReceiver());
 		HbClass receiverClass = receiver.getHbClass();
-		HbMethod method = receiverClass.getMethod(call.getMethodName());
-		// check that method exists
-		if(method == null)
-			throw new ErrorWrapper(
-						new HbMissingMethodError(objSpace,call.getMethodName()),
-						call.getOrigin().getStart());
-		return evalMethodCall(receiver,method,call.getArgs(),
+		return evalMethodCall(receiver,call.getMethodName(),call.getArgs(),
 									call.getOrigin().getStart());
 	}
 
-	private HbObject evalMethodCall(HbObject receiver, HbMethod method,
+	private HbObject evalMethodCall(HbObject receiver, String methodName,
 				ArrayList<ExpressionNode> args, SourceLocation origin)
 													throws ErrorWrapper, SyntaxError {
 		HbClass receiverClass = receiver.getHbClass();
+		HbMethod method = receiverClass.getMethod(methodName);
+		// check that method exists
+		if(method == null)
+			throw new ErrorWrapper(
+						new HbMissingMethodError(objSpace,methodName),
+						origin);
 		HbObject[] argValues = evalArgs(args,method,origin);
 		if(method instanceof HbNativeMethod)
 			return evalNativeMethodCall(receiver,(HbNativeMethod)method,argValues,

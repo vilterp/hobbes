@@ -23,14 +23,6 @@ public class HbString extends HbObject {
 		this(o,val.toString());
 	}
 	
-	public StringBuilder getValue() {
-		return value;
-	}
-	
-	public String toString() {
-		return "\"" + sanitizedValue() + "\"";
-	}
-	
 	public String sanitizedValue() {
 		// backslash craziness!
 		return value.toString()

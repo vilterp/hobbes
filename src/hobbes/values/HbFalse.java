@@ -9,8 +9,9 @@ public class HbFalse extends HbObject {
 		super(o);
 	}
 	
-	public String toString() {
-		return "false";
+	@HobbesMethod(name="toString")
+	public HbString hbToString() {
+		return new HbString(getObjSpace(),"false");
 	}
 
 }

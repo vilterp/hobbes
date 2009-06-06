@@ -1,10 +1,6 @@
 package hobbes.values;
 
-import java.util.ArrayList;
-
-import hobbes.interpreter.ExecutionFrame;
 import hobbes.interpreter.ObjectSpace;
-import hobbes.parser.SourceLocation;
 
 @HobbesClass(name="Error")
 public class HbError extends HbObject {
@@ -30,7 +26,8 @@ public class HbError extends HbObject {
 		return errorMessage;
 	}
 	
-	public String toString() {
+	@HobbesMethod(name="toString")
+	public HbString hbToString() {
 		StringBuilder ans = new StringBuilder("<");
 		ans.append(getHbClass().getName());
 		if(getMessage() != null) {
@@ -39,7 +36,7 @@ public class HbError extends HbObject {
 			ans.append("\"");
 		}
 		ans.append(">");
-		return ans.toString();
+		return new HbString(getObjSpace(),ans);
 	}
 	
 }

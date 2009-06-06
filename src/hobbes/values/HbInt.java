@@ -22,8 +22,9 @@ public class HbInt extends HbObject {
 		return value;
 	}
 	
-	public String toString() {
-		return new Integer(value).toString();
+	@HobbesMethod(name="toString")
+	public HbString hbToString() {
+		return new HbString(getObjSpace(),new Integer(value).toString());
 	}
 	
 }

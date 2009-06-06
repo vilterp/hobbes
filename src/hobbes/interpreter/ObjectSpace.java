@@ -110,16 +110,16 @@ public class ObjectSpace {
 			return getFalse();
 	}
 
-	public HbObject getTrue() {
-		return get(trueId);
+	public HbTrue getTrue() {
+		return (HbTrue)get(trueId);
 	}
 
-	public HbObject getFalse() {
-		return get(falseId);
+	public HbFalse getFalse() {
+		return (HbFalse)get(falseId);
 	}
 
-	public HbObject getNil() {
-		return get(nilId);
+	public HbNil getNil() {
+		return (HbNil)get(nilId);
 	}
 	
 	public HbObject nilIfNull(HbObject obj) {
@@ -162,7 +162,7 @@ public class ObjectSpace {
 			if(get(id) instanceof HbInt)
 				intConstants.remove(((HbInt)get(id)).getValue());
 			if(verboseGC)
-				System.out.println("Collected " + get(id));
+				System.out.println("collected object @ " + id);
 			objects.remove(id);
 			return true;
 		} else

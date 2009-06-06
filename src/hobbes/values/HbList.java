@@ -19,8 +19,9 @@ public class HbList extends HbObject {
 		elements = initValues;
 	}
 	
-	public String toString() {
-		return elements.toString();
+	@HobbesMethod(name="toString")
+	public HbString hbToString() {
+		return new HbString(getObjSpace(),elements.toString());
 	}
 	
 	@HobbesMethod(name="[]",numArgs=1)
@@ -53,6 +54,16 @@ public class HbList extends HbObject {
 									"get",
 									index.getHbClass().getName(),
 									"HbInt");
+	}
+	
+	@HobbesMethod(name="length")
+	public HbInt getLength() {
+		return getObjSpace().getInt(elements.size());
+	}
+	
+	@HobbesMethod(name="empty?")
+	public HbObject isEmpty() {
+		return getObjSpace().getBool(elements.isEmpty());
 	}
 	
 	@HobbesMethod(name="join",numArgs=1,defaults={"\"\""})

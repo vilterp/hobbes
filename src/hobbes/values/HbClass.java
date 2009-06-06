@@ -104,11 +104,12 @@ public class HbClass extends HbObject {
 		methods.put(name, method);
 	}
 	
-	public String toString() {
+	@HobbesMethod(name="toString")
+	public HbString hbToString() {
 		StringBuilder ans = new StringBuilder("<Class ");
 		ans.append(name);
 		ans.append(">");
-		return ans.toString();
+		return new HbString(getObjSpace(),ans);
 	}
 	
 	public Class<?extends HbObject> getJavaClass() {
