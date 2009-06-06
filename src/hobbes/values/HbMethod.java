@@ -13,6 +13,7 @@ public abstract class HbMethod {
 	}
 	
 	public abstract String getName();
+	public abstract String getDeclaringClassName();
 	public abstract int getNumArgs();
 
 	public ExpressionNode getDefault(int argInd) {

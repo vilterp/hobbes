@@ -64,7 +64,7 @@ public class HbClass extends HbObject {
 				HobbesMethod ann = m.getAnnotation(HobbesMethod.class);
 				String n = ann.name();
 				HbNativeMethod meth =
-								new HbNativeMethod(n,ann.numArgs(),m);
+								new HbNativeMethod(n,name,ann.numArgs(),m);
 				// get defaults
 				Tokenizer t = new Tokenizer();
 				Parser p = new Parser();

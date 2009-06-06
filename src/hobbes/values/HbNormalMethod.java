@@ -9,16 +9,27 @@ import hobbes.ast.MethodDefNode;
 public class HbNormalMethod extends HbMethod {
 	
 	private String name;
+	private String className;
 	private BlockNode block;
 	private ArrayList<ArgSpecNode> args;
 	
-	public HbNormalMethod(MethodDefNode def) {
+	public HbNormalMethod(String cn, MethodDefNode def) {
 		name = def.getName();
+		className = cn;
 		block = def.getBlock();
 		args = def.getArgs();
+		for(int i=0; i < args.size(); i++) {
+			ArgSpecNode argSpec = args.get(i);
+			if(argSpec.getDefault() != null)
+				setDefault(i,argSpec.getDefault());
+		}
 	}
 
 	public String getName() {
+		return name;
+	}
+	
+	public String getDeclaringClassName() {
 		return name;
 	}
 

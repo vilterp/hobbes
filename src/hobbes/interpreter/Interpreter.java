@@ -318,20 +318,10 @@ public class Interpreter {
 	}
 	
 	private HbObject[] evalArgs(ArrayList<ExpressionNode> args, HbMethod method,
-									SourceLocation origin) throws ErrorWrapper, SyntaxError {
+									SourceLocation loc) throws ErrorWrapper, SyntaxError {
 		// check not too many args
-		if(args.size() > method.getNumArgs()) {
-			StringBuilder msg = new StringBuilder(method.getName());
-			msg.append(" got ");
-			msg.append(args.size());
-			if(args.size() == 1)
-				msg.append(" arg, takes ");
-			else
-				msg.append(" args, takes ");
-			msg.append(method.getNumArgs());
-			throw new ErrorWrapper(new HbArgumentError(objSpace,msg.toString()),
-									origin);
-		}
+		if(args.size() > method.getNumArgs())
+			throw getArgumentError(method,args.size(),loc);
 		// eval args
 		HbObject[] argValues = new HbObject[method.getNumArgs()];
 		for(int i=0; i < argValues.length; i++) {
@@ -340,12 +330,24 @@ public class Interpreter {
 			else if(method.getDefault(i) != null)
 				argValues[i] = eval(method.getDefault(i));
 			else
-				throw new ErrorWrapper(new HbArgumentError(objSpace,
-									method.getName() + " needs more arguments"),
-									origin);
-				// TODO: more helpful error message
+				throw getArgumentError(method,i+1,loc);
 		}
 		return argValues;
+	}
+	
+	private ErrorWrapper getArgumentError(HbMethod method, int gotten, SourceLocation loc) {
+		StringBuilder msg = new StringBuilder(method.getDeclaringClassName());
+		msg.append("#");
+		msg.append(method.getName());
+		msg.append(" got ");
+		msg.append(gotten);
+		if(gotten == 1)
+			msg.append(" arg,");
+		else
+			msg.append(" args,");
+		msg.append(" but needs ");
+		msg.append(method.getNumArgs());
+		return new ErrorWrapper(new HbArgumentError(objSpace,msg),loc);
 	}
 	
 	private HbObject evalNormalMethodCall(HbObject receiver, HbNormalMethod method,
@@ -461,8 +463,8 @@ public class Interpreter {
 			if(item instanceof MethodDefNode) {
 				MethodDefNode methodDef = (MethodDefNode)item;
 				newClass.addMethod(methodDef.getName(),
-										new HbNormalMethod(methodDef));
-			} // else... anything else allowed in class body?
+						new HbNormalMethod(def.getName(),methodDef));
+			}
 		}
 	}
 
