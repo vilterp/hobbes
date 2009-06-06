@@ -18,6 +18,7 @@ public class Scope {
 		readOnlys.add("true");
 		readOnlys.add("false");
 		readOnlys.add("nil");
+		readOnlys.add("self");
 		readOnlys.add("print");
 		readOnlys.add("get_input");
 	}
@@ -35,7 +36,7 @@ public class Scope {
 			globals = inheritGlobalsFrom.getGlobals();
 			for(String global: inheritGlobalsFrom.getGlobals()) {
 				try {
-					setGlobalForce(global,inheritGlobalsFrom.get(global));
+					assignGlobalForce(global,inheritGlobalsFrom.get(global));
 				} catch (UndefinedNameException e) {
 					throw new IllegalArgumentException("name \"" + global
 										+ "\" in globals not in scope object");
@@ -47,11 +48,11 @@ public class Scope {
 	public void addBasics() {
 		// classes
 		for(String className: objSpace.getClasses().keySet())
-			setGlobalForce(className,objSpace.getClasses().get(className));
+			assignGlobalForce(className,objSpace.getClasses().get(className));
 		// variables
-		setGlobalForce("true",objSpace.getTrue());
-		setGlobalForce("false",objSpace.getFalse());
-		setGlobalForce("nil",objSpace.getNil());
+		assignGlobalForce("true",objSpace.getTrue());
+		assignGlobalForce("false",objSpace.getFalse());
+		assignGlobalForce("nil",objSpace.getNil());
 	}
 	
 	public HashSet<String> getGlobals() {
@@ -66,13 +67,22 @@ public class Scope {
 	}
 	
 	public void assign(String name, HbObject val) throws ReadOnlyNameException {
+		// ensure this name is not read-only
+		if(isReadOnly(name))
+			throw new ReadOnlyNameException(name);
+		else
+			doAssign(name,val);
+	}
+	
+	public void assignForce(String name, HbObject val) {
+		doAssign(name,val);
+	}
+	
+	private void doAssign(String name, HbObject val) {
 		// get id of whatever is already there
 		Integer prevId = null;
 		if(names.containsKey(name))
 			prevId = names.get(name);
-		// ensure this name is not read-only
-		if(isReadOnly(name))
-			throw new ReadOnlyNameException(name);
 		// set
 		names.put(name,val.getId());
 		objSpace.incRefs(val.getId());
@@ -81,18 +91,13 @@ public class Scope {
 			objSpace.garbageCollect(prevId);
 	}
 	
-	public void setGlobal(String name, HbObject val) throws ReadOnlyNameException {
-		if(isReadOnly(name))
-			throw new ReadOnlyNameException(name);
-		else {
-			assign(name,val);
-			globals.add(name);
-		}
+	public void assignGlobal(String name, HbObject val) throws ReadOnlyNameException {
+		assign(name,val);
+		globals.add(name);
 	}
 	
-	public void setGlobalForce(String name, HbObject val) {
-		names.put(name, val.getId());
-		objSpace.incRefs(val.getId());
+	public void assignGlobalForce(String name, HbObject val) {
+		assignForce(name,val);
 		globals.add(name);
 	}
 	
@@ -100,7 +105,7 @@ public class Scope {
 												UndefinedNameException {
 		if(readOnlys.contains(name))
 			throw new ReadOnlyNameException(name);
-		else if(names.containsKey(name)) {
+		else if(isDefined(name)) {
 			int deletedId = names.get(name);
 			objSpace.decRefs(deletedId);
 			objSpace.garbageCollect(deletedId);

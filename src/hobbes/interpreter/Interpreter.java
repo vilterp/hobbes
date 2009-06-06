@@ -364,6 +364,7 @@ public class Interpreter {
 							method.getArgs().get(i).getVar().getOrigin().getStart());
 			}
 		}
+		getCurrentFrame().getScope().assignForce("self",receiver);
 		// run method
 		HbObject lastResult = null;
 		for(SyntaxNode item: method.getBlock()) {
@@ -450,7 +451,7 @@ public class Interpreter {
 		objSpace.addClass(newClass);
 		// add class to scope
 		try {
-			getCurrentFrame().getScope().setGlobal(def.getName(),newClass);
+			getCurrentFrame().getScope().assignGlobal(def.getName(),newClass);
 		} catch (ReadOnlyNameException e) {
 			throw new ErrorWrapper(new HbReadOnlyError(objSpace,def.getName()),
 											def.getClassNameToken().getStart());
@@ -477,9 +478,11 @@ public class Interpreter {
 	}
 
 	private ExecutionFrame popFrame() {
-		if(canPop())
-			return stack.pop();
-		else
+		if(canPop()) {
+			ExecutionFrame temp = stack.pop();
+			objSpace.garbageCollectCreated();
+			return temp;
+		} else
 			throw new IllegalStateException("Can't pop the top level frame");
 	}
 
