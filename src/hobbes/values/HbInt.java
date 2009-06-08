@@ -1,19 +1,19 @@
 package hobbes.values;
 
-import hobbes.interpreter.ObjectSpace;
+import hobbes.interpreter.Interpreter;
 
 @HobbesClass(name="Int")
 public class HbInt extends HbObject {
 	
 	private int value;
 	
-	public HbInt(ObjectSpace o) throws HbArgumentError {
+	public HbInt(Interpreter o) throws HbArgumentError {
 		super(o);
-		throw new HbArgumentError(getObjSpace(),
+		throw new HbArgumentError(getInterp(),
 				"Can't make an Int with no parameters");
 	}
 	
-	public HbInt(ObjectSpace o, int val) {
+	public HbInt(Interpreter o, int val) {
 		super(o);
 		value = val;
 	}
@@ -24,7 +24,7 @@ public class HbInt extends HbObject {
 	
 	@HobbesMethod(name="toString")
 	public HbString hbToString() {
-		return new HbString(getObjSpace(),new Integer(value).toString());
+		return new HbString(getInterp(),new Integer(value).toString());
 	}
 	
 }

@@ -1,18 +1,17 @@
 package hobbes.values;
 
-import hobbes.interpreter.ObjectSpace;
-import hobbes.parser.SourceLocation;
+import hobbes.interpreter.Interpreter;
 
 @HobbesClass(name="UndefinedNameError")
 public class HbUndefinedNameError extends HbError {
 	
-	public HbUndefinedNameError(ObjectSpace o) throws HbArgumentError {
-		super(o);
+	public HbUndefinedNameError(Interpreter i) throws HbArgumentError {
+		super(i);
 		throw getNoMessageError();
 	}
 	
-	public HbUndefinedNameError(ObjectSpace o, String m) {
-		super(o, m);
+	public HbUndefinedNameError(Interpreter i, String m) {
+		super(i, m);
 	}
 
 }

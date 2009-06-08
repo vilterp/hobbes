@@ -1,11 +1,10 @@
 package hobbes.values;
 
-import hobbes.interpreter.ObjectSpace;
-import hobbes.parser.SourceLocation;
+import hobbes.interpreter.Interpreter;
 
 public class HbStackOverflow extends HbError {
 
-	public HbStackOverflow(ObjectSpace o) {
+	public HbStackOverflow(Interpreter o) {
 		super(o, null);
 	}
 	

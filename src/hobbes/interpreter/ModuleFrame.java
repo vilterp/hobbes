@@ -4,8 +4,8 @@ public class ModuleFrame extends ExecutionFrame {
 	
 	private String name;
 	
-	public ModuleFrame(ObjectSpace o, String n) {
-		super(new Scope(o));
+	public ModuleFrame(Interpreter i, String n) {
+		super(new Scope(i));
 		getScope().addBasics();
 		name = n;
 	}

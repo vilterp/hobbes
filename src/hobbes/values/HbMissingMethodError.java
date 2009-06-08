@@ -1,18 +1,17 @@
 package hobbes.values;
 
-import hobbes.interpreter.ObjectSpace;
-import hobbes.parser.SourceLocation;
+import hobbes.interpreter.Interpreter;
 
 @HobbesClass(name="MissingMethodError")
 public class HbMissingMethodError extends HbError {
 	
-	public HbMissingMethodError(ObjectSpace o) throws HbArgumentError {
-		super(o);
+	public HbMissingMethodError(Interpreter i) throws HbArgumentError {
+		super(i);
 		throw getNoMessageError();
 	}
 	
-	public HbMissingMethodError(ObjectSpace o, String m) {
-		super(o, m);
+	public HbMissingMethodError(Interpreter i, String m) {
+		super(i, m);
 	}
 
 }

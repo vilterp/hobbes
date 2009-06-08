@@ -7,6 +7,7 @@ import hobbes.values.HbArgumentError;
 import hobbes.values.HbObject;
 import hobbes.ast.BlockNode;
 import hobbes.ast.ArgSpecNode;
+import hobbes.interpreter.Interpreter;
 import hobbes.interpreter.ObjectSpace;
 
 @HobbesClass(name="AnonymousFunction")
@@ -15,14 +16,14 @@ public class HbAnonymousFunction extends HbFunction {
 	private ArrayList<ArgSpecNode> args;
 	private BlockNode block;
 
-	public HbAnonymousFunction(ObjectSpace o) throws HbArgumentError {
-		super(o);
-		throw new HbArgumentError(getObjSpace(),
+	public HbAnonymousFunction(Interpreter i) throws HbArgumentError {
+		super(i);
+		throw new HbArgumentError(getInterp(),
 				"Can't make an anonymous function with no parameters");
 	}
 	
-	public HbAnonymousFunction(ObjectSpace o, ArrayList<ArgSpecNode> a, BlockNode b) {
-		super(o);
+	public HbAnonymousFunction(Interpreter i, ArrayList<ArgSpecNode> a, BlockNode b) {
+		super(i);
 		args = a;
 		block = b;
 	}
@@ -45,7 +46,7 @@ public class HbAnonymousFunction extends HbFunction {
 				repr.append(",");
 		}
 		repr.append(")>");
-		return new HbString(getObjSpace(),repr);
+		return new HbString(getInterp(),repr);
 	}
 	
 	public int getNumArgs() {

@@ -3,6 +3,8 @@ package hobbes.values;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import hobbes.interpreter.ErrorWrapper;
+import hobbes.interpreter.Interpreter;
 import hobbes.interpreter.ObjectSpace;
 
 @HobbesClass(name="Object")
@@ -10,12 +12,12 @@ public class HbObject extends Throwable {
 	
 	private int id;
 	private HbClass hobbesClass;
-	private ObjectSpace objSpace;
+	private Interpreter interp;
 	private HashMap<String,Integer> instanceVars;
 	
-	public HbObject(ObjectSpace o) {
-		objSpace = o;
-		id = objSpace.add(this);
+	public HbObject(Interpreter i) {
+		interp = i;
+		id = getObjSpace().add(this);
 		instanceVars = new HashMap<String,Integer>();
 		// get HbClass instance
 		if(getClass().isAnnotationPresent(HobbesClass.class)) {
@@ -27,10 +29,10 @@ public class HbObject extends Throwable {
 					+ "\" extends HbObject but doesn't have a HbClass annotation");
 	}
 	
-	public HbObject(ObjectSpace o, HbClass c) {
+	public HbObject(Interpreter i, HbClass c) {
 		// FIXME eww code duplication
-		objSpace = o;
-		id = objSpace.add(this);
+		interp = i;
+		id = getObjSpace().add(this);
 		instanceVars = new HashMap<String,Integer>();
 		hobbesClass = c;
 	}
@@ -39,14 +41,22 @@ public class HbObject extends Throwable {
 		hobbesClass = c;
 	}
 	
+	public ObjectSpace getObjSpace() {
+		return interp.getObjSpace();
+	}
+	
+	public Interpreter getInterp() {
+		return interp;
+	}
+	
 	@HobbesMethod(name="toString",numArgs=0)
-	public HbString hbToString() {
+	public HbString hbToString() throws ErrorWrapper {
 		StringBuilder repr = new StringBuilder("<");
 		repr.append(getHbClass().getName());
 		repr.append("@");
 		repr.append(getId());
 		repr.append(">");
-		return new HbString(getObjSpace(),repr.toString());
+		return new HbString(getInterp(),repr.toString());
 	}
 
 	@HobbesMethod(name="hash_code")
@@ -62,16 +72,12 @@ public class HbObject extends Throwable {
 		return id;
 	}
 	
-	public ObjectSpace getObjSpace() {
-		return objSpace;
-	}
-	
 	public void putInstVar(String name, HbObject val) {
 		instanceVars.put(name, val.getId());
 	}
 	
 	public HbObject getInstVar(String name) {
-		return objSpace.get(instanceVars.get(name));
+		return getObjSpace().get(instanceVars.get(name));
 	}
 	
 	@HobbesMethod(name="init")
@@ -84,7 +90,7 @@ public class HbObject extends Throwable {
 	
 	@HobbesMethod(name="object_id")
 	public HbInt objectId() {
-		return new HbInt(getObjSpace(),id);
+		return new HbInt(getInterp(),id);
 	}
 	
 	@HobbesMethod(name="methods")
@@ -92,8 +98,8 @@ public class HbObject extends Throwable {
 		// TODO: should return HbSet
 		ArrayList<HbObject> methods = new ArrayList<HbObject>();
 		for(String methodName: getHbClass().getMethodNames())
-			methods.add(new HbString(getObjSpace(),methodName));
-		return new HbList(getObjSpace(),methods);
+			methods.add(new HbString(getInterp(),methodName));
+		return new HbList(getInterp(),methods);
 	}
 	
 }

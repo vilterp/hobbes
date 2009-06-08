@@ -1,16 +1,16 @@
 package hobbes.values;
 
-import hobbes.interpreter.ObjectSpace;
+import hobbes.interpreter.Interpreter;
 
 @HobbesClass(name="KeyError")
 public class HbKeyError extends HbError {
 	
-	public HbKeyError(ObjectSpace o) throws HbArgumentError {
+	public HbKeyError(Interpreter o) throws HbArgumentError {
 		super(o);
 		throw getNoMessageError();
 	}
 	
-	public HbKeyError(ObjectSpace o, String m) {
+	public HbKeyError(Interpreter o, String m) {
 		super(o, m);
 	}
 

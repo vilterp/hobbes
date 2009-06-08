@@ -3,13 +3,13 @@ package hobbes.values;
 import java.util.HashMap;
 
 import hobbes.ast.ExpressionNode;
-import hobbes.interpreter.ObjectSpace;
+import hobbes.interpreter.Interpreter;
 
 public abstract class HbFunction extends HbObject implements HbCallable {
 	
 	private HashMap<Integer,ExpressionNode> defaults;
 	
-	public HbFunction(ObjectSpace o) {
+	public HbFunction(Interpreter o) {
 		super(o);
 		defaults = new HashMap<Integer,ExpressionNode>();
 	}

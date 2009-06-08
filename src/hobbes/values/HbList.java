@@ -3,25 +3,36 @@ package hobbes.values;
 import java.util.ArrayList;
 import java.util.Iterator;
 
+import hobbes.interpreter.ErrorWrapper;
+import hobbes.interpreter.Interpreter;
 import hobbes.interpreter.ObjectSpace;
 
 @HobbesClass(name="List")
 public class HbList extends HbObject {
 	
 	private ArrayList<HbObject> elements;
+	private static final String COMMA_SPACE = ", ";
 	
-	public HbList(ObjectSpace o) {
+	public HbList(Interpreter o) {
 		this(o,new ArrayList<HbObject>());
 	}
 	
-	public HbList(ObjectSpace o, ArrayList<HbObject> initValues) {
+	public HbList(Interpreter o, ArrayList<HbObject> initValues) {
 		super(o);
 		elements = initValues;
 	}
 	
 	@HobbesMethod(name="toString")
-	public HbString hbToString() {
-		return new HbString(getObjSpace(),elements.toString());
+	public HbString hbToString() throws ErrorWrapper {
+		StringBuilder repr = new StringBuilder("[");
+		Iterator<HbObject> it = elements.iterator();
+		while(it.hasNext()) {
+			repr.append(getInterp().show(it.next()));
+			if(it.hasNext())
+				repr.append(COMMA_SPACE);
+		}
+		repr.append(']');
+		return new HbString(getInterp(),repr);
 	}
 	
 	@HobbesMethod(name="[]",numArgs=1)
@@ -31,26 +42,26 @@ public class HbList extends HbObject {
 			if(ind < elements.size()) {
 				return elements.get(ind);
 			} else
-				throw new HbKeyError(getObjSpace(),
+				throw new HbKeyError(getInterp(),
 						new Integer(ind).toString()
 						+ " (size: " + elements.size() + ")");
 		} else
-			throw new HbArgumentError(getObjSpace(),
+			throw new HbArgumentError(getInterp(),
 									"[]",
 									index.getHbClass().getName(),
 									"HbInt");
 	}
 	
-	@HobbesMethod(name="[]set",numArgs=1)
+	@HobbesMethod(name="[]set",numArgs=2)
 	public void set(HbObject index, HbObject value) throws HbError {
 		if(index instanceof HbInt) {
 			int ind = ((HbInt)index).getValue();
 			if(ind < elements.size()) {
 				elements.set(ind, value);
 			} else
-				throw new HbKeyError(getObjSpace(),new Integer(ind).toString());
+				throw new HbKeyError(getInterp(),new Integer(ind).toString());
 		} else
-			throw new HbArgumentError(getObjSpace(),
+			throw new HbArgumentError(getInterp(),
 									"get",
 									index.getHbClass().getName(),
 									"HbInt");
@@ -81,9 +92,9 @@ public class HbList extends HbObject {
 				if(it.hasNext())
 					ans.append(j);
 			}
-			return new HbString(getObjSpace(),ans);
+			return new HbString(getInterp(),ans);
 		} else
-			throw new HbArgumentError(getObjSpace(),"join",
+			throw new HbArgumentError(getInterp(),"join",
 								joiner.getHbClass().getName(),
 								"String");
 	}

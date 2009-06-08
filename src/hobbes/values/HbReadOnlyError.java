@@ -1,17 +1,16 @@
 package hobbes.values;
 
-import hobbes.interpreter.ObjectSpace;
-import hobbes.parser.SourceLocation;
+import hobbes.interpreter.Interpreter;
 
 @HobbesClass(name="ReadOnlyError")
 public class HbReadOnlyError extends HbError {
 	
-	public HbReadOnlyError(ObjectSpace o) throws HbArgumentError {
+	public HbReadOnlyError(Interpreter o) throws HbArgumentError {
 		super(o);
 		throw getNoMessageError();
 	}
 
-	public HbReadOnlyError(ObjectSpace o, String m) {
+	public HbReadOnlyError(Interpreter o, String m) {
 		super(o, m);
 	}
 

@@ -20,8 +20,10 @@ public class ObjectSpace {
 	private int falseId;
 	private int nilId;
 	private boolean verboseGC;
+	private Interpreter interp;
 
-	public ObjectSpace(boolean vgc) {
+	public ObjectSpace(Interpreter i, boolean vgc) {
+		interp = i;
 		verboseGC = vgc;
 		objects = new HashMap<Integer,ValueRecord>();
 		builtinClasses = new HashSet<String>();
@@ -31,6 +33,9 @@ public class ObjectSpace {
 		intConstants = new HashMap<Integer,HbInt>();
 		//floatConstants = new HashMap<Float, HbFloat>();
 		nextId = 0;
+	}
+	
+	public void addBuiltins() {
 		// add builtin classes
 		addNativeClass(HbClass.class);
 		addNativeClass(HbObject.class);
@@ -56,9 +61,9 @@ public class ObjectSpace {
 		for(String className: classes.keySet())
 			builtinClasses.add(className);
 		// add builtin globals
-		nilId = new HbNil(this).getId();
-		trueId = new HbTrue(this).getId();
-		falseId = new HbFalse(this).getId();
+		nilId = new HbNil(interp).getId();
+		trueId = new HbTrue(interp).getId();
+		falseId = new HbFalse(interp).getId();
 		// add native functions
 		addNativeFunction("print",new String[]{"object"});
 		addNativeFunction("get_input",new String[]{"prompt"});
@@ -69,13 +74,14 @@ public class ObjectSpace {
 		ArrayList<String> a = new ArrayList<String>();
 		for(String s: args)
 			a.add(s);
-		functions.put(name,new HbNativeFunction(this,name,a));
+		functions.put(name,new HbNativeFunction(interp,name,a));
 	}
 	
 	private void addNativeClass(Class<? extends HbObject> klass) {
 		if(klass.isAnnotationPresent(HobbesClass.class)) {
-			String name = ((HobbesClass)klass.getAnnotation(HobbesClass.class)).name();
-			classes.put(name,new HbClass(this,klass));
+			String name = ((HobbesClass)klass
+							.getAnnotation(HobbesClass.class)).name();
+			classes.put(name,new HbClass(interp,klass));
 			classes.get(name).setClass(classes.get("Class"));
 		} else
 			throw new IllegalArgumentException("Supplied class \""+ klass.getName()
@@ -153,7 +159,7 @@ public class ObjectSpace {
 		if(intConstants.containsKey(val))
 			return intConstants.get(val);
 		else {
-			HbInt newConstant = new HbInt(this,val);
+			HbInt newConstant = new HbInt(interp,val);
 			intConstants.put(val,newConstant);
 			return newConstant;
 		}

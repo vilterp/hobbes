@@ -2,25 +2,25 @@ package hobbes.values;
 
 import java.util.regex.Pattern;
 
-import hobbes.interpreter.ObjectSpace;
+import hobbes.interpreter.Interpreter;
 
 @HobbesClass(name="String")
 public class HbString extends HbObject {
 	
 	private StringBuilder value;
 	
-	public HbString(ObjectSpace o) {
-		super(o);
+	public HbString(Interpreter i) {
+		super(i);
 		value = new StringBuilder();
 	}
 	
-	public HbString(ObjectSpace o, String val) {
-		super(o);
+	public HbString(Interpreter i, String val) {
+		super(i);
 		value = new StringBuilder(val);
 	}
 	
-	public HbString(ObjectSpace o, StringBuilder val) {
-		this(o,val.toString());
+	public HbString(Interpreter i, StringBuilder val) {
+		this(i,val.toString());
 	}
 	
 	public String sanitizedValue() {

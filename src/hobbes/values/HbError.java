@@ -1,24 +1,24 @@
 package hobbes.values;
 
-import hobbes.interpreter.ObjectSpace;
+import hobbes.interpreter.Interpreter;
 
 @HobbesClass(name="Error")
 public class HbError extends HbObject {
 	
 	private String errorMessage;
 	
-	public HbError(ObjectSpace o) {
-		super(o);
+	public HbError(Interpreter i) {
+		super(i);
 		errorMessage = null;
 	}
 	
-	public HbError(ObjectSpace o, String m) {
-		super(o);
+	public HbError(Interpreter i, String m) {
+		super(i);
 		errorMessage = m;
 	}
 	
 	protected HbArgumentError getNoMessageError() {
-		return new HbArgumentError(getObjSpace(),
+		return new HbArgumentError(getInterp(),
 				getHbClass().getName() + " needs a message");
 	}
 
@@ -36,7 +36,7 @@ public class HbError extends HbObject {
 			ans.append("\"");
 		}
 		ans.append(">");
-		return new HbString(getObjSpace(),ans);
+		return new HbString(getInterp(),ans);
 	}
 	
 }

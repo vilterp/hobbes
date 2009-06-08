@@ -1,17 +1,16 @@
 package hobbes.values;
 
-import hobbes.interpreter.ObjectSpace;
-import hobbes.parser.SourceLocation;
+import hobbes.interpreter.Interpreter;
 
 @HobbesClass(name="SyntaxError")
 public class HbSyntaxError extends HbError {
 	
-	public HbSyntaxError(ObjectSpace o) throws HbArgumentError {
+	public HbSyntaxError(Interpreter o) throws HbArgumentError {
 		super(o);
 		throw getNoMessageError();
 	}
 	
-	public HbSyntaxError(ObjectSpace o, String m) {
+	public HbSyntaxError(Interpreter o, String m) {
 		super(o, m);
 	}
 

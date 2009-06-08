@@ -6,7 +6,7 @@ import java.util.Iterator;
 import hobbes.ast.ArgSpecNode;
 import hobbes.ast.ArgsSpecNode;
 import hobbes.ast.BlockNode;
-import hobbes.interpreter.ObjectSpace;
+import hobbes.interpreter.Interpreter;
 
 @HobbesClass(name="Function")
 public class HbNormalFunction extends HbFunction {
@@ -15,14 +15,14 @@ public class HbNormalFunction extends HbFunction {
 	private ArrayList<ArgSpecNode> args;
 	private BlockNode block;
 	
-	public HbNormalFunction(ObjectSpace o) throws HbArgumentError {
+	public HbNormalFunction(Interpreter o) throws HbArgumentError {
 		super(o);
-		throw new HbArgumentError(getObjSpace(),
+		throw new HbArgumentError(getInterp(),
 				"Can't make a function with no parameters");
 	}
 	
-	public HbNormalFunction(ObjectSpace o, String n, ArrayList<ArgSpecNode> a, BlockNode b) {
-		super(o);
+	public HbNormalFunction(Interpreter i, String n, ArrayList<ArgSpecNode> a, BlockNode b) {
+		super(i);
 		name = n;
 		args = a;
 		block = b;
@@ -52,7 +52,7 @@ public class HbNormalFunction extends HbFunction {
 				repr.append(",");
 		}
 		repr.append(")>");
-		return new HbString(getObjSpace(),repr);
+		return new HbString(getInterp(),repr);
 	}
 	
 	public int getNumArgs() {

@@ -3,7 +3,7 @@ package hobbes.values;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-import hobbes.interpreter.ObjectSpace;
+import hobbes.interpreter.Interpreter;
 
 @HobbesClass(name="NativeFunction")
 public class HbNativeFunction extends HbFunction {
@@ -11,14 +11,14 @@ public class HbNativeFunction extends HbFunction {
 	private String name;
 	private ArrayList<String> args;
 	
-	public HbNativeFunction(ObjectSpace o) throws HbArgumentError {
+	public HbNativeFunction(Interpreter o) throws HbArgumentError {
 		super(o);
-		throw new HbArgumentError(getObjSpace(),
+		throw new HbArgumentError(getInterp(),
 				"Can't make a new native function");
 	}
 	
-	public HbNativeFunction(ObjectSpace o, String n, ArrayList<String> a) {
-		super(o);
+	public HbNativeFunction(Interpreter i, String n, ArrayList<String> a) {
+		super(i);
 		name = n;
 		args = a;
 	}
@@ -43,7 +43,7 @@ public class HbNativeFunction extends HbFunction {
 				repr.append(",");
 		}
 		repr.append(")>");
-		return new HbString(getObjSpace(),repr);
+		return new HbString(getInterp(),repr);
 	}
 	
 	public int getNumArgs() {

@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Set;
 
 import hobbes.ast.ExpressionNode;
+import hobbes.interpreter.Interpreter;
 import hobbes.interpreter.ObjectSpace;
 import hobbes.parser.SourceLine;
 import hobbes.parser.SyntaxError;
@@ -18,16 +19,16 @@ public class HbClass extends HbObject {
 	private Class<?extends HbObject> javaClass;
 	private HashMap<String,HbMethod> methods;
 	
-	public HbClass(ObjectSpace o) throws HbArgumentError {
-		super(o);
-		throw new HbArgumentError(getObjSpace(),"Use class ClassName {...} to make a new class");
+	public HbClass(Interpreter i) throws HbArgumentError {
+		super(i);
+		throw new HbArgumentError(getInterp(),"Use class ClassName {...} to make a new class");
 	}
 	
 	/*
 	 * For native classes: class name is determined by HobbesClass annotation. 
 	 */
-	public HbClass(ObjectSpace o, Class<? extends HbObject> c) {
-		this(o,c,((HobbesClass)c.getAnnotation(HobbesClass.class)).name());
+	public HbClass(Interpreter i, Class<? extends HbObject> c) {
+		this(i,c,((HobbesClass)c.getAnnotation(HobbesClass.class)).name());
 		javaClass = c;
 	}
 	
@@ -35,25 +36,26 @@ public class HbClass extends HbObject {
 	 * For classes defined in Hobbes: name supplied,
 	 * builtin methods inherited from HbObject
 	 */
-	public HbClass(ObjectSpace o, String name) {
-		this(o,HbObject.class,name);
+	public HbClass(Interpreter i, String name) {
+		this(i,HbObject.class,name);
 		javaClass = HbObject.class;
 		setClass(getObjSpace().getClass("Class"));
 	}
 	
-	public HbClass(ObjectSpace o, Class<? extends HbObject> methodSource,
+	public HbClass(Interpreter i, Class<? extends HbObject> methodSource,
 																	String na) {
-		super(o);
+		super(i);
 		name = na;
 		javaClass = methodSource;
 		// check that it has a ObjectSpace constructor
 		try {
-			javaClass.getConstructor(ObjectSpace.class);
+			javaClass.getConstructor(Interpreter.class);
 		} catch (SecurityException e1) {
 			e1.printStackTrace();
 		} catch (NoSuchMethodException e1) {
 			System.err.println("Class " + javaClass.getName() + " needs a constructor " +
-					"that takes an ObjectSpace as the sole parameter");
+					"that takes an Interpreter as the sole parameter");
+			e1.printStackTrace();
 			System.exit(1);
 		}
 		// add methods
@@ -69,15 +71,15 @@ public class HbClass extends HbObject {
 				Tokenizer t = new Tokenizer();
 				Parser p = new Parser();
 				boolean specAlready = false;
-				for(int i=0; i < ann.defaults().length; i++) {
-					if(ann.defaults()[i] != null) {
+				for(int j=0; j < ann.defaults().length; j++) {
+					if(ann.defaults()[j] != null) {
 						try {
-							t.addLine(new SourceLine(ann.defaults()[i],"<default>",1));
-							meth.setDefault(i,(ExpressionNode)p.parse(t.getTokens()));
+							t.addLine(new SourceLine(ann.defaults()[j],"<default>",1));
+							meth.setDefault(j,(ExpressionNode)p.parse(t.getTokens()));
 							specAlready = true;
 						} catch(SyntaxError e) {
 							throw new IllegalArgumentException("Invalid expression ("
-										+ ann.defaults()[i]
+										+ ann.defaults()[j]
 										+ ") for method "
 										+ ann.name()
 										+ " in class " + name);
@@ -96,6 +98,10 @@ public class HbClass extends HbObject {
 		return name;
 	}
 	
+	public boolean hasMethod(String name) {
+		return methods.containsKey(name);
+	}
+	
 	public HbMethod getMethod(String name) {
 		return methods.get(name);
 	}
@@ -109,7 +115,7 @@ public class HbClass extends HbObject {
 		StringBuilder ans = new StringBuilder("<Class ");
 		ans.append(name);
 		ans.append(">");
-		return new HbString(getObjSpace(),ans);
+		return new HbString(getInterp(),ans);
 	}
 	
 	public Class<?extends HbObject> getJavaClass() {
@@ -118,7 +124,7 @@ public class HbClass extends HbObject {
 	
 	@HobbesMethod(name="name")
 	public HbString name() {
-		return new HbString(getObjSpace(),name);
+		return new HbString(getInterp(),name);
 	}
 	
 	@HobbesMethod(name="superclass")

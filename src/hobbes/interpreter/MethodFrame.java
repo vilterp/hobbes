@@ -10,9 +10,9 @@ public class MethodFrame extends ExecutionFrame {
 	private SourceLocation loc;
 	private HbObject receiver;
 	
-	public MethodFrame(ObjectSpace o, Scope adoptGlobals, HbObject rec,
+	public MethodFrame(Interpreter i, Scope adoptGlobals, HbObject rec,
 						String mn, SourceLocation p) {
-		super(new Scope(o,adoptGlobals));
+		super(new Scope(i,adoptGlobals));
 		methodName = mn;
 		loc = p;
 		receiver = rec;

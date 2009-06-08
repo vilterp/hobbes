@@ -12,6 +12,7 @@ import java.util.HashSet;
 public class Scope {
 	
 	private ObjectSpace objSpace;
+	private Interpreter interp;
 	private HashMap<String,Integer> names;
 	private HashSet<String> globals;
 	
@@ -25,12 +26,13 @@ public class Scope {
 		readOnlys.add("get_input");
 	}
 	
-	public Scope(ObjectSpace o) {
-		this(o,null);
+	public Scope(Interpreter i) {
+		this(i,null);
 	}
 	
-	public Scope(ObjectSpace o, Scope inheritGlobalsFrom) {
-		objSpace = o;
+	public Scope(Interpreter i, Scope inheritGlobalsFrom) {
+		interp = i;
+		objSpace = interp.getObjSpace();
 		names = new HashMap<String,Integer>();
 		if(inheritGlobalsFrom == null) {
 			globals = new HashSet<String>();
@@ -68,13 +70,13 @@ public class Scope {
 		if(names.containsKey(name))
 			return objSpace.get(names.get(name));
 		else
-			throw new HbUndefinedNameError(objSpace,name);
+			throw new HbUndefinedNameError(interp,name);
 	}
 	
 	public void assign(String name, HbObject val) throws HbReadOnlyError {
 		// ensure this name is not read-only
 		if(isReadOnly(name))
-			throw new HbReadOnlyError(objSpace,name);
+			throw new HbReadOnlyError(interp,name);
 		else
 			doAssign(name,val);
 	}

@@ -1,26 +1,27 @@
 package hobbes.values;
 
+import hobbes.interpreter.Interpreter;
 import hobbes.interpreter.ObjectSpace;
 import hobbes.parser.SourceLocation;
 
 @HobbesClass(name="ArgumentError")
 public class HbArgumentError extends HbError {
 	
-	public HbArgumentError(ObjectSpace o) throws HbArgumentError {
-		super(o);
+	public HbArgumentError(Interpreter i) throws HbArgumentError {
+		super(i);
 		throw getNoMessageError();
 	}
 	
-	public HbArgumentError(ObjectSpace o, String m) {
+	public HbArgumentError(Interpreter o, String m) {
 		super(o, m);
 	}
 	
-	public HbArgumentError(ObjectSpace o, StringBuilder m) {
+	public HbArgumentError(Interpreter o, StringBuilder m) {
 		super(o, m.toString());
 	}
 	
-	public HbArgumentError(ObjectSpace o, String methodName, String gotten, String expected) {
-		super(o,methodName + " got a(n)" + gotten + ", but expected a " + expected + ".");
+	public HbArgumentError(Interpreter i, String methodName, String gotten, String expected) {
+		super(i,methodName + " got a(n)" + gotten + ", but expected a " + expected + ".");
 	}
 
 }
