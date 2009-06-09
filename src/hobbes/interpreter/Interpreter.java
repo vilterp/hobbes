@@ -134,16 +134,18 @@ public class Interpreter {
 	}
 	
 	public String show(HbObject obj) throws ErrorWrapper {
-		String repr = ((HbString)
-				evalMethodCall(obj,"toString",emptyArgs,null)).sanitizedValue();
 		if(obj instanceof HbString)
-			return '"' + repr + '"';
+			return '"' + callToString(obj)
+						.replaceAll("\n", "\\\\n")
+						.replaceAll("\t", "\\\\t")
+						.replaceAll("\"", "\\\\\"")
+						+ '"';
 		else
-			return repr;
+			return callToString(obj); 
 	}
 	
 	public String callToString(HbObject obj) throws ErrorWrapper {
-		return ((HbString)evalMethodCall(obj,"toString",emptyArgs,null)).sanitizedValue();
+		return ((HbString)evalMethodCall(obj,"toString",emptyArgs,null)).getValue();
 	}
 	
 	private String interpret(SyntaxNode tree) {
@@ -271,17 +273,17 @@ public class Interpreter {
 	private HbObject evalNativeFuncCall(HbNativeFunction func, HbObject[] args,
 			SourceLocation parenLoc) throws ErrorWrapper {
 		try {
-			pushFrame(new NativeFunctionFrame(getCurrentFrame().getScope(),func.getName(),parenLoc));
+			pushFrame(new NativeFunctionFrame(getCurrentFrame().getScope(),
+													func.getName(),parenLoc));
 		} catch (HbStackOverflow e) {
 			throw new ErrorWrapper(e,parenLoc);
 		}
 		if(func.getName().equals("print")) {
-			System.out.println(show(args[0]));
+			System.out.println(callToString(args[0]));
 			popFrame();
 			return objSpace.getNil();
 		} else if(func.getName().equals("get_input")) {
-			System.out.print(((HbString)callMethod(args[0],"toString",new HbObject[]{},null))
-																				.getValue());
+			System.out.print(callToString(args[0]));
 			Scanner in = new Scanner(System.in);
 			popFrame();
 			return new HbString(this,in.nextLine());
@@ -583,8 +585,24 @@ public class Interpreter {
 	}
 	
 	private void defineClass(ClassDefNode def) throws ErrorWrapper {
+		// get superclass
+		String superclass = null;
+		if(def.getSuperclass() == null)
+			superclass = "Object";
+		else {
+			HbObject sc = evalVariable(def.getSuperclass());
+			if(sc instanceof HbClass)
+				superclass = ((HbClass)sc).getName();
+			else
+				throw new ErrorWrapper(new HbNotAClassError(this,def.getSuperclass().getName()),
+									def.getSuperclass().getOrigin().getStart());
+		}
+		if(!superclass.equals("Object") && objSpace.getBuiltinClasses().contains(superclass))
+			throw new ErrorWrapper(new HbArgumentError(this,
+							"Can't currently extend the builtin classes."),
+							def.getSuperclass().getOrigin().getStart());
 		// make HbClass instance
-		HbClass newClass = new HbClass(this,def.getName());
+		HbClass newClass = new HbClass(this,def.getName(),superclass);
 		// add class to ObjectSpace's classes HashMap
 		objSpace.addClass(newClass);
 		try {

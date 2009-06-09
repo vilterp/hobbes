@@ -39,6 +39,7 @@ public class ObjectSpace {
 		// add builtin classes
 		addNativeClass(HbClass.class);
 		addNativeClass(HbObject.class);
+		getClass("Class").setSuperclass(getClass("Object"));
 		addNativeClass(HbTrue.class);
 		addNativeClass(HbFalse.class);
 		addNativeClass(HbNil.class);
@@ -81,7 +82,9 @@ public class ObjectSpace {
 		if(klass.isAnnotationPresent(HobbesClass.class)) {
 			String name = ((HobbesClass)klass
 							.getAnnotation(HobbesClass.class)).name();
-			classes.put(name,new HbClass(interp,klass));
+			String superclass = ((HobbesClass)klass
+						.getAnnotation(HobbesClass.class)).superClass();
+			classes.put(name,new HbClass(interp,klass,superclass));
 			classes.get(name).setClass(classes.get("Class"));
 		} else
 			throw new IllegalArgumentException("Supplied class \""+ klass.getName()

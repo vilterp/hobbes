@@ -10,5 +10,6 @@ import java.lang.annotation.RetentionPolicy;
 public @interface HobbesClass {
 	
 	String name();
+	String superClass() default "Object";
 	
 }

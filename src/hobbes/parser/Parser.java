@@ -461,9 +461,9 @@ public class Parser {
 			Token classWord = getLastToken();
 			if(wordWithPattern(classNamePattern)) {
 				Token name = getLastToken();
-				ObjectNode superclass = null;
+				VariableNode superclass = null;
 				if(superclassDef())
-					superclass = (ObjectNode)stack.pop();
+					superclass = (VariableNode)stack.pop();
 				if(block()) {
 					BlockNode block = (BlockNode)stack.pop();
 					stack.push(new ClassDefNode(name,superclass,block));
@@ -505,7 +505,7 @@ public class Parser {
 	private boolean superclassDef() throws SyntaxError {
 		if(symbol("(")) {
 			Token opener = getLastToken();
-			if(object()) {
+			if(variable()) {
 				if(symbol(")")) {
 					stack.pop();
 					return true;

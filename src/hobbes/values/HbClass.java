@@ -18,6 +18,7 @@ public class HbClass extends HbObject {
 	private String name;
 	private Class<?extends HbObject> javaClass;
 	private HashMap<String,HbMethod> methods;
+	private HbClass superClass;
 	
 	public HbClass(Interpreter i) throws HbArgumentError {
 		super(i);
@@ -27,8 +28,8 @@ public class HbClass extends HbObject {
 	/*
 	 * For native classes: class name is determined by HobbesClass annotation. 
 	 */
-	public HbClass(Interpreter i, Class<? extends HbObject> c) {
-		this(i,c,((HobbesClass)c.getAnnotation(HobbesClass.class)).name());
+	public HbClass(Interpreter i, Class<? extends HbObject> c, String superclass) {
+		this(i,c,((HobbesClass)c.getAnnotation(HobbesClass.class)).name(),superclass);
 		javaClass = c;
 	}
 	
@@ -36,17 +37,21 @@ public class HbClass extends HbObject {
 	 * For classes defined in Hobbes: name supplied,
 	 * builtin methods inherited from HbObject
 	 */
-	public HbClass(Interpreter i, String name) {
-		this(i,HbObject.class,name);
+	public HbClass(Interpreter i, String name, String superclass) {
+		this(i,HbObject.class,name,superclass);
 		javaClass = HbObject.class;
 		setClass(getObjSpace().getClass("Class"));
 	}
 	
 	public HbClass(Interpreter i, Class<? extends HbObject> methodSource,
-																	String na) {
+														String na, String sc) {
 		super(i);
 		name = na;
 		javaClass = methodSource;
+		if(name.equals("Object"))
+			superClass = null;
+		else
+			superClass = getObjSpace().getClass(sc);
 		// check that it has a ObjectSpace constructor
 		try {
 			javaClass.getConstructor(Interpreter.class);
@@ -92,6 +97,14 @@ public class HbClass extends HbObject {
 				methods.put(n,meth);
 			}
 		}
+		// add methods from superclass
+		if(!sc.equals("Object"))
+			for(String methodName: superClass.getMethodNames())
+				methods.put(methodName,superClass.getMethod(methodName));
+	}
+	
+	public void setSuperclass(HbClass c) {
+		superClass = c;
 	}
 	
 	public String getName() {
@@ -114,7 +127,12 @@ public class HbClass extends HbObject {
 	public HbString hbToString() {
 		StringBuilder ans = new StringBuilder("<Class ");
 		ans.append(name);
-		ans.append(">");
+		if(superClass != null && !superClass.getName().equals("Object")) {
+			ans.append('(');
+			ans.append(superClass.getName());
+			ans.append(')');
+		}
+		ans.append('>');
 		return new HbString(getInterp(),ans);
 	}
 	
@@ -128,8 +146,12 @@ public class HbClass extends HbObject {
 	}
 	
 	@HobbesMethod(name="superclass")
+	public HbObject hbGetSuperClass() {
+		return (superClass != null ? superClass : getObjSpace().getNil());
+	}
+	
 	public HbClass getSuperClass() {
-		return getObjSpace().getClass("Object");
+		return superClass;
 	}
 	
 	public Set<String> getMethodNames() {

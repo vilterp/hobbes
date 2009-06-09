@@ -6,10 +6,10 @@ import hobbes.parser.Token;
 public class ClassDefNode implements DefNode {
 	
 	private Token nameToken;
-	private ObjectNode superclass;
+	private VariableNode superclass;
 	private BlockNode body;
 	
-	public ClassDefNode(Token n, ObjectNode sc, BlockNode b) {
+	public ClassDefNode(Token n, VariableNode sc, BlockNode b) {
 		nameToken = n;
 		superclass = sc;
 		body = b;
@@ -32,7 +32,7 @@ public class ClassDefNode implements DefNode {
 		return nameToken.getValue();
 	}
 	
-	public ObjectNode getSuperclass() {
+	public VariableNode getSuperclass() {
 		return superclass;
 	}
 	

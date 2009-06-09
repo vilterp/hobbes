@@ -50,7 +50,7 @@ public class HbObject extends Throwable {
 	}
 	
 	public String toString() {
-		return getHbClass().getName() + "@" + getId();
+		return "<" + getHbClass().getName() + "@" + getId() + ">";
 	}
 	
 	@HobbesMethod(name="toString",numArgs=0)
