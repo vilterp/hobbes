@@ -53,6 +53,29 @@ public class HbObject extends Throwable {
 		return "<" + getHbClass().getName() + "@" + getId() + ">";
 	}
 	
+	public boolean gt(HbObject other) throws ErrorWrapper {
+		return getInterp().callMethod(this,">",new HbObject[]{other},null)
+											== getObjSpace().getTrue();
+	}
+	
+	public boolean lt(HbObject other) throws ErrorWrapper {
+		return getInterp().callMethod(this,"<",new HbObject[]{other},null)
+											== getObjSpace().getTrue();
+	}
+	
+	public boolean eq(HbObject other) throws ErrorWrapper {
+		return getInterp().callMethod(this,"==",new HbObject[]{other},null)
+											== getObjSpace().getTrue();
+	}
+	
+	@HobbesMethod(name="clone")
+	public HbObject clone() {
+		HbObject newObj = new HbObject(getInterp(),getHbClass());
+		for(String instanceVar: instanceVars.keySet())
+			newObj.putInstVar(instanceVar,getObjSpace().get(instanceVars.get(instanceVar)));
+		return newObj;
+	}
+	
 	@HobbesMethod(name="toString",numArgs=0)
 	public HbString hbToString() throws ErrorWrapper {
 		StringBuilder repr = new StringBuilder("<");
@@ -65,11 +88,7 @@ public class HbObject extends Throwable {
 
 	@HobbesMethod(name="hash_code")
 	public HbInt hbHashCode() {
-		return getObjSpace().getInt(hashCode());
-	}
-
-	public int hashCode() {
-		return getId();
+		return getObjSpace().getInt(getId());
 	}
 	
 	public int getId() {
@@ -104,12 +123,21 @@ public class HbObject extends Throwable {
 	}
 	
 	@HobbesMethod(name="methods")
-	public HbList getMethods() {
-		// TODO: should return HbSet
-		ArrayList<HbObject> methods = new ArrayList<HbObject>();
+	public HbSet getMethods() {
+		HbSet temp = new HbSet(getInterp());
 		for(String methodName: getHbClass().getMethodNames())
-			methods.add(new HbString(getInterp(),methodName));
-		return new HbList(getInterp(),methods);
+			temp.add(new HbString(getInterp(),methodName));
+		return temp;
+	}
+	
+	@HobbesMethod(name="is",numArgs=1)
+	public HbObject is(HbObject other) {
+		return getObjSpace().getBool(getId() == other.getId());
+	}
+	
+	@HobbesMethod(name="toBool")
+	public HbObject toBool() {
+		return getObjSpace().getTrue();
 	}
 	
 }

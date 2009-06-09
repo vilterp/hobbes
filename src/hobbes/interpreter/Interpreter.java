@@ -6,6 +6,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.Stack;
@@ -69,7 +70,7 @@ public class Interpreter {
 	
 	private Stack<ExecutionFrame> stack;
 	private SourceFile file;
-	private ModuleFrame topLevelFrame;
+	private FileFrame topLevelFrame;
 	private ObjectSpace objSpace;
 	private String fileName;
 	private Parser parser;
@@ -89,7 +90,7 @@ public class Interpreter {
 			System.out.println("initial object space size: " + objSpace.size());
 		stack = new Stack<ExecutionFrame>();
 		fileName = fn;
-		topLevelFrame = new ModuleFrame(this,fileName);
+		topLevelFrame = new FileFrame(this,fileName);
 		stack.push(topLevelFrame);
 		parser = new Parser();
 		tokenizer = new Tokenizer();
@@ -148,6 +149,13 @@ public class Interpreter {
 		return ((HbString)evalMethodCall(obj,"toString",emptyArgs,null)).getValue();
 	}
 	
+	public void handleError(ErrorWrapper e) {
+		while(canPop())
+			e.addFrame(popFrame());
+		e.addFrame(getCurrentFrame());
+		e.printStackTrace();
+	}
+	
 	private String interpret(SyntaxNode tree) {
 		if(tree != null) {
 			topLevelFrame.setCurrentLine(tree.getLine());
@@ -162,10 +170,7 @@ public class Interpreter {
 					System.out.println("object space size: " + objSpace.size());
 				return toReturn;
 			} catch(ErrorWrapper e) {
-				while(canPop())
-					e.addFrame(popFrame());
-				e.addFrame(getCurrentFrame());
-				e.printStackTrace();
+				handleError(e);
 				return null;
 			} catch(Return r) {
 				handleUnexpectedReturn(r);
@@ -209,6 +214,8 @@ public class Interpreter {
 			return evalAnonFunc((AnonymousFunctionNode)expr);
 		else if(expr instanceof StringNode)
 			return new HbString(this,((StringNode)expr).getValue());
+		else if(expr instanceof SetNode)
+			return evalSet((SetNode)expr);
 		// calls
 		else if(expr instanceof MethodCallNode)
 			return evalMethodCall((MethodCallNode)expr);
@@ -220,6 +227,13 @@ public class Interpreter {
 		}
 	}
 	
+	private HbObject evalSet(SetNode expr) throws ErrorWrapper {
+		HashSet<HbObject> elements = new HashSet<HbObject>();
+		for(ExpressionNode elem: expr.getElements())
+			elements.add(eval(elem));
+		return new HbSet(this,elements);
+	}
+
 	private HbObject evalFunctionCall(FunctionCallNode call) throws ErrorWrapper {
 		HbFunction func = (HbFunction)eval(call.getFuncExpr());
 		HbObject[] args = evalArgs(call.getArgs(),func,
@@ -288,16 +302,19 @@ public class Interpreter {
 			popFrame();
 			return new HbString(this,in.nextLine());
 		} else if(func.getName().equals("eval")) {
-			Tokenizer t = new Tokenizer();
-			Parser p = new Parser();
+			try {
+				pushFrame(new FileFrame(this,"<eval>"));
+			} catch (HbStackOverflow e1) {
+				throw new ErrorWrapper(e1,parenLoc);
+			}
 			SourceFile f = new SourceFile("<eval>");
 			Scanner s = new Scanner(((HbString)args[0]).getValue());
 			HbObject lastResult = null;
 			while(s.hasNext()) {
 				try {
-					t.addLine(f.addLine(s.next()));
-					if(t.isReady()) {
-						SyntaxNode tree = p.parse(t.getTokens());
+					tokenizer.addLine(f.addLine(s.next()));
+					if(tokenizer.isReady()) {
+						SyntaxNode tree = parser.parse(tokenizer.getTokens());
 						lastResult = run(tree);
 					}
 				} catch (SyntaxError e) {
@@ -307,7 +324,7 @@ public class Interpreter {
 					handleUnexpectedReturn(r);
 				}
 			}
-			return null;
+			return lastResult;
 		} else
 			throw new IllegalArgumentException("Nonexistent native function");
 	}
@@ -655,7 +672,7 @@ public class Interpreter {
 	private void handleSyntaxError(SyntaxError e) {
 		ErrorWrapper error = new ErrorWrapper(
 				new HbSyntaxError(this,e.getMessage()),e.getLocation());
-		error.addFrame((ModuleFrame)getCurrentFrame());
+		error.addFrame((FileFrame)getCurrentFrame());
 		error.printStackTrace();
 		tokenizer.reset();
 		parser.reset();

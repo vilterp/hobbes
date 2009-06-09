@@ -50,6 +50,7 @@ public class ObjectSpace {
 		addNativeClass(HbNormalFunction.class);
 		// collections
 		addNativeClass(HbList.class);
+		addNativeClass(HbSet.class);
 		// errors
 		addNativeClass(HbError.class);
 		addNativeClass(HbSyntaxError.class);

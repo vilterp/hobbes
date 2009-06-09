@@ -20,8 +20,9 @@ public class HbArgumentError extends HbError {
 		super(o, m.toString());
 	}
 	
-	public HbArgumentError(Interpreter i, String methodName, String gotten, String expected) {
-		super(i,methodName + " got a(n)" + gotten + ", but expected a " + expected + ".");
+	public HbArgumentError(Interpreter i, String methodName, HbObject gotten, String expected) {
+		super(i,methodName + " got a(n)" + gotten.getHbClass().getName()
+									+ ", but expected a " + expected + ".");
 	}
 
 }

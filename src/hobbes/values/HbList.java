@@ -1,7 +1,9 @@
 package hobbes.values;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
+import java.util.Random;
 
 import hobbes.interpreter.ErrorWrapper;
 import hobbes.interpreter.Interpreter;
@@ -11,6 +13,7 @@ import hobbes.interpreter.ObjectSpace;
 public class HbList extends HbObject {
 	
 	private ArrayList<HbObject> elements;
+	private static Random r = new Random();
 	private static final String COMMA_SPACE = ", ";
 	
 	public HbList(Interpreter o) {
@@ -20,6 +23,11 @@ public class HbList extends HbObject {
 	public HbList(Interpreter o, ArrayList<HbObject> initValues) {
 		super(o);
 		elements = initValues;
+	}
+	
+	@HobbesMethod(name="clone")
+	public HbList clone() {
+		return new HbList(getInterp(),(ArrayList<HbObject>)elements.clone());
 	}
 	
 	@HobbesMethod(name="toString")
@@ -46,10 +54,7 @@ public class HbList extends HbObject {
 						new Integer(ind).toString()
 						+ " (size: " + elements.size() + ")");
 		} else
-			throw new HbArgumentError(getInterp(),
-									"[]",
-									index.getHbClass().getName(),
-									"HbInt");
+			throw new HbArgumentError(getInterp(),"[]",index,"HbInt");
 	}
 	
 	@HobbesMethod(name="[]set",numArgs=2)
@@ -61,10 +66,17 @@ public class HbList extends HbObject {
 			} else
 				throw new HbKeyError(getInterp(),new Integer(ind).toString());
 		} else
-			throw new HbArgumentError(getInterp(),
-									"get",
-									index.getHbClass().getName(),
-									"HbInt");
+			throw new HbArgumentError(getInterp(),"get",index,"HbInt");
+	}
+	
+	@HobbesMethod(name="clear")
+	public void clear() {
+		elements.clear();
+	}
+	
+	@HobbesMethod(name="add",numArgs=1)
+	public void add(HbObject obj) {
+		elements.add(obj);
 	}
 	
 	@HobbesMethod(name="length")
@@ -91,8 +103,90 @@ public class HbList extends HbObject {
 			return new HbString(getInterp(),ans);
 		} else
 			throw new HbArgumentError(getInterp(),"join",
-								joiner.getHbClass().getName(),
+								joiner,
 								"String");
+	}
+	
+	@HobbesMethod(name="toSet")
+	public HbSet toSet() {
+		HbSet set = new HbSet(getInterp());
+		for(HbObject elem: elements)
+			set.add(elem);
+		return set;
+	}
+	
+	@HobbesMethod(name="sort")
+	public HbList sort() throws ErrorWrapper {
+		HbList newList = clone();
+		newList.sortInPlace();
+		return newList;
+	}
+	
+	@HobbesMethod(name="sort!")
+	public void sortInPlace() throws ErrorWrapper {
+		sort(0,elements.size()-1);
+	}
+	
+	private void sort(int start, int end) throws ErrorWrapper {
+		if(start < end) {
+			int pivotIndex = partition(start,end);
+			sort(start,pivotIndex-1);
+			sort(pivotIndex+1,end);
+		}
+	}
+	
+	private int partition(int start, int end) throws ErrorWrapper {
+		int r1 = r.nextInt(end-start) + start;
+		int r2 = r.nextInt(end-start) + start;
+		int r3 = r.nextInt(end-start) + start;
+		if(elements.get(r1).gt(elements.get(r2))) {
+			int temp = r1;
+			r1 = r2;
+			r2 = temp;
+		}
+		if(elements.get(r2).gt(elements.get(r3))) {
+			int temp = r2;
+			r2 = r3;
+			r3 = temp;
+		}
+		if(elements.get(r1).gt(elements.get(r2))) {
+			int temp = r1;
+			r1 = r2;
+			r2 = temp;
+		}
+		swap(r2,end);
+		int pivotIndex = end;
+		HbObject pivot = elements.get(pivotIndex);
+		end--;
+		boolean goingRight = true;
+		while(start <= end) {
+			if(goingRight) {
+				if(elements.get(start).gt(pivot))
+					goingRight = false;
+				else
+					start++;
+			} else {
+				if(elements.get(end).lt(pivot)) {
+					swap(start,end);
+					start++;
+					goingRight = true;
+				} else {
+					end--;
+				}
+			}
+		}
+		if(elements.get(start).gt(pivot)) {
+			swap(start,pivotIndex);
+			return start;
+		} else {
+			return pivotIndex;
+		}
+	}
+	
+	private void swap(int a, int b) {
+		HbObject temp = elements.get(a);
+		elements.set(a,elements.get(b));
+		elements.set(b,temp);
 	}
 
 }

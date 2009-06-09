@@ -27,6 +27,10 @@ public class SetNode implements AtomNode {
 		return ans;
 	}
 	
+	public HashSet<ExpressionNode> getElements() {
+		return elements;
+	}
+	
 	public SourceLine getLine() {
 		return line;
 	}

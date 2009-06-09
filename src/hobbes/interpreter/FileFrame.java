@@ -2,12 +2,12 @@ package hobbes.interpreter;
 
 import hobbes.parser.SourceLine;
 
-public class ModuleFrame extends ExecutionFrame {
+public class FileFrame extends ExecutionFrame {
 	
 	private String name;
 	private SourceLine currentLine;
 	
-	public ModuleFrame(Interpreter i, String n) {
+	public FileFrame(Interpreter i, String n) {
 		super(new Scope(i));
 		getScope().addBasics();
 		name = n;
@@ -18,8 +18,7 @@ public class ModuleFrame extends ExecutionFrame {
 	}
 
 	public String show() {
-		return "  in " + name + "\n"
-				+ "    " + currentLine.show();
+		return "  in " + name;
 	}
 
 	public void setCurrentLine(SourceLine line) {
