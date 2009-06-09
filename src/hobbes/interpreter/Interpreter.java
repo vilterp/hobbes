@@ -68,8 +68,9 @@ public class Interpreter {
 	}
 	
 	private Stack<ExecutionFrame> stack;
+	private SourceFile file;
+	private ModuleFrame topLevelFrame;
 	private ObjectSpace objSpace;
-	private int lineNo;
 	private String fileName;
 	private Parser parser;
 	private Tokenizer tokenizer;
@@ -80,15 +81,16 @@ public class Interpreter {
 	
 	public Interpreter(String fn, boolean vgc) {
 		verboseGC = vgc;
+		file = new SourceFile(fn);
 		objSpace = new ObjectSpace(this,vgc);
 		objSpace.addBuiltins();
 		objSpace.resetCreated();
 		if(verboseGC)
 			System.out.println("initial object space size: " + objSpace.size());
 		stack = new Stack<ExecutionFrame>();
-		lineNo = 1;
 		fileName = fn;
-		stack.push(new ModuleFrame(this,fileName));
+		topLevelFrame = new ModuleFrame(this,fileName);
+		stack.push(topLevelFrame);
 		parser = new Parser();
 		tokenizer = new Tokenizer();
 		emptyArgs = new ArrayList<ExpressionNode>();
@@ -100,8 +102,7 @@ public class Interpreter {
 	
 	public void add(String line) {
 		try {
-			tokenizer.addLine(new SourceLine(line,fileName,lineNo));
-			lineNo++;
+			tokenizer.addLine(file.addLine(line));
 		} catch (SyntaxError e) {
 			handleSyntaxError(e);
 		}
@@ -141,18 +142,23 @@ public class Interpreter {
 			return repr;
 	}
 	
+	public String callToString(HbObject obj) throws ErrorWrapper {
+		return ((HbString)evalMethodCall(obj,"toString",emptyArgs,null)).sanitizedValue();
+	}
+	
 	private String interpret(SyntaxNode tree) {
 		if(tree != null) {
+			topLevelFrame.setCurrentLine(tree.getLine());
 			try {
 				HbObject result = run(tree);
+				String toReturn = null;
+				if(result != null)
+					toReturn = show(result);
 				// collect the garbage
 				objSpace.garbageCollectCreated();
 				if(verboseGC)
 					System.out.println("object space size: " + objSpace.size());
-				if(result == null)
-					return null;
-				else
-					return show(result);
+				return toReturn;
 			} catch(ErrorWrapper e) {
 				while(canPop())
 					e.addFrame(popFrame());
@@ -160,10 +166,7 @@ public class Interpreter {
 				e.printStackTrace();
 				return null;
 			} catch(Return r) {
-				SyntaxError e = new SyntaxError("Unexpected return statment - " +
-												"not inside function or method",
-													r.getOrigin().getStart());
-				handleSyntaxError(e);
+				handleUnexpectedReturn(r);
 				return null;
 			}
 		} else
@@ -234,34 +237,94 @@ public class Interpreter {
 	}
 
 	private HbObject evalNormalFuncCall(HbNormalFunction func, HbObject[] args,
-			SourceLocation parenLoc) {
-		// TODO Auto-generated method stub
-		return null;
+												SourceLocation parenLoc) throws ErrorWrapper {
+		// push frame
+		try {
+			pushFrame(new FunctionFrame(new Scope(this,getCurrentFrame().getScope()),
+								func.getName(),parenLoc));
+		} catch (HbStackOverflow e) {
+			throw new ErrorWrapper(e,parenLoc);
+		}
+		// set args in scope
+		for(int i=0; i < args.length; i++) {
+			try {
+				getCurrentFrame().getScope().assign(func.getArgs().get(i).getVar().getName(),
+																					args[i]);
+			} catch (HbReadOnlyError e) {
+				throw new ErrorWrapper(e,parenLoc);
+			}
+		}
+		// run block
+		HbObject lastResult = null;
+		for(SyntaxNode item: func.getBlock()) {
+			try {
+				lastResult = run(item);
+			} catch(Return r) {
+				popFrame();
+				return r.getValue();
+			}
+		}
+		popFrame();
+		return lastResult;
 	}
 
 	private HbObject evalNativeFuncCall(HbNativeFunction func, HbObject[] args,
 			SourceLocation parenLoc) throws ErrorWrapper {
+		try {
+			pushFrame(new NativeFunctionFrame(getCurrentFrame().getScope(),func.getName(),parenLoc));
+		} catch (HbStackOverflow e) {
+			throw new ErrorWrapper(e,parenLoc);
+		}
 		if(func.getName().equals("print")) {
 			System.out.println(show(args[0]));
+			popFrame();
 			return objSpace.getNil();
 		} else if(func.getName().equals("get_input")) {
-			System.out.print(show(args[0]));
+			System.out.print(((HbString)callMethod(args[0],"toString",new HbObject[]{},null))
+																				.getValue());
 			Scanner in = new Scanner(System.in);
+			popFrame();
 			return new HbString(this,in.nextLine());
 		} else if(func.getName().equals("eval")) {
-			System.err.println("eval hasn't been implemented yet");
-			return objSpace.getNil();
+			Tokenizer t = new Tokenizer();
+			Parser p = new Parser();
+			SourceFile f = new SourceFile("<eval>");
+			Scanner s = new Scanner(((HbString)args[0]).getValue());
+			HbObject lastResult = null;
+			while(s.hasNext()) {
+				try {
+					t.addLine(f.addLine(s.next()));
+					if(t.isReady()) {
+						SyntaxNode tree = p.parse(t.getTokens());
+						lastResult = run(tree);
+					}
+				} catch (SyntaxError e) {
+					throw new ErrorWrapper(new HbSyntaxError(this,e.getMessage()),
+											e.getLocation());
+				} catch (Return r) {
+					handleUnexpectedReturn(r);
+				}
+			}
+			return null;
 		} else
 			throw new IllegalArgumentException("Nonexistent native function");
 	}
-
+	
+	private void handleUnexpectedReturn(Return r) {
+		SyntaxError e = new SyntaxError("Unexpected return statment - " +
+					"not inside function or method",
+					r.getOrigin().getStart());
+		handleSyntaxError(e);
+	}
+	
 	private HbObject evalAnonFunc(AnonymousFunctionNode func) {
 		return new HbAnonymousFunction(this,func.getArgs(),func.getBlock());
 	}
 
 	private HbObject evalInstanceVar(InstanceVarNode expr) throws ErrorWrapper {
-		if(getCurrentFrame() instanceof MethodFrame) {
-			return ((MethodFrame)getCurrentFrame()).getReceiver().getInstVar(expr.getName());
+		if(getCurrentFrame() instanceof NormalMethodFrame) {
+			return ((NormalMethodFrame)getCurrentFrame())
+											.getReceiver().getInstVar(expr.getName());
 		} else
 			throw new ErrorWrapper(new HbSyntaxError(this,
 					"Unexpected instance variable: not inside a method"),
@@ -360,8 +423,8 @@ public class Interpreter {
 		if(receiver.getHbClass().hasMethod(methodName))
 			method = receiver.getHbClass().getMethod(methodName);
 		else
-			throw new ErrorWrapper(new HbMissingMethodError(this,methodName),
-									origin);
+			throw new ErrorWrapper(new HbMissingMethodError(this,methodName,
+								receiver.getHbClass().getName()),origin);
 		HbObject[] argValues = evalArgs(args,method,methodName,origin);
 		return callMethod(receiver,methodName,argValues,origin);
 	}
@@ -415,7 +478,7 @@ public class Interpreter {
 												throws ErrorWrapper {
 		// add frame
 		try {
-			pushFrame(new MethodFrame(this,getCurrentFrame().getScope(),
+			pushFrame(new NormalMethodFrame(this,getCurrentFrame().getScope(),
 										receiver,method.getName(),origin));
 		} catch (HbStackOverflow e) {
 			throw new ErrorWrapper(e,origin);
@@ -437,7 +500,7 @@ public class Interpreter {
 				lastResult = run(item);
 			} catch(Return r) {
 				popFrame();
-				return r.getToReturn();
+				return r.getValue();
 			}
 		}
 		popFrame();
@@ -461,9 +524,12 @@ public class Interpreter {
 		} catch (IllegalAccessException e) {
 			e.printStackTrace();
 		} catch (InvocationTargetException e) {
-			if(e.getCause() instanceof HbError) {
+			Throwable t = e.getCause();
+			if(e.getCause() instanceof HbError)
 				throw new ErrorWrapper((HbError)e.getCause(),loc);
-			} else
+			else if(e.getCause() instanceof ErrorWrapper)
+				throw (ErrorWrapper)e.getCause();
+			else
 				e.printStackTrace();
 		}
 		System.exit(1);
@@ -493,8 +559,8 @@ public class Interpreter {
 			} catch (HbReadOnlyError e) {
 				throw new ErrorWrapper(e,stmt.getEqualsToken().getStart());
 			}
-		} else if(getCurrentFrame() instanceof MethodFrame) {
-			((MethodFrame)getCurrentFrame()).getReceiver().putInstVar(stmt.getVar().getName(),
+		} else if(getCurrentFrame() instanceof NormalMethodFrame) {
+			((NormalMethodFrame)getCurrentFrame()).getReceiver().putInstVar(stmt.getVar().getName(),
 																eval(stmt.getExpr()));
 		} else
 			throw new ErrorWrapper(new HbSyntaxError(this,

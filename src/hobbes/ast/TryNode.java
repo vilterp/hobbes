@@ -1,14 +1,19 @@
 package hobbes.ast;
 
+import hobbes.parser.SourceLine;
+import hobbes.parser.Token;
+
 import java.util.ArrayList;
 
 public class TryNode implements StatementNode {
 	
+	private Token origin;
 	private BlockNode tryBlock;
 	private ArrayList<CatchNode> catches;
 	private BlockNode finallyBlock;
 	
-	public TryNode(BlockNode tb, ArrayList<CatchNode> c, BlockNode f) {
+	public TryNode(Token o, BlockNode tb, ArrayList<CatchNode> c, BlockNode f) {
+		origin = o;
 		tryBlock = tb;
 		catches = c;
 		finallyBlock = f;
@@ -31,6 +36,10 @@ public class TryNode implements StatementNode {
 	
 	public BlockNode getFinally() {
 		return finallyBlock;
+	}
+	
+	public SourceLine getLine() {
+		return origin.getLine();
 	}
 	
 }

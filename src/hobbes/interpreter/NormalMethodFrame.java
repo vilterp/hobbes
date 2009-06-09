@@ -3,18 +3,18 @@ package hobbes.interpreter;
 import hobbes.parser.SourceLocation;
 import hobbes.values.HbObject;
 
-public class MethodFrame extends ExecutionFrame {
+public class NormalMethodFrame extends ExecutionFrame {
 	
 	private String methodName;
 	private String className;
-	private SourceLocation loc;
+	private SourceLocation callLoc;
 	private HbObject receiver;
 	
-	public MethodFrame(Interpreter i, Scope adoptGlobals, HbObject rec,
+	public NormalMethodFrame(Interpreter i, Scope adoptGlobals, HbObject rec,
 						String mn, SourceLocation p) {
 		super(new Scope(i,adoptGlobals));
 		methodName = mn;
-		loc = p;
+		callLoc = p;
 		receiver = rec;
 		className = rec.getHbClass().getName();
 	}
@@ -24,12 +24,12 @@ public class MethodFrame extends ExecutionFrame {
 	}
 	
 	public SourceLocation getLoc() {
-		return loc;
+		return callLoc;
 	}
 	
 	public String show() {
 		return "  in " + className + "#" + methodName + "\n"
-				+ loc.show();
+				+ showLoc(callLoc);
 	}
 	
 }

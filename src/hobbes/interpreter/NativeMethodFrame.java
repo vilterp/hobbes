@@ -6,18 +6,18 @@ public class NativeMethodFrame extends ExecutionFrame {
 	
 	private String className;
 	private String methodName;
-	private SourceLocation loc;
+	private SourceLocation callLoc;
 	
 	public NativeMethodFrame(String cn, String mn, SourceLocation l) {
 		super(null);
 		className = cn;
 		methodName = mn;
-		loc = l;
+		callLoc = l;
 	}
 	
 	public String show() {
 		return "  in " + className + "#" + methodName + "\n"
-		+ loc.show();
+				+ showLoc(callLoc);
 	}
 
 }

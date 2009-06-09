@@ -1,5 +1,7 @@
 package hobbes.interpreter;
 
+import hobbes.parser.SourceLocation;
+
 public abstract class ExecutionFrame {
 	
 	private Scope scope;
@@ -13,5 +15,9 @@ public abstract class ExecutionFrame {
 	}
 	
 	public abstract String show();
+	
+	protected String showLoc(SourceLocation loc) {
+		return (loc == null ? "    [internal]" : loc.show());
+	}
 	
 }

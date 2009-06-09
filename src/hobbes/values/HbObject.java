@@ -49,6 +49,10 @@ public class HbObject extends Throwable {
 		return interp;
 	}
 	
+	public String toString() {
+		return getHbClass().getName() + "@" + getId();
+	}
+	
 	@HobbesMethod(name="toString",numArgs=0)
 	public HbString hbToString() throws ErrorWrapper {
 		StringBuilder repr = new StringBuilder("<");
@@ -73,7 +77,13 @@ public class HbObject extends Throwable {
 	}
 	
 	public void putInstVar(String name, HbObject val) {
-		instanceVars.put(name, val.getId());
+		Integer prevId = instanceVars.get(name);
+		instanceVars.put(name,val.getId());
+		getObjSpace().incRefs(val.getId());
+		if(prevId != null) {
+			getObjSpace().decRefs(prevId);
+			getObjSpace().garbageCollect(prevId);
+		}
 	}
 	
 	public HbObject getInstVar(String name) {

@@ -74,7 +74,7 @@ public class HbClass extends HbObject {
 				for(int j=0; j < ann.defaults().length; j++) {
 					if(ann.defaults()[j] != null) {
 						try {
-							t.addLine(new SourceLine(ann.defaults()[j],"<default>",1));
+							t.addLine(new SourceLine(null,ann.defaults()[j],1));
 							meth.setDefault(j,(ExpressionNode)p.parse(t.getTokens()));
 							specAlready = true;
 						} catch(SyntaxError e) {

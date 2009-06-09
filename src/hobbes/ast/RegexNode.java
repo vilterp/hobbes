@@ -1,5 +1,6 @@
 package hobbes.ast;
 
+import hobbes.parser.SourceLine;
 import hobbes.parser.Token;
 
 public class RegexNode implements AtomNode {
@@ -19,6 +20,10 @@ public class RegexNode implements AtomNode {
 				.replaceAll("\n", "\\\\n")
 				.replaceAll("\t", "\\\\t")
 				.replaceAll("\"", "\\\"");
+	}
+	
+	public SourceLine getLine() {
+		return origin.getLine();
 	}
 	
 }

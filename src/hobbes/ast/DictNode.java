@@ -1,18 +1,22 @@
 package hobbes.ast;
 
+import hobbes.parser.SourceLine;
+
 import java.util.HashMap;
 import java.util.Iterator;
 
 public class DictNode implements AtomNode {
 	
+	private SourceLine line;
 	private HashMap<ExpressionNode,ExpressionNode> elements;
 	
-	public DictNode(HashMap<ExpressionNode,ExpressionNode> elems) {
+	public DictNode(SourceLine l, HashMap<ExpressionNode,ExpressionNode> elems) {
+		line = l;
 		elements = elems;
 	}
 	
-	public DictNode() {
-		elements = new HashMap<ExpressionNode,ExpressionNode>();
+	public DictNode(SourceLine l) {
+		this(l,new HashMap<ExpressionNode,ExpressionNode>());
 	}
 	
 	public String toString() {
@@ -28,6 +32,10 @@ public class DictNode implements AtomNode {
 		}
 		ans += "}";
 		return ans;
+	}
+	
+	public SourceLine getLine() {
+		return line;
 	}
 	
 }

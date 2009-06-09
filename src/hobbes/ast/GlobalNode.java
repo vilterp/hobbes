@@ -1,5 +1,7 @@
 package hobbes.ast;
 
+import hobbes.parser.SourceLine;
+
 public class GlobalNode implements StatementNode {
 	
 	private VariableNode var;
@@ -10,6 +12,10 @@ public class GlobalNode implements StatementNode {
 	
 	public String toString() {
 		return "global(" + var + ")";
+	}
+	
+	public SourceLine getLine() {
+		return var.getLine();
 	}
 	
 }

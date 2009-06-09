@@ -1,5 +1,6 @@
 package hobbes.ast;
 
+import hobbes.parser.SourceLine;
 import hobbes.parser.Token;
 
 public class AssignmentNode implements StatementNode {
@@ -28,6 +29,10 @@ public class AssignmentNode implements StatementNode {
 	
 	public Token getEqualsToken() {
 		return origin;
+	}
+	
+	public SourceLine getLine() {
+		return origin.getLine();
 	}
 	
 }

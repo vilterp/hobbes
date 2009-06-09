@@ -10,8 +10,8 @@ public class HbMissingMethodError extends HbError {
 		throw getNoMessageError();
 	}
 	
-	public HbMissingMethodError(Interpreter i, String m) {
-		super(i, m);
+	public HbMissingMethodError(Interpreter i, String m, String c) {
+		super(i, m + " (class " + c + ")");
 	}
 
 }

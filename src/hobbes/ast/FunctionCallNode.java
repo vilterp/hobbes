@@ -1,5 +1,6 @@
 package hobbes.ast;
 
+import hobbes.parser.SourceLine;
 import hobbes.parser.SourceLocation;
 
 import java.util.ArrayList;
@@ -30,6 +31,10 @@ public class FunctionCallNode implements FunctionNode {
 	
 	public ArrayList<ExpressionNode> getArgs() {
 		return args;
+	}
+	
+	public SourceLine getLine() {
+		return parenLoc.getLine();
 	}
 	
 }

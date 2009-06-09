@@ -13,7 +13,7 @@ public class Return extends Throwable {
 		origin = o;
 	}
 	
-	public HbObject getToReturn() {
+	public HbObject getValue() {
 		return toReturn;
 	}
 	

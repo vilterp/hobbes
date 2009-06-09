@@ -1,15 +1,20 @@
 package hobbes.ast;
 
+import hobbes.parser.SourceLine;
+import hobbes.parser.Token;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 
 public class ImportNode implements StatementNode {
 	
+	private Token origin;
 	private ArrayList<VariableNode> path;
 	private HashSet<VariableNode> names;
 	
-	public ImportNode(ArrayList<VariableNode> p, HashSet<VariableNode> n) {
+	public ImportNode(Token o, ArrayList<VariableNode> p, HashSet<VariableNode> n) {
+		origin = o;
 		path = p;
 		names = n;
 	}
@@ -34,6 +39,10 @@ public class ImportNode implements StatementNode {
 		}
 		ans += ")";
 		return ans;
+	}
+	
+	public SourceLine getLine() {
+		return origin.getLine();
 	}
 	
 }

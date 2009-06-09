@@ -1,5 +1,6 @@
 package hobbes.ast;
 
+import hobbes.parser.SourceLine;
 import hobbes.parser.Token;
 
 public class ClassDefNode implements DefNode {
@@ -37,6 +38,10 @@ public class ClassDefNode implements DefNode {
 	
 	public Token getClassNameToken() {
 		return nameToken;
+	}
+	
+	public SourceLine getLine() {
+		return nameToken.getLine();
 	}
 	
 }

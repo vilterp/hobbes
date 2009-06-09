@@ -1,5 +1,6 @@
 package hobbes.ast;
 
+import hobbes.parser.SourceLine;
 import hobbes.parser.Token;
 
 import java.util.ArrayList;
@@ -24,6 +25,10 @@ public class ArgsSpecNode implements SyntaxNode {
 	
 	public ArrayList<ArgSpecNode> getArgs() {
 		return args;
+	}
+	
+	public SourceLine getLine() {
+		return closingToken.getLine();
 	}
 	
 }

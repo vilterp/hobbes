@@ -1,18 +1,21 @@
 package hobbes.ast;
 
+import hobbes.parser.SourceLine;
+import hobbes.parser.Token;
+
 public class IfStatementNode implements ExpressionNode {
-	
+
+	private Token origin;
 	private ExpressionNode condition;
 	private BlockNode theIf;
 	private BlockNode theElse;
 	
-	public IfStatementNode(ExpressionNode c, BlockNode i) {
-		condition = c;
-		theIf = i;
-		theElse = null;
+	public IfStatementNode(Token o, ExpressionNode c, BlockNode i) {
+		this(o,c,i,null);
 	}
 	
-	public IfStatementNode(ExpressionNode c, BlockNode i, BlockNode e) {
+	public IfStatementNode(Token o, ExpressionNode c, BlockNode i, BlockNode e) {
+		origin = o;
 		condition = c;
 		theIf = i;
 		theElse = e;
@@ -34,6 +37,10 @@ public class IfStatementNode implements ExpressionNode {
 
 	public BlockNode getElseBlock() {
 		return theElse;
+	}
+	
+	public SourceLine getLine() {
+		return origin.getLine();
 	}
 	
 }

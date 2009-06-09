@@ -1,5 +1,6 @@
 package hobbes.ast;
 
+import hobbes.parser.SourceLine;
 import hobbes.parser.Token;
 
 import java.util.ArrayList;
@@ -29,6 +30,10 @@ public class NewInstanceNode implements AtomNode {
 	
 	public Token getNewWord() {
 		return newWord;
+	}
+	
+	public SourceLine getLine() {
+		return newWord.getLine();
 	}
 	
 }

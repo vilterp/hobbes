@@ -1,5 +1,6 @@
 package hobbes.ast;
 
+import hobbes.parser.SourceLine;
 import hobbes.parser.Token;
 
 public class VariableNode implements VarNode {
@@ -20,6 +21,10 @@ public class VariableNode implements VarNode {
 	
 	public String getName() {
 		return origin.getValue();
+	}
+	
+	public SourceLine getLine() {
+		return origin.getLine();
 	}
 	
 }

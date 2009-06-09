@@ -20,11 +20,12 @@ public class SourceLocation {
 		// indentation
 		for(int i=0; i < INDENTATION; i++)
 			ans.append(" ");
-		// line no and code
-		String lineNo = new Integer(line.getLineNo()).toString();
-		ans.append(lineNo + ": " + line.getCode() + "\n");
+		// line no. and code
+		String lineNo = new Integer(line.getLineNo()).toString() + ": ";
+		ans.append(lineNo);
+		ans.append(line.getCode());
+		ans.append('\n');
 		// spaces before pointer to account for line no
-		ans.append("  ");
 		for(int i=0; i < lineNo.length(); i++)
 			ans.append(" ");
 		// indentation

@@ -78,17 +78,13 @@ public class HbList extends HbObject {
 	}
 	
 	@HobbesMethod(name="join",numArgs=1,defaults={"\"\""})
-	public HbString join(HbObject joiner) throws HbArgumentError {
+	public HbString join(HbObject joiner) throws HbArgumentError, ErrorWrapper {
 		if(joiner instanceof HbString) {
 			String j = ((HbString)joiner).getValue().toString();
 			StringBuilder ans = new StringBuilder();
 			Iterator<HbObject> it = elements.iterator();
 			while(it.hasNext()) {
-				HbObject next = it.next();
-				if(next instanceof HbString)
-					ans.append(((HbString)next).getValue());
-				else
-					ans.append(next);
+				ans.append(getInterp().callToString(it.next()));
 				if(it.hasNext())
 					ans.append(j);
 			}

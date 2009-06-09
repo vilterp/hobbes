@@ -1,5 +1,6 @@
 package hobbes.ast;
 
+import hobbes.parser.SourceLine;
 import hobbes.parser.Token;
 
 public class DeletionNode implements StatementNode {
@@ -22,6 +23,10 @@ public class DeletionNode implements StatementNode {
 	
 	public Token getOrigin() {
 		return origin;
+	}
+	
+	public SourceLine getLine() {
+		return origin.getLine();
 	}
 	
 }

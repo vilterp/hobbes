@@ -1,5 +1,6 @@
 package hobbes.ast;
 
+import hobbes.parser.SourceLine;
 import hobbes.parser.Token;
 
 public class ArgSpecNode implements SyntaxNode {
@@ -33,6 +34,10 @@ public class ArgSpecNode implements SyntaxNode {
 	
 	public ExpressionNode getDefault() {
 		return def;
+	}
+	
+	public SourceLine getLine() {
+		return equalsToken.getLine();
 	}
 	
 }

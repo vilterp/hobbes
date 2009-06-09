@@ -28,6 +28,10 @@ public class Token {
 		return type;
 	}
 	
+	public SourceLine getLine() {
+		return getStart().getLine();
+	}
+	
 	public SourceSpan getSourceSpan() {
 		return location;
 	}

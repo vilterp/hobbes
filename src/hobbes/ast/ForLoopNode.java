@@ -1,5 +1,7 @@
 package hobbes.ast;
 
+import hobbes.parser.SourceLine;
+
 public class ForLoopNode implements StatementNode {
 	
 	private VariableNode indexVar;
@@ -21,6 +23,10 @@ public class ForLoopNode implements StatementNode {
 				+ collection + ","
 				+ block
 				+ ")";
+	}
+	
+	public SourceLine getLine() {
+		return loopVar.getOrigin().getLine();
 	}
 	
 }

@@ -3,6 +3,7 @@ package hobbes.ast;
 import java.util.ArrayList;
 
 import hobbes.ast.SyntaxNode;
+import hobbes.parser.SourceLine;
 import hobbes.parser.Token;
 
 public class ArgumentsNode implements SyntaxNode {
@@ -21,6 +22,10 @@ public class ArgumentsNode implements SyntaxNode {
 	
 	public Token getOpener() {
 		return opener;
+	}
+	
+	public SourceLine getLine() {
+		return opener.getLine();
 	}
 	
 }

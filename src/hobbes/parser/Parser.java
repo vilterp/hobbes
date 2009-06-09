@@ -17,11 +17,10 @@ public class Parser {
 	public static void main(String[] args) {
 			Tokenizer t = new Tokenizer();
 			Parser p = new Parser();
+			SourceFile f = new SourceFile("<console>");
 			
-			int lineNo = 1;
 			Scanner s = new Scanner(System.in);
 			while(true) {
-				System.out.print(lineNo + ":");
 				if(t.isReady())
 					System.out.print(">> ");
 				else
@@ -33,7 +32,7 @@ public class Parser {
 					System.out.println();
 				}
 				try {
-					t.addLine(new SourceLine(line,"<console>",lineNo));
+					t.addLine(f.addLine(line));
 					if(t.isReady() && t.numTokens() > 0)
 						System.out.println(p.parse(t.getTokens()));
 				} catch (SyntaxError e) {
@@ -44,7 +43,6 @@ public class Parser {
 					p.reset();
 					t.reset();
 				}
-				lineNo++;
 			}
 			
 //			try {
@@ -140,7 +138,7 @@ public class Parser {
 	
 	private boolean statement() throws SyntaxError {
 		return assignment() || deletionStatement() || importStatement() ||
-				returnStatement() || globalStatement() || raiseStatement() ||
+				returnStatement() || globalStatement() || throwStatement() ||
 				breakStatement() || continueStatement();
 	}
 
@@ -268,7 +266,7 @@ public class Parser {
 								stack.pop();
 						} else if(symbol("}")) {
 							stack.pop();
-							stack.push(new ImportNode(path,names));
+							stack.push(new ImportNode(importWord,path,names));
 							return true;
 						} else
 							throw new SyntaxError("Missing comma",
@@ -309,15 +307,15 @@ public class Parser {
 			return false;
 	}
 	
-	private boolean raiseStatement() throws SyntaxError {
-		if(word("raise")) {
-			Token raiseWord = getLastToken();
+	private boolean throwStatement() throws SyntaxError {
+		if(word("throw")) {
+			Token throwWord = getLastToken();
 			if(expression()) {
-				stack.push(new ThrowNode((ExpressionNode)stack.pop()));
+				stack.push(new ThrowNode(throwWord,(ExpressionNode)stack.pop()));
 				return true;
 			} else
 				throw new SyntaxError("No expression after \"raise\"",
-										raiseWord.getEnd().next());
+										throwWord.getEnd().next());
 		} else
 			return false;
 	}
@@ -357,10 +355,10 @@ public class Parser {
 			if(expression()) {
 				ExpressionNode cond = getLastExpression();
 				if(iou.getValue().equals("until"))
-					cond = new NotNode(cond);
+					cond = new NotNode(null,cond);
 				if(block()) {
 					BlockNode block = (BlockNode)stack.pop();
-					stack.push(new WhileLoopNode(cond,block));
+					stack.push(new WhileLoopNode(iou,cond,block));
 					return true;
 				} else
 					throw new SyntaxError("No block inside while loop",
@@ -426,14 +424,14 @@ public class Parser {
 		if(expression()) {
 			ExpressionNode cond = getLastExpression();
 			if(startWord.getValue().equals("unless"))
-				cond = new NotNode(cond);
+				cond = new NotNode(null,cond);
 			if(block()) {
 				BlockNode block = (BlockNode)stack.pop();
 				if(word("else")) {
 					Token elseWord = getLastToken();
 					if(block()) {
 						BlockNode elseBlock = (BlockNode)stack.pop();
-						stack.push(new IfStatementNode(cond,block,elseBlock));
+						stack.push(new IfStatementNode(startWord,cond,block,elseBlock));
 						return true;
 					} else
 						throw new SyntaxError("No block after \"else\"",
@@ -442,10 +440,10 @@ public class Parser {
 					Token elifWord = getLastToken();
 					getIf(elifWord);
 					BlockNode elseBlock = new BlockNode((IfStatementNode)stack.pop());
-					stack.push(new IfStatementNode(cond,block,elseBlock));
+					stack.push(new IfStatementNode(startWord,cond,block,elseBlock));
 					return true;
 				} else {
-					stack.push(new IfStatementNode(cond,block));
+					stack.push(new IfStatementNode(startWord,cond,block));
 					return true;
 				}
 			} else
@@ -534,7 +532,7 @@ public class Parser {
 						ObjectNode exceptionClass = (ObjectNode)stack.pop();
 						if(block()) {
 							BlockNode catchBlock = (BlockNode)stack.pop();
-							catches.add(new CatchNode(exceptionClass,catchBlock));
+							catches.add(new CatchNode(catchWord,exceptionClass,catchBlock));
 						} else
 							throw new SyntaxError("No block after \"catch\"",
 											catchWord.getSourceSpan().getEnd()
@@ -553,7 +551,7 @@ public class Parser {
 						throw new SyntaxError("No block after \"finally\"",
 												finallyWord.getEnd().next());
 				}
-				stack.push(new TryNode(tryBlock,catches,finallyBlock));
+				stack.push(new TryNode(tryWord,tryBlock,catches,finallyBlock));
 				return true;
 			} else
 				throw new SyntaxError("No block after \"try\"",
@@ -595,21 +593,21 @@ public class Parser {
 			if(or()) {
 				condition = getLastExpression();
 				if(iou.getValue().equals("unless"))
-					condition = new NotNode(condition);
+					condition = new NotNode(null,condition);
 				if(word("else")) {
 					Token elseWord = getLastToken();
 					if(or()) {
 						ExpressionNode theElse = getLastExpression();
 						BlockNode ifBlock = new BlockNode(theIf);
 						BlockNode elseBlock = new BlockNode(theElse);
-						stack.push(new IfStatementNode(condition,ifBlock,elseBlock));
+						stack.push(new IfStatementNode(iou,condition,ifBlock,elseBlock));
 						return true;
 					} else
 						throw new SyntaxError("No expression after \"else\"",
 												elseWord.getEnd());
 				} else {
 					BlockNode ifBlock = new BlockNode(theIf);
-					stack.push(new IfStatementNode(condition,ifBlock));
+					stack.push(new IfStatementNode(iou,condition,ifBlock));
 					return true;
 				}
 			} else
@@ -650,12 +648,12 @@ public class Parser {
 	
 	private boolean not() throws SyntaxError {
 		if(word("not")) {
-			stack.pop();
+			Token notWord = getLastToken();
 			if(test()) {
-				stack.push(new NotNode(getLastExpression()));
+				stack.push(new NotNode(notWord,getLastExpression()));
 				return true;
 			} else
-				throw getSyntaxError("No expression after \"not\"");
+				throw new SyntaxError("No expression after \"not\"",notWord.getEnd());
 		} else if(test())
 			return true;
 		else
@@ -671,10 +669,10 @@ public class Parser {
 				if(test()) {
 					ExpressionNode right = getLastExpression();
 					Token theIn = getLastToken();
-					stack.pop(); // the "not"
+					Token notWord = getLastToken();
 					ExpressionNode left = getLastExpression();
 					makeOperation(left,theIn,right);
-					stack.push(new NotNode(getLastExpression()));
+					stack.push(new NotNode(notWord,getLastExpression()));
 					return true;
 				} else
 					throw getSyntaxError("No expression after \"not in\"");
@@ -684,11 +682,11 @@ public class Parser {
 			if(word("not")) {
 				if(test()) {
 					ExpressionNode right = getLastExpression();
-					stack.pop(); // the "not"
+					Token notWord = getLastToken();
 					Token theIs = getLastToken();
 					ExpressionNode left = getLastExpression();
 					makeOperation(left,theIs,right);
-					stack.push(new NotNode(getLastExpression()));
+					stack.push(new NotNode(notWord,getLastExpression()));
 					return true;
 				} else
 					throw getSyntaxError("No expression after \"is not\"");
@@ -701,7 +699,7 @@ public class Parser {
 				Token fakeDubEql = new Token("==",TokenType.SYMBOL,notEql.getSourceSpan());
 				ExpressionNode left = getLastExpression();
 				makeOperation(left,fakeDubEql,right);
-				stack.push(new NotNode(getLastExpression()));
+				stack.push(new NotNode(null,getLastExpression()));
 				return true;
 			} else
 				throw getSyntaxError("No expression after !=");
@@ -765,7 +763,7 @@ public class Parser {
 		if(symbol("-")) {
 			Token negative = getLastToken();
 			if(exponent() || parenthesizedExpression()) {
-				stack.push(new NegativeNode(getLastExpression()));
+				stack.push(new NegativeNode(negative,getLastExpression()));
 				return true;
 			} else {
 				tokens.addFirst(negative);
@@ -1052,10 +1050,11 @@ public class Parser {
 	}
 
 	private boolean list() throws SyntaxError {
+		Token opener = null;
 		if(!symbol("["))
 			return false;
 		else
-			stack.pop();
+			opener = getLastToken();
 		if(symbol("]")) {
 			stack.pop();
 			stack.push(new ListNode());
@@ -1077,7 +1076,7 @@ public class Parser {
 			} else {
 				if(symbol("]")) {
 					stack.pop();
-					stack.push(new ListNode(elements));
+					stack.push(new ListNode(opener.getLine(),elements));
 					return true;
 				} else
 					throw new SyntaxError("Missing comma",
@@ -1087,13 +1086,14 @@ public class Parser {
 	}
 
 	private boolean dictOrSet() throws SyntaxError {
+		Token opener = null;
 		if(!symbol("{"))
 			return false;
 		else
-			stack.pop();
+			opener = getLastToken();
 		if(symbol("}")) {
 			stack.pop();
-			stack.push(new DictNode());
+			stack.push(new DictNode(opener.getLine()));
 			return true;
 		}
 		destroyEOLsUntil("}");
@@ -1103,7 +1103,7 @@ public class Parser {
 			if(expression()) {
 				ExpressionNode key = getLastExpression();
 				if(!symbol(":"))
-					return set(key);
+					return set(opener,key);
 				else {
 					Token colon = getLastToken();
 					if(expression()) {
@@ -1125,7 +1125,7 @@ public class Parser {
 			} else {
 				if(symbol("}")) {
 					stack.pop();
-					stack.push(new DictNode(elements));
+					stack.push(new DictNode(opener.getLine(),elements));
 					return true;
 				} else
 					throw new SyntaxError("Missing comma",
@@ -1134,7 +1134,7 @@ public class Parser {
 		}
 	}
 	
-	private boolean set(ExpressionNode firstElement) throws SyntaxError {
+	private boolean set(Token opener, ExpressionNode firstElement) throws SyntaxError {
 		HashSet<ExpressionNode> elements = new HashSet<ExpressionNode>();
 		elements.add(firstElement);
 		if(symbol(",")) {
@@ -1162,7 +1162,7 @@ public class Parser {
 			} else {
 				if(symbol("}")) {
 					stack.pop();
-					stack.push(new SetNode(elements));
+					stack.push(new SetNode(opener.getLine(),elements));
 					return true;
 				} else
 					throw new SyntaxError("Missing comma",
@@ -1212,10 +1212,11 @@ public class Parser {
 	}
 	
 	private boolean block() throws SyntaxError {
+		SourceLine firstLine = null;
 		if(!symbol("{"))
 			return false;
 		else
-			stack.pop();
+			firstLine = getLastToken().getLine();
 		ArrayList<SyntaxNode> lines = new ArrayList<SyntaxNode>();
 		if(eol()) {
 			while(true) {
@@ -1226,7 +1227,7 @@ public class Parser {
 			}
 			if(symbol("}")) {
 				stack.pop();
-				stack.push(new BlockNode(lines));
+				stack.push(new BlockNode(firstLine,lines));
 				return true;
 			} else {
 				Token theUnexpected = tokens.peek();
@@ -1239,7 +1240,7 @@ public class Parser {
 				lines.add(stack.pop());
 			if(symbol("}")) {
 				stack.pop();
-				stack.push(new BlockNode(lines));
+				stack.push(new BlockNode(firstLine,lines));
 				return true;
 			} else {
 				Token theUnexpected = tokens.peek();

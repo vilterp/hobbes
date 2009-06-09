@@ -1,5 +1,6 @@
 package hobbes.ast;
 
+import hobbes.parser.SourceLine;
 import hobbes.parser.Token;
 
 public class ReturnNode implements StatementNode {
@@ -21,6 +22,10 @@ public class ReturnNode implements StatementNode {
 	
 	public ExpressionNode getExpr() {
 		return expr;
+	}
+	
+	public SourceLine getLine() {
+		return origin.getLine();
 	}
 	
 }

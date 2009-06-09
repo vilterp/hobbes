@@ -2,6 +2,7 @@ package hobbes.ast;
 
 import java.util.ArrayList;
 
+import hobbes.parser.SourceLine;
 import hobbes.parser.Token;
 
 public class MethodDefNode implements DefNode {
@@ -45,6 +46,10 @@ public class MethodDefNode implements DefNode {
 	
 	public BlockNode getBlock() {
 		return block;
+	}
+	
+	public SourceLine getLine() {
+		return name.getLine();
 	}
 	
 }

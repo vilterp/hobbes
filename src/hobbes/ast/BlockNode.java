@@ -1,19 +1,27 @@
 package hobbes.ast;
 
+import hobbes.parser.SourceLine;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 
 public class BlockNode implements SyntaxNode, Iterable<SyntaxNode> {
 	
+	private SourceLine firstLine;
 	private ArrayList<SyntaxNode> lines;
 	
-	public BlockNode(ArrayList<SyntaxNode> ls) {
+	public BlockNode(SourceLine fl, ArrayList<SyntaxNode> ls) {
 		lines = ls;
+		if(lines.size() > 0)
+			firstLine = lines.get(0).getLine();
+		else
+			firstLine = fl;
 	}
 	
 	public BlockNode(SyntaxNode l) {
 		ArrayList<SyntaxNode> ls = new ArrayList<SyntaxNode>();
 		ls.add(l);
+		firstLine = l.getLine();
 		lines = ls;
 	}
 	
@@ -37,6 +45,10 @@ public class BlockNode implements SyntaxNode, Iterable<SyntaxNode> {
 	
 	public Iterator<SyntaxNode> iterator() {
 		return lines.iterator();
+	}
+	
+	public SourceLine getLine() {
+		return firstLine;
 	}
 	
 }

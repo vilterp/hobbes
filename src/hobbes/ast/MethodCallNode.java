@@ -1,5 +1,6 @@
 package hobbes.ast;
 
+import hobbes.parser.SourceLine;
 import hobbes.parser.Token;
 
 import java.util.ArrayList;
@@ -63,6 +64,10 @@ public class MethodCallNode implements FunctionNode {
 	
 	public int getNumArgs() {
 		return args.size();
+	}
+	
+	public SourceLine getLine() {
+		return origin.getLine();
 	}
 	
 }

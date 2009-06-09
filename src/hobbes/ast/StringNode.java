@@ -1,5 +1,6 @@
 package hobbes.ast;
 
+import hobbes.parser.SourceLine;
 import hobbes.parser.Token;
 
 public class StringNode implements AtomNode {
@@ -23,6 +24,10 @@ public class StringNode implements AtomNode {
 	
 	public String getValue() {
 		return origin.getValue();
+	}
+	
+	public SourceLine getLine() {
+		return origin.getLine();
 	}
 	
 }

@@ -1,12 +1,16 @@
 package hobbes.ast;
 
+import hobbes.parser.SourceLine;
+
 import java.util.ArrayList;
 
 public class ListNode implements AtomNode {
 	
+	private SourceLine line;
 	private ArrayList<ExpressionNode> elements;
 	
-	public ListNode(ArrayList<ExpressionNode> elems) {
+	public ListNode(SourceLine l, ArrayList<ExpressionNode> elems) {
+		line = l;
 		elements = elems;
 	}
 	
@@ -20,6 +24,10 @@ public class ListNode implements AtomNode {
 	
 	public ArrayList<ExpressionNode> getElements() {
 		return elements;
+	}
+	
+	public SourceLine getLine() {
+		return line;
 	}
 	
 }
