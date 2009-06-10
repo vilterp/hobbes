@@ -175,6 +175,11 @@ public class HbList extends HbObject {
 		return set;
 	}
 	
+	@HobbesMethod(name="uniq")
+	public HbList uniq() throws ErrorWrapper, HbError {
+		return toSet().toList();
+	}
+	
 	public HbObject[] toArray() {
 		HbObject[] toReturn = new HbObject[elements.size()];
 		for(int i=0; i < elements.size(); i++)
