@@ -12,6 +12,9 @@ import hobbes.interpreter.ObjectSpace;
 @HobbesClass(name="List")
 public class HbList extends HbObject {
 	
+	// TODO: []del
+	// TODO: find (== or is?)
+	
 	private ArrayList<HbObject> elements;
 	private static Random r = new Random();
 	private static final String COMMA_SPACE = ", ";
@@ -35,7 +38,7 @@ public class HbList extends HbObject {
 		StringBuilder repr = new StringBuilder("[");
 		Iterator<HbObject> it = elements.iterator();
 		while(it.hasNext()) {
-			repr.append(getInterp().show(it.next()));
+			repr.append(it.next().show());
 			if(it.hasNext())
 				repr.append(COMMA_SPACE);
 		}
@@ -54,29 +57,44 @@ public class HbList extends HbObject {
 						new Integer(ind).toString()
 						+ " (size: " + elements.size() + ")");
 		} else
-			throw new HbArgumentError(getInterp(),"[]",index,"HbInt");
+			throw new HbArgumentError(getInterp(),"[]",index,"Int");
 	}
 	
 	@HobbesMethod(name="[]set",numArgs=2)
 	public void set(HbObject index, HbObject value) throws HbError {
 		if(index instanceof HbInt) {
 			int ind = ((HbInt)index).getValue();
-			if(ind < elements.size()) {
-				elements.set(ind, value);
+			if(ind >= 0 && ind < elements.size()) {
+				if(elements.get(ind) != null)
+					elements.get(ind).decRefs();
+				elements.set(ind,value);
+				value.incRefs();
 			} else
 				throw new HbKeyError(getInterp(),new Integer(ind).toString());
 		} else
-			throw new HbArgumentError(getInterp(),"get",index,"HbInt");
-	}
-	
-	@HobbesMethod(name="clear")
-	public void clear() {
-		elements.clear();
+			throw new HbArgumentError(getInterp(),"[]set",index,"Int");
 	}
 	
 	@HobbesMethod(name="add",numArgs=1)
 	public void add(HbObject obj) {
 		elements.add(obj);
+		obj.incRefs();
+	}
+
+	@HobbesMethod(name="[]del",numArgs=1)
+	public void removeAtIndex(HbObject index) throws HbArgumentError {
+		if(index instanceof HbInt) {
+			index.decRefs();
+			elements.remove(((HbInt)index).getValue());
+		} else
+			throw new HbArgumentError(getInterp(),"[]del",index,"Int");
+	}
+	
+	@HobbesMethod(name="clear")
+	public void clear() {
+		for(HbObject element: elements)
+			element.decRefs();
+		elements.clear();
 	}
 	
 	@HobbesMethod(name="length")
@@ -108,11 +126,24 @@ public class HbList extends HbObject {
 	}
 	
 	@HobbesMethod(name="toSet")
-	public HbSet toSet() {
+	public HbSet toSet() throws ErrorWrapper {
 		HbSet set = new HbSet(getInterp());
 		for(HbObject elem: elements)
 			set.add(elem);
 		return set;
+	}
+	
+	@HobbesMethod(name="reverse!")
+	public void reverseInPlace() {
+		for(int i=0; i < elements.size() / 2; i++)
+			swap(i,elements.size()-1-i);
+	}
+	
+	@HobbesMethod(name="reverse")
+	public HbList reverse() {
+		HbList newList = clone();
+		newList.reverseInPlace();
+		return newList;
 	}
 	
 	@HobbesMethod(name="sort")

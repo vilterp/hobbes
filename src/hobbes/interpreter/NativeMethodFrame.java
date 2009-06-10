@@ -8,8 +8,8 @@ public class NativeMethodFrame extends ExecutionFrame {
 	private String methodName;
 	private SourceLocation callLoc;
 	
-	public NativeMethodFrame(String cn, String mn, SourceLocation l) {
-		super(null);
+	public NativeMethodFrame(Scope s, String cn, String mn, SourceLocation l) {
+		super(s);
 		className = cn;
 		methodName = mn;
 		callLoc = l;

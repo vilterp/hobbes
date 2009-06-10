@@ -216,6 +216,8 @@ public class Interpreter {
 			return new HbString(this,((StringNode)expr).getValue());
 		else if(expr instanceof SetNode)
 			return evalSet((SetNode)expr);
+		else if(expr instanceof DictNode)
+			return evalDict((DictNode)expr);
 		// calls
 		else if(expr instanceof MethodCallNode)
 			return evalMethodCall((MethodCallNode)expr);
@@ -227,11 +229,18 @@ public class Interpreter {
 		}
 	}
 	
+	private HbObject evalDict(DictNode expr) throws ErrorWrapper {
+		HbDict newDict = new HbDict(this);
+		for(ExpressionNode key: expr.getElements().keySet())
+			newDict.put(eval(key),eval(expr.getElements().get(key)));
+		return newDict;
+	}
+
 	private HbObject evalSet(SetNode expr) throws ErrorWrapper {
-		HashSet<HbObject> elements = new HashSet<HbObject>();
+		HbSet newSet = new HbSet(this);
 		for(ExpressionNode elem: expr.getElements())
-			elements.add(eval(elem));
-		return new HbSet(this,elements);
+			newSet.add(eval(elem));
+		return newSet;
 	}
 
 	private HbObject evalFunctionCall(FunctionCallNode call) throws ErrorWrapper {
@@ -247,9 +256,43 @@ public class Interpreter {
 	}
 
 	private HbObject evalAnonFuncCall(HbAnonymousFunction func,
-			HbObject[] args, SourceLocation parenLoc) {
-		// TODO Auto-generated method stub
-		return null;
+			HbObject[] args, SourceLocation parenLoc) throws ErrorWrapper {
+		// push frame
+		try {
+			pushFrame(new FunctionFrame(new Scope(this,getCurrentFrame().getScope()),
+								func.realToString(),parenLoc));
+		} catch (HbStackOverflow e) {
+			throw new ErrorWrapper(e,parenLoc);
+		}
+		// set args in scope
+		for(int i=0; i < args.length; i++) {
+			try {
+				getCurrentFrame().getScope().assign(func.getArgs().get(i).getVar().getName(),
+																					args[i]);
+			} catch (HbReadOnlyError e) {
+				throw new ErrorWrapper(e,parenLoc);
+			}
+		}
+		// run block
+		HbObject lastResult = null;
+		for(SyntaxNode item: func.getBlock()) {
+			try {
+				lastResult = run(item);
+			} catch(Return r) {
+				popFrame();
+				return r.getValue();
+			}
+		}
+		popFrame();
+		return lastResult;
+	}
+	
+	public HbObject callAnonFunc(HbAnonymousFunction func,
+			HbObject[] args, SourceLocation parenLoc) throws ErrorWrapper {
+		if(func.getNumArgs() != args.length)
+			throw getArgumentError(func.realToString(),args.length,func.getNumArgs(),parenLoc);
+		else
+			return evalAnonFuncCall(func,args,parenLoc);
 	}
 
 	private HbObject evalNormalFuncCall(HbNormalFunction func, HbObject[] args,
@@ -324,6 +367,7 @@ public class Interpreter {
 					handleUnexpectedReturn(r);
 				}
 			}
+			popFrame();
 			return lastResult;
 		} else
 			throw new IllegalArgumentException("Nonexistent native function");
@@ -361,10 +405,10 @@ public class Interpreter {
 	}
 
 	private HbObject evalList(ListNode expr) throws ErrorWrapper {
-		ArrayList<HbObject> elements = new ArrayList<HbObject>();
+		HbList newList = new HbList(this);
 		for(ExpressionNode elem: expr.getElements())
-			elements.add(eval(elem));
-		return new HbList(this,elements);
+			newList.add(eval(elem));
+		return newList;
 	}
 
 	private HbObject evalNewInstance(NewInstanceNode expr) throws ErrorWrapper {
@@ -529,8 +573,8 @@ public class Interpreter {
 	private HbObject evalNativeMethodCall(HbObject receiver, HbNativeMethod method,
 						HbObject[] args, SourceLocation loc) throws ErrorWrapper {
 		try {
-			pushFrame(new NativeMethodFrame(receiver.getHbClass().getName(),
-												method.getName(),loc));
+			pushFrame(new NativeMethodFrame(getCurrentFrame().getScope(),
+					receiver.getHbClass().getName(),method.getName(),loc));
 		} catch (HbStackOverflow e) {
 			throw new ErrorWrapper(e,loc);
 		}

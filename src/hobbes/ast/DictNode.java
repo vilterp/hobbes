@@ -38,4 +38,8 @@ public class DictNode implements AtomNode {
 		return line;
 	}
 	
+	public HashMap<ExpressionNode,ExpressionNode> getElements() {
+		return elements;
+	}
+	
 }

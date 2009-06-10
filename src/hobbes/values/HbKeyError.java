@@ -5,13 +5,13 @@ import hobbes.interpreter.Interpreter;
 @HobbesClass(name="KeyError")
 public class HbKeyError extends HbError {
 	
-	public HbKeyError(Interpreter o) throws HbArgumentError {
-		super(o);
+	public HbKeyError(Interpreter i) throws HbArgumentError {
+		super(i);
 		throw getNoMessageError();
 	}
 	
-	public HbKeyError(Interpreter o, String m) {
-		super(o, m);
+	public HbKeyError(Interpreter i, String m) {
+		super(i, m);
 	}
 
 }

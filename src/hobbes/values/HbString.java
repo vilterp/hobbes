@@ -1,7 +1,5 @@
 package hobbes.values;
 
-import java.util.regex.Pattern;
-
 import hobbes.interpreter.Interpreter;
 
 @HobbesClass(name="String")
@@ -45,12 +43,17 @@ public class HbString extends HbObject {
 	}
 	
 	public String toString() {
-		return "<String@" + getId() + " val=" + sanitizedValue() + ">";
+		return "<String@" + getId() + " val=" + getValue() + ">";
 	}
 	
 	@HobbesMethod(name="toString")
 	public HbString hbToString() {
 		return this;
+	}
+	
+	@HobbesMethod(name="hash_code")
+	public HbInt hbHashCode() {
+		return getObjSpace().getInt(value.toString().hashCode());
 	}
 	
 	@HobbesMethod(name="==",numArgs=1)

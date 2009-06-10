@@ -1,5 +1,6 @@
 package hobbes.values;
 
+import hobbes.interpreter.ErrorWrapper;
 import hobbes.interpreter.Interpreter;
 
 @HobbesClass(name="Int")
@@ -20,6 +21,10 @@ public class HbInt extends HbObject {
 	
 	public int getValue() {
 		return value;
+	}
+	
+	public String toString() {
+		return "<Int val=" + getValue() + ">";
 	}
 	
 	@HobbesMethod(name="toString")
@@ -62,6 +67,15 @@ public class HbInt extends HbObject {
 			return getObjSpace().getBool(getValue() == ((HbInt)other).getValue());
 		else
 			throw new HbArgumentError(getInterp(),"==",other,"Int");
+	}
+	
+	@HobbesMethod(name="times",numArgs=1)
+	public void doNumTimes(HbObject func) throws ErrorWrapper, HbArgumentError {
+		if(func instanceof HbAnonymousFunction) {
+			for(int i=0; i < getValue(); i++)
+				getInterp().callAnonFunc((HbAnonymousFunction)func,new HbObject[]{},null);
+		} else
+			throw new HbArgumentError(getInterp(),"times",func,"AnonymousFunction");
 	}
 	
 }

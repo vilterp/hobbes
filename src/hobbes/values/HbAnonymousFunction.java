@@ -38,14 +38,17 @@ public class HbAnonymousFunction extends HbFunction {
 	
 	@HobbesMethod(name="toString")
 	public HbString hbToString() {
-		StringBuilder repr = new StringBuilder("<AnonymousFunction (");
+		StringBuilder repr = new StringBuilder("<AnonymousFunction(");
 		Iterator<ArgSpecNode> it = args.iterator();
 		while(it.hasNext()) {
 			repr.append(it.next());
 			if(it.hasNext())
 				repr.append(",");
 		}
-		repr.append(")>");
+		repr.append(')');
+		repr.append('@');
+		repr.append(getId());
+		repr.append('>');
 		return new HbString(getInterp(),repr);
 	}
 	

@@ -87,15 +87,11 @@ public class Scope {
 	
 	private void doAssign(String name, HbObject val) {
 		// get id of whatever is already there
-		Integer prevId = null;
 		if(names.containsKey(name))
-			prevId = names.get(name);
+			objSpace.get(names.get(name)).decRefs();
 		// set
 		names.put(name,val.getId());
-		objSpace.incRefs(val.getId());
-		// garbage collect on overwritten object
-		if(prevId != null)
-			objSpace.garbageCollect(prevId);
+		val.incRefs();
 	}
 	
 	public void assignGlobal(String name, HbObject val) throws HbReadOnlyError {

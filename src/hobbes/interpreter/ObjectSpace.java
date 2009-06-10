@@ -50,6 +50,7 @@ public class ObjectSpace {
 		addNativeClass(HbNormalFunction.class);
 		// collections
 		addNativeClass(HbList.class);
+		addNativeClass(HbDict.class);
 		addNativeClass(HbSet.class);
 		// errors
 		addNativeClass(HbError.class);
@@ -192,7 +193,7 @@ public class ObjectSpace {
 			if(get(id) instanceof HbInt)
 				intConstants.remove(((HbInt)get(id)).getValue());
 			if(verboseGC)
-				System.out.println("collected object @ " + id);
+				System.out.println("Collected " + get(id));
 			objects.remove(id);
 			return true;
 		} else

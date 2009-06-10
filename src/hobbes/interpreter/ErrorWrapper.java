@@ -34,7 +34,7 @@ public class ErrorWrapper extends Exception {
 		if(error.getMessage() != null)
 			System.err.print(": " + error.getMessage());
 		System.err.println();
-		System.err.println(loc.show());
+		System.err.println(loc != null ? loc.show() : "    [internal]");
 		for(ExecutionFrame f: trace)
 			System.err.println(f.show());
 	}

@@ -85,10 +85,31 @@ public class HbObject extends Throwable {
 		repr.append(">");
 		return new HbString(getInterp(),repr.toString());
 	}
+	
+	public String realToString() throws ErrorWrapper {
+		return getInterp().callToString(this);
+	}
+	
+	public String show() throws ErrorWrapper {
+		return getInterp().show(this);
+	}
 
 	@HobbesMethod(name="hash_code")
 	public HbInt hbHashCode() {
 		return getObjSpace().getInt(getId());
+	}
+	
+	public int realHashCode() throws ErrorWrapper {
+		return ((HbInt)getInterp().callMethod(this,"hash_code",
+					new HbObject[]{},null)).getValue();
+	}
+	
+	public void incRefs() {
+		getObjSpace().incRefs(getId());
+	}
+	
+	public void decRefs() {
+		getObjSpace().decRefs(getId());
 	}
 	
 	public int getId() {
@@ -123,7 +144,7 @@ public class HbObject extends Throwable {
 	}
 	
 	@HobbesMethod(name="methods")
-	public HbSet getMethods() {
+	public HbSet getMethods() throws ErrorWrapper {
 		HbSet temp = new HbSet(getInterp());
 		for(String methodName: getHbClass().getMethodNames())
 			temp.add(new HbString(getInterp(),methodName));
