@@ -111,7 +111,6 @@ public class Scope {
 		else if(isDefined(name)) {
 			int deletedId = names.get(name);
 			objSpace.decRefs(deletedId);
-			objSpace.garbageCollect(deletedId);
 			names.remove(name);
 		} else
 			throw new UndefinedNameException(name);

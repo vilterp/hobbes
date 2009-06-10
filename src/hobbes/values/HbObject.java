@@ -49,27 +49,28 @@ public class HbObject extends Throwable {
 		return interp;
 	}
 	
+	public int[] contentAddrs() {
+		return new int[0];
+	}
+	
 	public String toString() {
 		return "<" + getHbClass().getName() + "@" + getId() + ">";
 	}
 	
-	public boolean gt(HbObject other) throws ErrorWrapper {
-		return getInterp().callMethod(this,">",new HbObject[]{other},null)
-											== getObjSpace().getTrue();
+	public boolean gt(HbObject other) throws ErrorWrapper, HbError {
+		return call(">",new HbObject[]{other}) == getObjSpace().getTrue();
 	}
 	
-	public boolean lt(HbObject other) throws ErrorWrapper {
-		return getInterp().callMethod(this,"<",new HbObject[]{other},null)
-											== getObjSpace().getTrue();
+	public boolean lt(HbObject other) throws ErrorWrapper, HbError {
+		return call("<",new HbObject[]{other}) == getObjSpace().getTrue();
 	}
 	
-	public boolean eq(HbObject other) throws ErrorWrapper {
-		return getInterp().callMethod(this,"==",new HbObject[]{other},null)
-											== getObjSpace().getTrue();
+	public boolean eq(HbObject other) throws ErrorWrapper, HbError {
+		return call("==",new HbObject[]{other}) == getObjSpace().getTrue();
 	}
 	
 	@HobbesMethod(name="clone")
-	public HbObject clone() {
+	public HbObject hbClone() throws ErrorWrapper, HbError {
 		HbObject newObj = new HbObject(getInterp(),getHbClass());
 		for(String instanceVar: instanceVars.keySet())
 			newObj.putInstVar(instanceVar,getObjSpace().get(instanceVars.get(instanceVar)));
@@ -77,7 +78,7 @@ public class HbObject extends Throwable {
 	}
 	
 	@HobbesMethod(name="toString",numArgs=0)
-	public HbString hbToString() throws ErrorWrapper {
+	public HbString hbToString() throws ErrorWrapper, HbError {
 		StringBuilder repr = new StringBuilder("<");
 		repr.append(getHbClass().getName());
 		repr.append("@");
@@ -86,22 +87,50 @@ public class HbObject extends Throwable {
 		return new HbString(getInterp(),repr.toString());
 	}
 	
-	public String realToString() throws ErrorWrapper {
-		return getInterp().callToString(this);
+	public String realToString() throws ErrorWrapper, HbError {
+		HbObject repr = call("toString");
+		if(repr instanceof HbString)
+			return ((HbString)repr).getValue();
+		else
+			throw new HbTypeError(getInterp(),"toString must return a String");
 	}
 	
-	public String show() throws ErrorWrapper {
-		return getInterp().show(this);
+	public String show() throws ErrorWrapper, HbError {
+		return realToString();
+	}
+	
+	public HbObject call(String methodName, HbObject[] args) throws ErrorWrapper, HbError {
+		return getInterp().callMethod(this,methodName,args,null);
+	}
+	
+	public HbObject call(String methodName) throws ErrorWrapper, HbError {
+		return call(methodName, new HbObject[]{});
+	}
+	
+	@HobbesMethod(name="call",numArgs=2)
+	public HbObject hbCall(HbObject methodName, HbObject args) throws ErrorWrapper, HbError {
+		if(methodName instanceof HbString) {
+			if(args instanceof HbList)
+				return call(((HbString)methodName).getValue(),
+										((HbList)args).toArray());
+			else
+				throw new HbArgumentError(getInterp(),"call",args,"List");
+		} else
+			throw new HbArgumentError(getInterp(),"call",methodName,"String");
+			
 	}
 
 	@HobbesMethod(name="hash_code")
-	public HbInt hbHashCode() {
+	public HbInt defaultHashCode() {
 		return getObjSpace().getInt(getId());
 	}
 	
-	public int realHashCode() throws ErrorWrapper {
-		return ((HbInt)getInterp().callMethod(this,"hash_code",
-					new HbObject[]{},null)).getValue();
+	public int realHashCode() throws ErrorWrapper, HbError {
+		HbObject result = call("hash_code");
+		if(result instanceof HbInt)
+			return ((HbInt)result).getValue();
+		else
+			throw new HbTypeError(getInterp(),"hash_code must return an Int");
 	}
 	
 	public void incRefs() {
@@ -116,14 +145,11 @@ public class HbObject extends Throwable {
 		return id;
 	}
 	
-	public void putInstVar(String name, HbObject val) {
+	public void putInstVar(String name, HbObject val) throws ErrorWrapper, HbError {
 		Integer prevId = instanceVars.get(name);
 		instanceVars.put(name,val.getId());
 		getObjSpace().incRefs(val.getId());
-		if(prevId != null) {
 			getObjSpace().decRefs(prevId);
-			getObjSpace().garbageCollect(prevId);
-		}
 	}
 	
 	public HbObject getInstVar(String name) {
@@ -144,7 +170,7 @@ public class HbObject extends Throwable {
 	}
 	
 	@HobbesMethod(name="methods")
-	public HbSet getMethods() throws ErrorWrapper {
+	public HbSet getMethods() throws ErrorWrapper, HbError {
 		HbSet temp = new HbSet(getInterp());
 		for(String methodName: getHbClass().getMethodNames())
 			temp.add(new HbString(getInterp(),methodName));

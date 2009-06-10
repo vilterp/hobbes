@@ -14,7 +14,8 @@ public class ObjectSpace {
 	private HashMap<String,HbClass> classes;
 	private HashSet<String> builtinClasses;
 	private HashMap<String,HbNativeFunction> functions;
-	private ArrayList<Integer> created;
+	private HashSet<Integer> alive;
+	private HashSet<Integer> collected;
 	private int nextId;
 	private int trueId;
 	private int falseId;
@@ -29,7 +30,8 @@ public class ObjectSpace {
 		builtinClasses = new HashSet<String>();
 		classes = new HashMap<String,HbClass>();
 		functions = new HashMap<String,HbNativeFunction>();
-		created = new ArrayList<Integer>();
+		alive = new HashSet<Integer>();
+		collected = new HashSet<Integer>();
 		intConstants = new HashMap<Integer,HbInt>();
 		//floatConstants = new HashMap<Float, HbFloat>();
 		nextId = 0;
@@ -60,6 +62,8 @@ public class ObjectSpace {
 		addNativeClass(HbArgumentError.class);
 		addNativeClass(HbReadOnlyError.class);
 		addNativeClass(HbKeyError.class);
+		addNativeClass(HbTypeError.class);
+		addNativeClass(HbNotAClassError.class);
 		// set builtin classes
 		for(String className: classes.keySet())
 			builtinClasses.add(className);
@@ -126,7 +130,7 @@ public class ObjectSpace {
 	public int add(HbObject val) {
 		int id = getId();
 		set(id, val);
-		created.add(id);
+		alive.add(id);
 		return id;
 	}
 
@@ -188,36 +192,41 @@ public class ObjectSpace {
 		objects.get(id).decRefs();
 	}
 	
-	public boolean garbageCollect(int id) {
-		if(!objects.get(id).isReferenced()) {
-			if(get(id) instanceof HbInt)
-				intConstants.remove(((HbInt)get(id)).getValue());
+	private void garbageCollect(int id){
+		HbObject victim = get(id);
+		if(!isReferenced(id)) {
+			if(victim instanceof HbInt)
+				intConstants.remove(((HbInt)victim).getValue());
+			for(int addr: victim.contentAddrs()) {
+				if(objects.containsKey(addr)) {
+					objects.get(addr).decRefs();
+					garbageCollect(addr);
+				}
+			}
 			if(verboseGC)
-				System.out.println("Collected " + get(id));
+				System.out.println("Collected " + victim);
 			objects.remove(id);
-			return true;
-		} else
-			return false;
-	}
-	
-	public int garbageCollectCreated() {
-		int collected = 0;
-		for(int id: created) {
-			if(garbageCollect(id))
-				collected++;
+			collected.add(id);
 		}
-		resetCreated();
-		return collected;
 	}
 	
-	public void resetCreated() {
-		created.clear();
+	public void garbageCollect() {
+		for(int id: alive)
+			if(!collected.contains(id))
+				garbageCollect(id);
+		for(int id: collected)
+			alive.remove(id);
+		collected.clear();
 	}
 	
-	public int getNumCreated() {
-		return created.size();
+	private boolean isReferenced(int id) {
+		return objects.get(id).isReferenced();
 	}
 
+	public void resetAlive() {
+		alive.clear();
+	}
+	
 	public int size() {
 		return objects.size();
 	}

@@ -37,6 +37,30 @@ public class HbInt extends HbObject {
 		return getObjSpace().getBool(getValue() != 0);
 	}
 	
+	@HobbesMethod(name="+",numArgs=1)
+	public HbInt plus(HbObject other) throws HbArgumentError {
+		if(other instanceof HbInt)
+			return getObjSpace().getInt(getValue() + ((HbInt)other).getValue());
+		else
+			throw new HbArgumentError(getInterp(),"+",other,"Int");
+	}
+	
+	@HobbesMethod(name="-",numArgs=1)
+	public HbInt minus(HbObject other) throws HbArgumentError {
+		if(other instanceof HbInt)
+			return getObjSpace().getInt(getValue() - ((HbInt)other).getValue());
+		else
+			throw new HbArgumentError(getInterp(),"-",other,"Int");
+	}
+	
+	@HobbesMethod(name="*",numArgs=1)
+	public HbInt times(HbObject other) throws HbArgumentError {
+		if(other instanceof HbInt)
+			return getObjSpace().getInt(getValue() * ((HbInt)other).getValue());
+		else
+			throw new HbArgumentError(getInterp(),"*",other,"Int");
+	}
+	
 	@HobbesMethod(name="abs")
 	public HbInt abs() {
 		if(getValue() < 0)
@@ -70,7 +94,7 @@ public class HbInt extends HbObject {
 	}
 	
 	@HobbesMethod(name="times",numArgs=1)
-	public void doNumTimes(HbObject func) throws ErrorWrapper, HbArgumentError {
+	public void doNumTimes(HbObject func) throws ErrorWrapper, HbError {
 		if(func instanceof HbAnonymousFunction) {
 			for(int i=0; i < getValue(); i++)
 				getInterp().callAnonFunc((HbAnonymousFunction)func,new HbObject[]{},null);

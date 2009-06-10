@@ -1,7 +1,6 @@
 package hobbes.values;
 
 import hobbes.interpreter.Interpreter;
-import hobbes.parser.SourceLocation;
 
 @HobbesClass(name="NotAClassError")
 public class HbNotAClassError extends HbError {

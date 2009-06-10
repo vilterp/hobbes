@@ -1145,6 +1145,11 @@ public class Parser {
 				throw getSyntaxError("Trailing comma");
 			} else
 				stack.pop();
+		} else if(symbol("}")) {
+			stack.pop();
+			elements.add(firstElement);
+			stack.push(new SetNode(opener.getLine(),elements));
+			return true;
 		} else
 			throw new SyntaxError("Missing comma",tokens.peek().getStart());
 		while(true) {

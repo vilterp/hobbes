@@ -21,4 +21,12 @@ public class NegativeNode implements ExpressionNode {
 		return origin.getLine();
 	}
 	
+	public ExpressionNode getExpr() {
+		return expression;
+	}
+	
+	public Token getOrigin() {
+		return origin;
+	}
+	
 }

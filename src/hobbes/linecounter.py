@@ -12,6 +12,8 @@ def countdir(path):
   return total
 
 def countfile(path):
+  if path == './linecounter.py':
+    return 0
   lines = 0
   for line in open(path):
     if line.strip() != '':

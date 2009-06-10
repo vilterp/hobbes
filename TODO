@@ -1,0 +1,6 @@
+- HbInt
+	- [math]
+- HbFloat
+- HobbesMethod
+	- get numArgs from Methods
+- HbRegex

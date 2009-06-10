@@ -1,5 +1,6 @@
 package hobbes.values;
 
+import hobbes.interpreter.ErrorWrapper;
 import hobbes.interpreter.Interpreter;
 
 @HobbesClass(name="String")
@@ -38,12 +39,16 @@ public class HbString extends HbObject {
 	}
 	
 	@HobbesMethod(name="clone")
-	public HbString clone() {
+	public HbString hbClone() {
 		return new HbString(getInterp(),value.toString());
 	}
 	
 	public String toString() {
 		return "<String@" + getId() + " val=" + getValue() + ">";
+	}
+	
+	public String show() {
+		return "\"" + sanitizedValue() + "\"";
 	}
 	
 	@HobbesMethod(name="toString")
@@ -52,7 +57,7 @@ public class HbString extends HbObject {
 	}
 	
 	@HobbesMethod(name="hash_code")
-	public HbInt hbHashCode() {
+	public HbInt defaultHashCode() {
 		return getObjSpace().getInt(value.toString().hashCode());
 	}
 	
@@ -83,6 +88,22 @@ public class HbString extends HbObject {
 	@HobbesMethod(name="length")
 	public HbInt length() {
 		return getObjSpace().getInt(value.length());
+	}
+	
+	@HobbesMethod(name="+",numArgs=1)
+	public HbString plus(HbObject other) throws HbError, ErrorWrapper {
+		return new HbString(getInterp(),getValue() + other.realToString());
+	}
+	
+	@HobbesMethod(name="*",numArgs=1)
+	public HbString times(HbObject other) throws HbArgumentError {
+		if(other instanceof HbInt) {
+			StringBuilder newString = new StringBuilder();
+			for(int i=0; i < ((HbInt)other).getValue(); i++)
+				newString.append(getValue());
+			return new HbString(getInterp(),newString);
+		} else
+			throw new HbArgumentError(getInterp(),"*",other,"Int");
 	}
 	
 	@HobbesMethod(name="chars")
@@ -153,21 +174,21 @@ public class HbString extends HbObject {
 	
 	@HobbesMethod(name="lstrip")
 	public HbString lstrip() {
-		HbString newString = clone();
+		HbString newString = hbClone();
 		newString.lstripInPlace();
 		return newString;
 	}
 	
 	@HobbesMethod(name="rstrip")
 	public HbString rstrip() {
-		HbString newString = clone();
+		HbString newString = hbClone();
 		newString.rstripInPlace();
 		return newString;
 	}
 	
 	@HobbesMethod(name="strip")
 	public HbString strip() {
-		HbString newString = clone();
+		HbString newString = hbClone();
 		newString.stripInPlace();
 		return newString;
 	}
