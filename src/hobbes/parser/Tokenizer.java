@@ -106,7 +106,9 @@ public class Tokenizer {
 		while(moreCode()) {
 			if(!isReady()) {
 				if(getLastOpener().equals("\""))
-					getString();
+					getString('"');
+				if(getLastOpener().equals("\'"))
+					getString('\'');
 				else if(getLastOpener().equals("/"))
 					getRegex();
 				else
@@ -126,15 +128,12 @@ public class Tokenizer {
 			startPos = pos;
 		} else if(Character.isLetter(peek()) || peek() == '_' || peek() == '@')
 				getWord();
-		else if(peek() == '"') {
-			read();
+		else if(peek() == '"' || peek() == '\'') {
+			char start = read();
 			Token startingQuote = makeToken(TokenType.SYMBOL);
 			depth.push(startingQuote);
 			startPos = startingQuote.getStart();
-			getString();
-		} else if(peek() == '\'') {
-			advance();
-			getChar();
+			getString(start);
 		} else if(Character.isDigit(peek()))
 			getNumber();
 		else if(peek() == '.') {
@@ -163,12 +162,12 @@ public class Tokenizer {
 			getSymbol();
 	}
 
-	private void getString() throws SyntaxError {
+	private void getString(char start) throws SyntaxError {
 		while(true) {
 			if(!moreCode()) {
 				buffer.append("\n");
 				return;
-			} else if(peek() == '"') {
+			} else if(peek() == start) {
 				advance();
 				depth.pop();
 				tokens.add(makeToken(TokenType.STRING));
@@ -183,8 +182,8 @@ public class Tokenizer {
 						buffer.append("\t");
 						advance();
 						advance();
-					} else if(peek(1) == '"') {
-						buffer.append('"');
+					} else if(peek(1) == start) {
+						buffer.append(start);
 						advance();
 						advance();
 					} else if(peek(1) == '\\') {
@@ -193,7 +192,9 @@ public class Tokenizer {
 						advance();
 					} else
 						throw new SyntaxError("invalid escape sequence " +
-												"(only \\t, \\n, \\\" and \\\\)",
+												"(only \\t, \\n, \\"
+												+ (start == '"' ? '\'' : '"' )
+												+ " and \\\\)",
 												pos.next());
 				} else
 					read();
@@ -202,42 +203,6 @@ public class Tokenizer {
 		}
 	}
 	
-	private void getChar() throws SyntaxError {
-		if(peek() == '\'')
-			throw new SyntaxError("Empty character literal",pos);
-		else if(peek() == '\\') {
-			if(peek(1) == 'n') {
-				buffer.append("\n");
-				advance();
-				advance();
-			} else if(peek(1) == 't') {
-				buffer.append("\t");
-				advance();
-				advance();
-			} else if(peek(1) == '\'') {
-				buffer.append("'");
-				advance();
-				advance();
-			} else if(peek(1) == '\\') {
-				buffer.append("\\");
-				advance();
-				advance();
-			} else
-				throw new SyntaxError("Not a valid escape sequence " +
-										"(only \\t, \\n, \\' and \\\\)",
-										pos.next());
-		} else
-			read();
-		if(peek() != '\'')
-			throw new SyntaxError("Can only put one character " +
-					"in a character literal (put strings in \"s)",pos);
-		else {
-			advance();
-			tokens.add(makeToken(TokenType.CHAR));
-			return;
-		}
-	}
-
 	private void getRegex() throws SyntaxError {
 		while(true) {
 			if(!moreCode()) {

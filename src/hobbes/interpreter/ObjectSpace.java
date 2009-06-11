@@ -10,7 +10,7 @@ public class ObjectSpace {
 
 	private HashMap<Integer,ValueRecord> objects;
 	private HashMap<Integer,HbInt> intConstants;
-	//private HashMap<Float, HbFloat> floatConstants;
+	private HashMap<Float,HbFloat> floatConstants;
 	private HashMap<String,HbClass> classes;
 	private HashSet<String> builtinClasses;
 	private HashMap<String,HbNativeFunction> functions;
@@ -33,7 +33,7 @@ public class ObjectSpace {
 		alive = new HashSet<Integer>();
 		collected = new HashSet<Integer>();
 		intConstants = new HashMap<Integer,HbInt>();
-		//floatConstants = new HashMap<Float, HbFloat>();
+		floatConstants = new HashMap<Float,HbFloat>();
 		nextId = 0;
 	}
 	
@@ -46,6 +46,7 @@ public class ObjectSpace {
 		addNativeClass(HbFalse.class);
 		addNativeClass(HbNil.class);
 		addNativeClass(HbInt.class);
+		addNativeClass(HbFloat.class);
 		addNativeClass(HbString.class);
 		addNativeClass(HbAnonymousFunction.class);
 		addNativeClass(HbNativeFunction.class);
@@ -174,15 +175,15 @@ public class ObjectSpace {
 		}
 	}
 
-//	public HbFloat getFloat(Float val) {
-//		if (intConstants.containsKey(val))
-//			return floatConstants.get(val);
-//		else {
-//			HbFloat newConstant = new HbFloat(this,val);
-//			floatConstants.put(val, newConstant);
-//			return newConstant;
-//		}
-//	}
+	public HbFloat getFloat(Float val) {
+		if (intConstants.containsKey(val))
+			return floatConstants.get(val);
+		else {
+			HbFloat newConstant = new HbFloat(interp,val);
+			floatConstants.put(val,newConstant);
+			return newConstant;
+		}
+	}
 	
 	public void incRefs(int id) {
 		objects.get(id).incRefs();

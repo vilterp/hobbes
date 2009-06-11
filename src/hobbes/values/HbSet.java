@@ -48,8 +48,17 @@ public class HbSet extends HbObject {
 	}
 	
 	@HobbesMethod(name="empty?")
-	public HbObject isEmpty() {
-		return getObjSpace().getBool(elements.size() == 0);
+	public HbObject hbIsEmpty() {
+		return getObjSpace().getBool(isEmpty());
+	}
+	
+	public boolean isEmpty() {
+		return elements.size() == 0;
+	}
+	
+	@HobbesMethod(name="toBool")
+	public HbObject toBool() {
+		return getObjSpace().getBool(!isEmpty());
 	}
 	
 	@HobbesMethod(name="contains?",numArgs=1)

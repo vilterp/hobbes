@@ -24,4 +24,8 @@ public class NotNode implements ExpressionNode {
 			return null;
 	}
 	
+	public ExpressionNode getExpr() {
+		return expression;
+	}
+	
 }

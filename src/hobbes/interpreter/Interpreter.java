@@ -4,9 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.Stack;
@@ -14,6 +12,7 @@ import java.util.Stack;
 import hobbes.ast.*;
 import hobbes.parser.*;
 import hobbes.values.*;
+
 
 public class Interpreter {
 	
@@ -204,6 +203,8 @@ public class Interpreter {
 			return new HbString(this,((StringNode)expr).getValue());
 		else if(expr instanceof NegativeNode)
 			return evalNegative((NegativeNode)expr);
+		else if(expr instanceof NotNode)
+			return evalNot((NotNode)expr);
 		else if(expr instanceof SetNode)
 			return evalSet((SetNode)expr);
 		else if(expr instanceof DictNode)
@@ -219,6 +220,14 @@ public class Interpreter {
 		}
 	}
 	
+	private HbObject evalNot(NotNode expr) throws ErrorWrapper, HbError {
+		HbObject result = eval(expr.getExpr());
+		if(result.call("toBool") == objSpace.getTrue())
+			return objSpace.getFalse();
+		else
+			return objSpace.getTrue();
+	}
+
 	private HbObject evalNegative(NegativeNode neg) throws ErrorWrapper {
 		if(neg.getExpr() instanceof NumberNode)
 			return evalNumber((NumberNode)neg.getExpr(),true);
@@ -402,8 +411,11 @@ public class Interpreter {
 			else
 				return objSpace.getInt(value);
 		} catch(NumberFormatException e) {
-			System.err.println("only ints for now");
-			return null;
+			float value = Float.parseFloat(num.getValue());
+			if(negative)
+				return objSpace.getFloat(-value);
+			else
+				return objSpace.getFloat(value);
 		}
 	}
 	

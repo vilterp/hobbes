@@ -51,8 +51,17 @@ public class HbDict extends HbObject {
 	}
 	
 	@HobbesMethod(name="empty?")
-	public HbObject isEmpty() {
-		return getObjSpace().getBool(size() == 0);
+	public HbObject hbIsEmpty() {
+		return getObjSpace().getBool(isEmpty());
+	}
+	
+	public boolean isEmpty() {
+		return size() == 0;
+	}
+	
+	@HobbesMethod(name="toBool")
+	public HbObject toBool() {
+		return getObjSpace().getBool(!isEmpty());
 	}
 	
 	@HobbesMethod(name="toString")
@@ -110,7 +119,7 @@ public class HbDict extends HbObject {
 			throw new HbKeyError(getInterp(),key.show());
 	}
 	
-	@HobbesMethod(name="has_key?",numArgs=1)
+	@HobbesMethod(name="contains_key?",numArgs=1)
 	public HbObject hbContainsKey(HbObject key) throws ErrorWrapper, HbError {
 		return getObjSpace().getBool(containsKey(key));
 	}

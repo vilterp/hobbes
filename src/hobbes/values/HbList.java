@@ -55,6 +55,11 @@ public class HbList extends HbObject {
 		return new HbString(getInterp(),repr);
 	}
 	
+	@HobbesMethod(name="toBool")
+	public HbObject toBool() {
+		return getObjSpace().getBool(!isEmpty());
+	}
+	
 	@HobbesMethod(name="[]",numArgs=1)
 	public HbObject hbGet(HbObject index) throws HbError {
 		if(index instanceof HbInt) {
@@ -129,8 +134,12 @@ public class HbList extends HbObject {
 	}
 	
 	@HobbesMethod(name="empty?")
-	public HbObject isEmpty() {
-		return getObjSpace().getBool(elements.isEmpty());
+	public HbObject hbIsEmpty() {
+		return getObjSpace().getBool(isEmpty());
+	}
+	
+	public boolean isEmpty() {
+		return elements.isEmpty();
 	}
 	
 	@HobbesMethod(name="join",numArgs=1,defaults={"\"\""})
@@ -165,6 +174,19 @@ public class HbList extends HbObject {
 		HbList newList = hbClone();
 		newList.mergeInPlace(other);
 		return newList;
+	}
+	
+	@HobbesMethod(name="find",numArgs=1)
+	public HbObject find(HbObject obj) throws ErrorWrapper, HbError {
+		for(int i=0; i < length(); i++)
+			if(obj.call("==",new HbObject[]{get(i)}) == getObjSpace().getTrue())
+				return getObjSpace().getInt(i);
+		return getObjSpace().getNil();				
+	}
+	
+	@HobbesMethod(name="contains?",numArgs=1)
+	public HbObject contains(HbObject obj) throws ErrorWrapper, HbError {
+		return getObjSpace().getBool(find(obj) instanceof HbInt);
 	}
 	
 	@HobbesMethod(name="toSet")

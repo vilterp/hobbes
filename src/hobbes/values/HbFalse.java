@@ -9,6 +9,11 @@ public class HbFalse extends HbObject {
 		super(o);
 	}
 	
+	@HobbesMethod(name="toBool")
+	public HbObject toBool() {
+		return this;
+	}
+	
 	@HobbesMethod(name="toString")
 	public HbString hbToString() {
 		return new HbString(getInterp(),"false");

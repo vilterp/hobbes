@@ -31,7 +31,7 @@ public class HbString extends HbObject {
 		return value.toString()
 				.replaceAll("\n", "\\\\n")
 				.replaceAll("\t", "\\\\t")
-				.replaceAll("\"", "\\\\\"");
+				.replaceAll("\'", "\\\\'");
 	}
 	
 	public String getValue() {
@@ -48,7 +48,7 @@ public class HbString extends HbObject {
 	}
 	
 	public String show() {
-		return "\"" + sanitizedValue() + "\"";
+		return "'" + sanitizedValue() + "'";
 	}
 	
 	@HobbesMethod(name="toString")
@@ -72,7 +72,8 @@ public class HbString extends HbObject {
 	@HobbesMethod(name=">",numArgs=1)
 	public HbObject greaterThan(HbObject other) throws HbArgumentError {
 		if(other instanceof HbString)
-			return getObjSpace().getBool(value.toString().compareTo(((HbString)other).getValue()) > 0);
+			return getObjSpace().getBool(value.toString()
+						.compareTo(((HbString)other).getValue()) > 0);
 		else
 			throw new HbArgumentError(getInterp(),">",other,"String");
 	}
@@ -146,8 +147,17 @@ public class HbString extends HbObject {
 	}
 	
 	@HobbesMethod(name="empty?")
-	public HbObject isEmpty() {
-		return getObjSpace().getBool(value.length() == 0);
+	public HbObject hbIsEmpty() {
+		return getObjSpace().getBool(isEmpty());
+	}
+	
+	public boolean isEmpty() {
+		return value.length() == 0;
+	}
+	
+	@HobbesMethod(name="toBool")
+	public HbObject toBool() {
+		return getObjSpace().getBool(!isEmpty());
 	}
 	
 	@HobbesMethod(name="lstrip!")
