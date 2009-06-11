@@ -99,19 +99,23 @@ public class Tokenizer {
 	
 	private void tokenize() throws SyntaxError {
 		if(!moreCode()) {
-			if("\"".equals(getLastOpener()) || "/".equals(getLastOpener()))
+			if("\"".equals(getLastOpener()) || "'".equals(getLastOpener()) ||
+										"/".equals(getLastOpener()))
 				buffer.append("\n");
 			return;
 		}
 		while(moreCode()) {
 			if(!isReady()) {
-				if(getLastOpener().equals("\""))
+				if("\"".equals(getLastOpener())) {
 					getString('"');
-				if(getLastOpener().equals("\'"))
+					continue;
+				} else if("\'".equals(getLastOpener())) {
 					getString('\'');
-				else if(getLastOpener().equals("/"))
+					continue;
+				} else if("/".equals(getLastOpener())) {
 					getRegex();
-				else
+					continue;
+				} else
 					getToken();
 			} else
 				getToken();
