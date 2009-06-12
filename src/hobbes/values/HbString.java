@@ -1,5 +1,7 @@
 package hobbes.values;
 
+import hobbes.interpreter.Break;
+import hobbes.interpreter.Continue;
 import hobbes.interpreter.ErrorWrapper;
 import hobbes.interpreter.Interpreter;
 
@@ -81,7 +83,8 @@ public class HbString extends HbObject {
 	@HobbesMethod(name="<",numArgs=1)
 	public HbObject lessThan(HbObject other) throws HbArgumentError {
 		if(other instanceof HbString)
-			return getObjSpace().getBool(value.toString().compareTo(((HbString)other).getValue()) < 0);
+			return getObjSpace().getBool(value.toString()
+										.compareTo(((HbString)other).getValue()) < 0);
 		else
 			throw new HbArgumentError(getInterp(),"<",other,"String");
 	}
@@ -92,7 +95,7 @@ public class HbString extends HbObject {
 	}
 	
 	@HobbesMethod(name="+",numArgs=1)
-	public HbString plus(HbObject other) throws HbError, ErrorWrapper {
+	public HbString plus(HbObject other) throws HbError, ErrorWrapper, Continue, Break {
 		return new HbString(getInterp(),getValue() + other.realToString());
 	}
 	

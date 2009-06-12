@@ -2,7 +2,7 @@ package hobbes.interpreter;
 
 import hobbes.parser.Token;
 
-public class Continue extends Throwable {
+public class Continue extends LoopControlException {
 	
 	private Token origin;
 	

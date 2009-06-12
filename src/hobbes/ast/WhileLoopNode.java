@@ -9,7 +9,8 @@ public class WhileLoopNode implements StatementNode {
 	private ExpressionNode cond;
 	private BlockNode block;
 	
-	public WhileLoopNode(Token origin, ExpressionNode c, BlockNode b) {
+	public WhileLoopNode(Token o, ExpressionNode c, BlockNode b) {
+		origin = o;
 		cond = c;
 		block = b;
 	}

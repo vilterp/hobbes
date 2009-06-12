@@ -3,6 +3,8 @@ package hobbes.values;
 import java.util.ArrayList;
 import java.util.Iterator;
 
+import hobbes.interpreter.Break;
+import hobbes.interpreter.Continue;
 import hobbes.interpreter.ErrorWrapper;
 import hobbes.interpreter.Interpreter;
 
@@ -65,7 +67,7 @@ public class HbDict extends HbObject {
 	}
 	
 	@HobbesMethod(name="toString")
-	public HbString hbToString() throws ErrorWrapper, HbError {
+	public HbString hbToString() throws ErrorWrapper, HbError, Continue, Break {
 		StringBuilder repr = new StringBuilder("{");
 		Iterator<HbObject> it = keys.iterator();
 		while(it.hasNext()) {
@@ -85,7 +87,7 @@ public class HbDict extends HbObject {
 	}
 	
 	@HobbesMethod(name="[]",numArgs=1)
-	public HbObject get(HbObject key) throws ErrorWrapper, HbError {
+	public HbObject get(HbObject key) throws ErrorWrapper, HbError, Continue, Break {
 		Bucket bucket = buckets[map(key.realHashCode())];
 		if(bucket == null)
 			throw new HbKeyError(getInterp(),key.show());
@@ -96,7 +98,7 @@ public class HbDict extends HbObject {
 	}
 	
 	@HobbesMethod(name="[]set",numArgs=2)
-	public void put(HbObject key, HbObject value) throws ErrorWrapper, HbError {
+	public void put(HbObject key, HbObject value) throws ErrorWrapper, HbError, Continue, Break {
 		int bucketIndex = map(key.realHashCode());
 		Bucket bucket = buckets[bucketIndex];
 		if(bucket == null) {
@@ -111,7 +113,7 @@ public class HbDict extends HbObject {
 	}
 	
 	@HobbesMethod(name="[]del",numArgs=1)
-	public void remove(HbObject key) throws ErrorWrapper, HbError {
+	public void remove(HbObject key) throws ErrorWrapper, HbError, Continue, Break {
 		Bucket bucket = buckets[map(key.realHashCode())];
 		if(bucket == null)
 			throw new HbKeyError(getInterp(),key.show());
@@ -120,11 +122,11 @@ public class HbDict extends HbObject {
 	}
 	
 	@HobbesMethod(name="contains_key?",numArgs=1)
-	public HbObject hbContainsKey(HbObject key) throws ErrorWrapper, HbError {
+	public HbObject hbContainsKey(HbObject key) throws ErrorWrapper, HbError, Continue, Break {
 		return getObjSpace().getBool(containsKey(key));
 	}
 	
-	public boolean containsKey(HbObject key) throws ErrorWrapper, HbError {
+	public boolean containsKey(HbObject key) throws ErrorWrapper, HbError, Continue, Break {
 		try {
 			get(key);
 			return true;
@@ -134,7 +136,7 @@ public class HbDict extends HbObject {
 	}
 	
 	@HobbesMethod(name="clear")
-	public void clear() throws ErrorWrapper, HbError {
+	public void clear() throws ErrorWrapper, HbError, Continue, Break {
 		for(HbObject key: keys) {
 			try {
 				remove(key);
@@ -145,7 +147,7 @@ public class HbDict extends HbObject {
 	}
 	
 	@HobbesMethod(name="keys")
-	public HbSet keySet() throws ErrorWrapper, HbError {
+	public HbSet keySet() throws ErrorWrapper, HbError, Continue, Break {
 		HbSet toReturn = new HbSet(getInterp());
 		for(HbObject key: keys)
 			toReturn.add(key);
@@ -153,7 +155,7 @@ public class HbDict extends HbObject {
 	}
 	
 	@HobbesMethod(name="values")
-	public HbSet valueSet() throws ErrorWrapper, HbError {
+	public HbSet valueSet() throws ErrorWrapper, HbError, Continue, Break {
 		HbSet toReturn = new HbSet(getInterp());
 		for(HbObject key: keys)
 			toReturn.add(get(key));
@@ -176,7 +178,7 @@ public class HbDict extends HbObject {
 		 * true: new
 		 * false: overwrite
 		 */
-		public boolean addEntry(Entry e) throws ErrorWrapper, HbError {
+		public boolean addEntry(Entry e) throws ErrorWrapper, HbError, Continue, Break {
 			for(int i=0; i < entries.size(); i++) {
 				Entry entry = entries.get(i);
 				if(entry.getKey().realHashCode()
@@ -192,7 +194,7 @@ public class HbDict extends HbObject {
 			return true;
 		}
 		
-		public boolean removeEntry(HbObject key) throws ErrorWrapper, HbError {
+		public boolean removeEntry(HbObject key) throws ErrorWrapper, HbError, Continue, Break {
 			for(int i=0; i < entries.size(); i++) {
 				Entry entry = entries.get(i);
 				if(entry.getKey().realHashCode() == key.realHashCode()) {
@@ -204,7 +206,7 @@ public class HbDict extends HbObject {
 			return false;
 		}
 		
-		public HbObject get(HbObject key) throws ErrorWrapper, HbError {
+		public HbObject get(HbObject key) throws ErrorWrapper, HbError, Continue, Break {
 			for(Entry entry: entries)
 				if(key.realHashCode() == entry.getKey().realHashCode())
 					return entry.getValue();

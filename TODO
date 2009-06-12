@@ -1,3 +1,11 @@
 - HobbesMethod
 	- get numArgs from Methods
 - HbRegex
+- HbSet
+	- map
+	- filter
+- HbList
+	- map
+	- filter
+- HbString
+	- []

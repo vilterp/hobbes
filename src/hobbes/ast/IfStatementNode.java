@@ -3,7 +3,7 @@ package hobbes.ast;
 import hobbes.parser.SourceLine;
 import hobbes.parser.Token;
 
-public class IfStatementNode implements ExpressionNode {
+public class IfStatementNode implements StatementNode {
 
 	private Token origin;
 	private ExpressionNode condition;

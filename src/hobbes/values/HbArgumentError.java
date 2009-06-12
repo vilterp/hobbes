@@ -22,7 +22,7 @@ public class HbArgumentError extends HbError {
 	
 	public HbArgumentError(Interpreter i, String methodName, HbObject gotten, String expected) {
 		super(i,methodName + " got a(n) " + gotten.getHbClass().getName()
-									+ ", but expected a " + expected + ".");
+									+ ", but expected a(n) " + expected + ".");
 	}
 
 }

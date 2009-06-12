@@ -123,7 +123,7 @@ public class Parser {
 	
 	private boolean blockItem() throws SyntaxError {
 		if(statement() || expression() || forLoop() || whileLoop() ||
-				methodDef() || classDef() || tryCatch()) {
+				ifStatement() || methodDef() || classDef() || tryCatch()) {
 			if(eol())
 				return true;
 			else
@@ -560,7 +560,7 @@ public class Parser {
 	}
 	
 	private boolean expression() throws SyntaxError {
-		return inlineIfStatement() || parenthesizedExpression() || ifStatement();
+		return inlineIfStatement() || parenthesizedExpression();
 	}
 
 	private boolean parenthesizedExpression() throws SyntaxError {
@@ -596,16 +596,13 @@ public class Parser {
 					Token elseWord = getLastToken();
 					if(or()) {
 						ExpressionNode theElse = getLastExpression();
-						BlockNode ifBlock = new BlockNode(theIf);
-						BlockNode elseBlock = new BlockNode(theElse);
-						stack.push(new IfStatementNode(iou,condition,ifBlock,elseBlock));
+						stack.push(new InlineIfStatementNode(iou,condition,theIf,theElse));
 						return true;
 					} else
 						throw new SyntaxError("No expression after \"else\"",
 												elseWord.getEnd());
 				} else {
-					BlockNode ifBlock = new BlockNode(theIf);
-					stack.push(new IfStatementNode(iou,condition,ifBlock));
+					stack.push(new InlineIfStatementNode(iou,condition,theIf,null));
 					return true;
 				}
 			} else
@@ -1226,12 +1223,8 @@ public class Parser {
 			firstLine = getLastToken().getLine();
 		ArrayList<SyntaxNode> lines = new ArrayList<SyntaxNode>();
 		if(eol()) {
-			while(true) {
-				if(blockItem()) {
-					lines.add(stack.pop());
-				} else
-					break;
-			}
+			while(blockItem())
+				lines.add(stack.pop());
 			if(symbol("}")) {
 				stack.pop();
 				stack.push(new BlockNode(firstLine,lines));
@@ -1332,6 +1325,8 @@ public class Parser {
 	private boolean tokenAhead(TokenType type, String value) {
 		int depth = 0;
 		for(Token t: tokens) {
+			if(t.getType() == TokenType.EOL)
+				return false;
 			if(depth == 0 && t.getType() == type && value.equals(t.getValue()))
 				return true;
 			if(t.getType() == TokenType.SYMBOL && t.getValue().equals("{"))

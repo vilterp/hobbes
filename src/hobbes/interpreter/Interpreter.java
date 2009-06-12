@@ -75,7 +75,6 @@ public class Interpreter {
 	private Parser parser;
 	private Tokenizer tokenizer;
 	private boolean verboseGC;
-	private ArrayList<ExpressionNode> emptyArgs;
 	
 	private static final int MAX_STACK_SIZE = 500;
 	
@@ -93,7 +92,6 @@ public class Interpreter {
 		stack.push(topLevelFrame);
 		parser = new Parser();
 		tokenizer = new Tokenizer();
-		emptyArgs = new ArrayList<ExpressionNode>();
 	}
 	
 	public Interpreter(String fn) {
@@ -133,7 +131,7 @@ public class Interpreter {
 		return objSpace;
 	}
 	
-	public void handleError(ErrorWrapper e) {
+	private void handleError(ErrorWrapper e) {
 		while(canPop())
 			e.addFrame(popFrame());
 		e.addFrame(getCurrentFrame());
@@ -152,11 +150,17 @@ public class Interpreter {
 			} catch(ErrorWrapper e) {
 				handleError(e);
 				return null;
+			} catch (HbError e) {
+				handleError(new ErrorWrapper(e,null));
+				return null;
 			} catch(Return r) {
 				handleUnexpectedReturn(r);
 				return null;
-			} catch (HbError e) {
-				handleError(new ErrorWrapper(e,null));
+			} catch (Continue e) {
+				handleUnexpectedBreakOrContinue(e);
+				return null;
+			} catch (Break e) {
+				handleUnexpectedBreakOrContinue(e);
 				return null;
 			} finally {
 				objSpace.garbageCollect();
@@ -166,8 +170,8 @@ public class Interpreter {
 		} else
 			return null;
 	}
-	
-	private HbObject run(SyntaxNode tree) throws ErrorWrapper, Return, HbError {
+
+	private HbObject run(SyntaxNode tree) throws ErrorWrapper, Return, HbError, Continue, Break {
 		if(tree instanceof ExpressionNode)
 			return eval((ExpressionNode)tree);
 		else if(tree instanceof StatementNode) {
@@ -185,7 +189,7 @@ public class Interpreter {
 		}
 	}
 	
-	private HbObject eval(ExpressionNode expr) throws ErrorWrapper, HbError {
+	private HbObject eval(ExpressionNode expr) throws ErrorWrapper, HbError, Continue, Break {
 		// atoms
 		if(expr instanceof NumberNode)
 			return evalNumber((NumberNode)expr);
@@ -209,6 +213,8 @@ public class Interpreter {
 			return evalSet((SetNode)expr);
 		else if(expr instanceof DictNode)
 			return evalDict((DictNode)expr);
+		else if(expr instanceof InlineIfStatementNode)
+			return evalInlineIf((InlineIfStatementNode)expr);
 		// calls
 		else if(expr instanceof MethodCallNode)
 			return evalMethodCall((MethodCallNode)expr);
@@ -220,7 +226,21 @@ public class Interpreter {
 		}
 	}
 	
-	private HbObject evalNot(NotNode expr) throws ErrorWrapper, HbError {
+	private HbObject evalInlineIf(InlineIfStatementNode expr)
+									throws ErrorWrapper, HbError, Continue, Break {
+		if(evalCond(expr.getCond()))
+			return eval(expr.getIf());
+		else if(expr.getElse() != null)
+			return eval(expr.getElse());
+		else
+			return objSpace.getNil();
+	}
+
+	private boolean evalCond(ExpressionNode cond) throws ErrorWrapper, HbError, Continue, Break {
+		return eval(cond) == objSpace.getTrue();
+	}
+
+	private HbObject evalNot(NotNode expr) throws ErrorWrapper, HbError, Continue, Break {
 		HbObject result = eval(expr.getExpr());
 		if(result.call("toBool") == objSpace.getTrue())
 			return objSpace.getFalse();
@@ -237,21 +257,22 @@ public class Interpreter {
 					neg.getOrigin().getStart());
 	}
 
-	private HbObject evalDict(DictNode expr) throws ErrorWrapper, HbError {
+	private HbObject evalDict(DictNode expr) throws ErrorWrapper, HbError, Continue, Break {
 		HbDict newDict = new HbDict(this);
 		for(ExpressionNode key: expr.getElements().keySet())
 			newDict.put(eval(key),eval(expr.getElements().get(key)));
 		return newDict;
 	}
 
-	private HbObject evalSet(SetNode expr) throws ErrorWrapper, HbError {
+	private HbObject evalSet(SetNode expr) throws ErrorWrapper, HbError, Continue, Break {
 		HbSet newSet = new HbSet(this);
 		for(ExpressionNode elem: expr.getElements())
 			newSet.add(eval(elem));
 		return newSet;
 	}
 
-	private HbObject evalFunctionCall(FunctionCallNode call) throws ErrorWrapper, HbError {
+	private HbObject evalFunctionCall(FunctionCallNode call)
+										throws ErrorWrapper, HbError, Continue, Break {
 		HbFunction func = (HbFunction)eval(call.getFuncExpr());
 		HbObject[] args = evalArgs(call.getArgs(),func,
 							func.hbToString().getValue(),call.getParenLoc());
@@ -264,7 +285,8 @@ public class Interpreter {
 	}
 
 	private HbObject evalAnonFuncCall(HbAnonymousFunction func,
-			HbObject[] args, SourceLocation parenLoc) throws ErrorWrapper, HbError {
+			HbObject[] args, SourceLocation parenLoc)
+											throws ErrorWrapper, HbError, Continue, Break {
 		// push frame
 		try {
 			pushFrame(new FunctionFrame(new Scope(this,getCurrentFrame().getScope()),
@@ -296,7 +318,8 @@ public class Interpreter {
 	}
 	
 	public HbObject callAnonFunc(HbAnonymousFunction func,
-			HbObject[] args, SourceLocation parenLoc) throws ErrorWrapper, HbError {
+								HbObject[] args, SourceLocation parenLoc)
+									throws ErrorWrapper, HbError, Continue, Break {
 		if(func.getNumArgs() != args.length)
 			throw getArgumentError(func.realToString(),args.length,func.getNumArgs(),parenLoc);
 		else
@@ -304,7 +327,8 @@ public class Interpreter {
 	}
 
 	private HbObject evalNormalFuncCall(HbNormalFunction func, HbObject[] args,
-												SourceLocation parenLoc) throws ErrorWrapper, HbError {
+												SourceLocation parenLoc)
+												throws ErrorWrapper, HbError, Continue, Break {
 		// push frame
 		try {
 			pushFrame(new FunctionFrame(new Scope(this,getCurrentFrame().getScope()),
@@ -336,7 +360,7 @@ public class Interpreter {
 	}
 
 	private HbObject evalNativeFuncCall(HbNativeFunction func, HbObject[] args,
-			SourceLocation parenLoc) throws ErrorWrapper, HbError {
+			SourceLocation parenLoc) throws ErrorWrapper, HbError, Continue, Break {
 		try {
 			pushFrame(new NativeFunctionFrame(getCurrentFrame().getScope(),
 													func.getName(),parenLoc));
@@ -384,8 +408,16 @@ public class Interpreter {
 	
 	private void handleUnexpectedReturn(Return r) {
 		SyntaxError e = new SyntaxError("Unexpected return statment - " +
-					"not inside function or method",
+					"not inside a function or method",
 					r.getOrigin().getStart());
+		handleSyntaxError(e);
+	}
+	
+	private void handleUnexpectedBreakOrContinue(LoopControlException lc) {
+		SyntaxError e = new SyntaxError("Unexpected "
+				+ (lc instanceof Continue ? "continue" : "break")
+				+ " statment - not inside a loop",
+				lc.getOrigin().getStart());
 		handleSyntaxError(e);
 	}
 	
@@ -423,14 +455,15 @@ public class Interpreter {
 		return evalNumber(num,false);
 	}
 
-	private HbObject evalList(ListNode expr) throws ErrorWrapper, HbError {
+	private HbObject evalList(ListNode expr) throws ErrorWrapper, HbError, Continue, Break {
 		HbList newList = new HbList(this);
 		for(ExpressionNode elem: expr.getElements())
 			newList.add(eval(elem));
 		return newList;
 	}
 
-	private HbObject evalNewInstance(NewInstanceNode expr) throws ErrorWrapper, HbError {
+	private HbObject evalNewInstance(NewInstanceNode expr)
+												throws ErrorWrapper, HbError, Continue, Break {
 		String className = expr.getClassVar().getName();
 		// get HbClass instance
 		HbClass hobbesClass = null;
@@ -492,7 +525,8 @@ public class Interpreter {
 		}
 	}
 	
-	private HbObject evalMethodCall(MethodCallNode call) throws ErrorWrapper, HbError {
+	private HbObject evalMethodCall(MethodCallNode call)
+											throws ErrorWrapper, HbError, Continue, Break {
 		HbObject receiver = eval(call.getReceiver());
 		return evalMethodCall(receiver,call.getMethodName(),call.getArgs(),
 									call.getOrigin().getStart());
@@ -500,7 +534,7 @@ public class Interpreter {
 
 	private HbObject evalMethodCall(HbObject receiver, String methodName,
 				ArrayList<ExpressionNode> args, SourceLocation origin)
-													throws ErrorWrapper, HbError {
+											throws ErrorWrapper, HbError, Continue, Break {
 		HbCallable method = null;
 		if(receiver.getHbClass().hasMethod(methodName))
 			method = receiver.getHbClass().getMethod(methodName);
@@ -513,7 +547,7 @@ public class Interpreter {
 	
 	public HbObject callMethod(HbObject receiver, String methodName,
 										HbObject[] args, SourceLocation loc)
-												throws ErrorWrapper, HbError {
+												throws ErrorWrapper, HbError, Continue, Break {
 		HbMethod method = receiver.getHbClass().getMethod(methodName);
 		if(method instanceof HbNormalMethod)
 			return evalNormalMethodCall(receiver,(HbNormalMethod)method,args,loc);
@@ -523,7 +557,7 @@ public class Interpreter {
 	
 	private HbObject[] evalArgs(ArrayList<ExpressionNode> args, HbCallable func,
 												String name, SourceLocation loc)
-												throws ErrorWrapper, HbError {
+												throws ErrorWrapper, HbError, Continue, Break {
 		// check not too many args
 		if(args.size() > func.getNumArgs())
 			throw getArgumentError(name,args.size(),func.getNumArgs(),loc);
@@ -557,7 +591,7 @@ public class Interpreter {
 	private HbObject evalNormalMethodCall(HbObject receiver, HbNormalMethod method,
 													HbObject[] args,
 													SourceLocation origin)
-												throws ErrorWrapper, HbError {
+												throws ErrorWrapper, HbError, Continue, Break {
 		// add frame
 		try {
 			pushFrame(new NormalMethodFrame(this,getCurrentFrame().getScope(),
@@ -618,22 +652,58 @@ public class Interpreter {
 		return null;
 	}
 	
-	private void exec(StatementNode stmt) throws ErrorWrapper, Return, HbError {
+	private void exec(StatementNode stmt) throws ErrorWrapper, Return, HbError, Continue, Break {
 		if(stmt instanceof AssignmentNode)
 			assign((AssignmentNode)stmt);
 		else if(stmt instanceof DeletionNode)
 			delete((DeletionNode)stmt);
 		else if(stmt instanceof ReturnNode)
 			execReturn((ReturnNode)stmt);
+		else if(stmt instanceof IfStatementNode)
+			execIf((IfStatementNode)stmt);
+		else if(stmt instanceof WhileLoopNode)
+			execWhile((WhileLoopNode)stmt);
+		else if(stmt instanceof ContinueNode)
+			throw new Continue(((ContinueNode)stmt).getOrigin());
+		else if(stmt instanceof BreakNode)
+			throw new Break(((BreakNode)stmt).getOrigin());
 		else
 			System.out.println("doesn't do that statement yet");
 	}
 
-	private void execReturn(ReturnNode stmt) throws ErrorWrapper, Return, HbError {
+	private void execWhile(WhileLoopNode stmt)
+								throws ErrorWrapper, HbError, Return, Continue, Break {
+		while(evalCond(stmt.getCondition())) {
+			try {
+				runBlock(stmt.getBlock());
+			} catch(Continue c) {
+				continue;
+			} catch(Break b) {
+				return;
+			}
+		}
+	}
+
+	private void execIf(IfStatementNode stmt)
+									throws ErrorWrapper, HbError, Return, Continue, Break {
+		if(evalCond(stmt.getCondition()))
+			runBlock(stmt.getIfBlock());
+		else if(stmt.getElseBlock() != null)
+			runBlock(stmt.getElseBlock());
+	}
+
+	private void runBlock(BlockNode block)
+									throws ErrorWrapper, HbError, Return, Continue, Break {
+		for(SyntaxNode item: block)
+			run(item);
+	}
+
+	private void execReturn(ReturnNode stmt)
+										throws ErrorWrapper, Return, HbError, Continue, Break {
 		throw new Return(stmt.getOrigin(),eval(stmt.getExpr()));
 	}
 
-	private void assign(AssignmentNode stmt) throws ErrorWrapper, HbError {
+	private void assign(AssignmentNode stmt) throws ErrorWrapper, HbError, Continue, Break {
 		if(stmt.getVar() instanceof VariableNode) {
 			try {
 				getCurrentFrame().getScope().assign(stmt.getVar().getName(),
@@ -642,8 +712,8 @@ public class Interpreter {
 				throw new ErrorWrapper(e,stmt.getEqualsToken().getStart());
 			}
 		} else if(getCurrentFrame() instanceof NormalMethodFrame) {
-			((NormalMethodFrame)getCurrentFrame()).getReceiver().putInstVar(stmt.getVar().getName(),
-																eval(stmt.getExpr()));
+			((NormalMethodFrame)getCurrentFrame()).getReceiver()
+									.putInstVar(stmt.getVar().getName(),eval(stmt.getExpr()));
 		} else
 			throw new ErrorWrapper(new HbSyntaxError(this,
 					"Unexpected instance variable: not inside a method"),
@@ -735,8 +805,7 @@ public class Interpreter {
 	private void handleSyntaxError(SyntaxError e) {
 		ErrorWrapper error = new ErrorWrapper(
 				new HbSyntaxError(this,e.getMessage()),e.getLocation());
-		error.addFrame((FileFrame)getCurrentFrame());
-		error.printStackTrace();
+		handleError(error);
 		tokenizer.reset();
 		parser.reset();
 	}

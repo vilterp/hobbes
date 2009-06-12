@@ -1,5 +1,7 @@
 package hobbes.values;
 
+import hobbes.interpreter.Break;
+import hobbes.interpreter.Continue;
 import hobbes.interpreter.ErrorWrapper;
 import hobbes.interpreter.Interpreter;
 
@@ -62,16 +64,16 @@ public class HbSet extends HbObject {
 	}
 	
 	@HobbesMethod(name="contains?",numArgs=1)
-	public HbObject hbContains(HbObject obj) throws ErrorWrapper, HbError {
+	public HbObject hbContains(HbObject obj) throws ErrorWrapper, HbError, Continue, Break {
 		return getObjSpace().getBool(elements.containsKey(obj));
 	}
 	
-	public boolean contains(HbObject obj) throws ErrorWrapper, HbError {
+	public boolean contains(HbObject obj) throws ErrorWrapper, HbError, Continue, Break {
 		return elements.containsKey(obj);
 	}
 	
 	@HobbesMethod(name="remove")
-	public HbObject remove(HbObject obj) throws ErrorWrapper, HbError {
+	public HbObject remove(HbObject obj) throws ErrorWrapper, HbError, Continue, Break {
 		try {
 			elements.remove(obj);
 			return getObjSpace().getTrue();
@@ -81,12 +83,12 @@ public class HbSet extends HbObject {
 	}
 	
 	@HobbesMethod(name="add")
-	public void add(HbObject obj) throws ErrorWrapper, HbError {
+	public void add(HbObject obj) throws ErrorWrapper, HbError, Continue, Break {
 		elements.put(obj,getObjSpace().getTrue());
 	}
 	
 	@HobbesMethod(name="toString")
-	public HbString hbToString() throws ErrorWrapper, HbError {
+	public HbString hbToString() throws ErrorWrapper, HbError, Continue, Break {
 		StringBuilder repr = new StringBuilder("{");
 		Iterator<HbObject> it = elements.getKeys().iterator();
 		while(it.hasNext()) {
@@ -107,7 +109,7 @@ public class HbSet extends HbObject {
 	}
 	
 	@HobbesMethod(name="+",numArgs=1)
-	public HbSet union(HbObject other) throws ErrorWrapper, HbError {
+	public HbSet union(HbObject other) throws ErrorWrapper, HbError, Continue, Break {
 		if(other instanceof HbSet) {
 			HbSet union = hbClone();
 			for(HbObject key: ((HbSet)other).getElements())
@@ -118,7 +120,7 @@ public class HbSet extends HbObject {
 	}
 	
 	@HobbesMethod(name="intersection",numArgs=1)
-	public HbSet intersection(HbObject other) throws ErrorWrapper, HbError {
+	public HbSet intersection(HbObject other) throws ErrorWrapper, HbError, Continue, Break {
 		if(other instanceof HbSet) {
 			HbSet intersection = new HbSet(getInterp());
 			for(HbObject key: elements.getKeys())
@@ -129,7 +131,7 @@ public class HbSet extends HbObject {
 			throw new HbArgumentError(getInterp(),"-",other,"Set");
 	}
 	
-	public void clear() throws ErrorWrapper, HbError {
+	public void clear() throws ErrorWrapper, HbError, Continue, Break {
 		elements.clear();
 	}
 	
