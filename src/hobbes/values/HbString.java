@@ -1,12 +1,14 @@
 package hobbes.values;
 
+import java.util.Iterator;
+
 import hobbes.interpreter.Break;
 import hobbes.interpreter.Continue;
 import hobbes.interpreter.ErrorWrapper;
 import hobbes.interpreter.Interpreter;
 
 @HobbesClass(name="String")
-public class HbString extends HbObject {
+public class HbString extends HbObject implements Iterable<HbObject> {
 	
 	private StringBuilder value;
 	
@@ -90,8 +92,12 @@ public class HbString extends HbObject {
 	}
 	
 	@HobbesMethod(name="length")
-	public HbInt length() {
-		return getObjSpace().getInt(value.length());
+	public HbInt hbLength() {
+		return getObjSpace().getInt(length());
+	}
+	
+	public int length() {
+		return value.length();
 	}
 	
 	@HobbesMethod(name="+",numArgs=1)
@@ -108,6 +114,18 @@ public class HbString extends HbObject {
 			return new HbString(getInterp(),newString);
 		} else
 			throw new HbArgumentError(getInterp(),"*",other,"Int");
+	}
+	
+	@HobbesMethod(name="[]",numArgs=1)
+	public HbString get(HbObject index) throws HbError {
+		if(index instanceof HbInt) {
+			int i = ((HbInt)index).getValue();
+			if(i >= 0 && i < length())
+				return new HbString(getInterp(),value.charAt(i));
+			else
+				throw new HbKeyError(getInterp(),i + " (length: " + length() + ")");
+		} else
+			throw new HbArgumentError(getInterp(),"[]",index,"Int");
 	}
 	
 	@HobbesMethod(name="chars")
@@ -205,5 +223,9 @@ public class HbString extends HbObject {
 		newString.stripInPlace();
 		return newString;
 	}
-
+	
+	public Iterator<HbObject> iterator() {
+		return chars().iterator();
+	}
+	
 }

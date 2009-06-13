@@ -19,7 +19,7 @@ public class Interpreter {
 	public static void main(String[] args) {
 		if(args.length == 0) { // interactive console
 			Scanner s = new Scanner(System.in);
-			Interpreter i = new Interpreter("<console>");
+			Interpreter i = new Interpreter("<console>",true,false);
 			while(true) {
 				if(i.needsMore())
 					System.out.print(" " + i.getLastOpener() + " ");
@@ -51,7 +51,7 @@ public class Interpreter {
 					System.err.println("File \"" + args[0] + "\" not found.");
 					System.exit(0);
 				}
-				Interpreter i = new Interpreter(args[0]);
+				Interpreter i = new Interpreter(args[0],false,true);
 				while(s.hasNext()) {
 					i.add(s.nextLine());
 					if(!i.needsMore())
@@ -75,10 +75,11 @@ public class Interpreter {
 	private Parser parser;
 	private Tokenizer tokenizer;
 	private boolean verboseGC;
+	private boolean inFile;
 	
 	private static final int MAX_STACK_SIZE = 500;
 	
-	public Interpreter(String fn, boolean vgc) {
+	public Interpreter(String fn, boolean vgc, boolean IF) {
 		verboseGC = vgc;
 		file = new SourceFile(fn);
 		objSpace = new ObjectSpace(this,vgc);
@@ -92,10 +93,11 @@ public class Interpreter {
 		stack.push(topLevelFrame);
 		parser = new Parser();
 		tokenizer = new Tokenizer();
+		inFile = IF;
 	}
 	
 	public Interpreter(String fn) {
-		this(fn,false);
+		this(fn,false,false);
 	}
 	
 	public void add(String line) {
@@ -136,7 +138,11 @@ public class Interpreter {
 			e.addFrame(popFrame());
 		e.addFrame(getCurrentFrame());
 		e.printStackTrace();
+		if(inFile)
+			System.exit(1);
 	}
+	
+	
 	
 	private String interpret(SyntaxNode tree) {
 		if(tree != null) {
@@ -171,7 +177,7 @@ public class Interpreter {
 			return null;
 	}
 
-	private HbObject run(SyntaxNode tree) throws ErrorWrapper, Return, HbError, Continue, Break {
+	protected HbObject run(SyntaxNode tree) throws ErrorWrapper, Return, HbError, Continue, Break {
 		if(tree instanceof ExpressionNode)
 			return eval((ExpressionNode)tree);
 		else if(tree instanceof StatementNode) {
@@ -189,7 +195,7 @@ public class Interpreter {
 		}
 	}
 	
-	private HbObject eval(ExpressionNode expr) throws ErrorWrapper, HbError, Continue, Break {
+	protected HbObject eval(ExpressionNode expr) throws ErrorWrapper, HbError, Continue, Break {
 		// atoms
 		if(expr instanceof NumberNode)
 			return evalNumber((NumberNode)expr);
@@ -274,8 +280,11 @@ public class Interpreter {
 	private HbObject evalFunctionCall(FunctionCallNode call)
 										throws ErrorWrapper, HbError, Continue, Break {
 		HbFunction func = (HbFunction)eval(call.getFuncExpr());
+		String funcRepr = func instanceof HbAnonymousFunction ?
+							func.hbToString().getValue() :
+							((HbNamedFunction)func).getName();
 		HbObject[] args = evalArgs(call.getArgs(),func,
-							func.hbToString().getValue(),call.getParenLoc());
+							funcRepr,call.getParenLoc());
 		if(func instanceof HbNativeFunction)
 			return evalNativeFuncCall((HbNativeFunction)func,args,call.getParenLoc());
 		else if(func instanceof HbNormalFunction)
@@ -663,12 +672,49 @@ public class Interpreter {
 			execIf((IfStatementNode)stmt);
 		else if(stmt instanceof WhileLoopNode)
 			execWhile((WhileLoopNode)stmt);
+		else if(stmt instanceof ForLoopNode)
+			execFor((ForLoopNode)stmt);
+		else if(stmt instanceof TryNode)
+			execTry((TryNode)stmt);
 		else if(stmt instanceof ContinueNode)
 			throw new Continue(((ContinueNode)stmt).getOrigin());
 		else if(stmt instanceof BreakNode)
 			throw new Break(((BreakNode)stmt).getOrigin());
 		else
 			System.out.println("doesn't do that statement yet");
+	}
+
+	private void execTry(TryNode stmt) throws Continue, Break, Return, ErrorWrapper, HbError {
+		try {
+			runBlock(stmt.getTryBlock());
+		} catch(ErrorWrapper e) {
+			HbError error = e.getError();
+			HbClass errorClass = error.getHbClass();
+			for(CatchNode c: stmt.getCatches()) {
+				if(eval(c.getErrorClass()).is(errorClass) == objSpace.getTrue()) {
+					runBlock(c.getBlock());
+					break;
+				}
+			}
+			if(stmt.getFinally() != null)
+				runBlock(stmt.getFinally());
+		} catch(HbError e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void execFor(ForLoopNode stmt)
+								throws ErrorWrapper, HbError, Continue, Break, Return {
+		HbObject collection = eval(stmt.getCollection());
+		if(collection instanceof Iterable) {
+			String loopVar = stmt.getLoopVar().getName();
+			for(HbObject obj: (Iterable<HbObject>)collection) {
+				getCurrentFrame().getScope().assign(loopVar,obj);
+				runBlock(stmt.getBlock());
+			}
+		} else
+			throw new ErrorWrapper(new HbNotIterableError(this,collection.realToString()),
+						stmt.getInWord().getEnd().next());
 	}
 
 	private void execWhile(WhileLoopNode stmt)
@@ -779,7 +825,7 @@ public class Interpreter {
 		}
 	}
 
-	private ExecutionFrame getCurrentFrame() {
+	protected ExecutionFrame getCurrentFrame() {
 		return stack.peek();
 	}
 
@@ -793,6 +839,7 @@ public class Interpreter {
 	private ExecutionFrame popFrame() {
 		if(canPop()) {
 			ExecutionFrame temp = stack.pop();
+			temp.getScope().destroy();
 			return temp;
 		} else
 			throw new IllegalStateException("Can't pop the top level frame");
@@ -800,6 +847,10 @@ public class Interpreter {
 
 	private boolean canPop() {
 		return stack.size() > 1;
+	}
+	
+	protected Stack<ExecutionFrame> getStackClone() {
+		return (Stack<ExecutionFrame>)stack.clone();
 	}
 
 	private void handleSyntaxError(SyntaxError e) {

@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 @HobbesClass(name="Set")
-public class HbSet extends HbObject {
+public class HbSet extends HbObject implements Iterable<HbObject> {
 
 	private HbDict elements;
 	private static final String COMMA_SPACE = ", ";
@@ -133,6 +133,10 @@ public class HbSet extends HbObject {
 	
 	public void clear() throws ErrorWrapper, HbError, Continue, Break {
 		elements.clear();
+	}
+
+	public Iterator<HbObject> iterator() {
+		return elements.getKeys().iterator();
 	}
 	
 }

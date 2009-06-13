@@ -6,17 +6,17 @@ import hobbes.parser.Token;
 public class CatchNode implements SyntaxNode {
 	
 	private Token origin;
-	private ObjectNode exceptionClass;
+	private ObjectNode errorClass;
 	private BlockNode block;
 	
 	public CatchNode(Token o, ObjectNode ec, BlockNode b) {
 		origin = o;
-		exceptionClass = ec;
+		errorClass = ec;
 		block = b;
 	}
 	
 	public String toString() {
-		return exceptionClass + "(" + block + ")";
+		return errorClass + "(" + block + ")";
 	}
 	
 	public BlockNode getBlock() {
@@ -25,6 +25,10 @@ public class CatchNode implements SyntaxNode {
 	
 	public SourceLine getLine() {
 		return origin.getLine();
+	}
+	
+	public ObjectNode getErrorClass() {
+		return errorClass;
 	}
 	
 }

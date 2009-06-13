@@ -65,6 +65,7 @@ public class ObjectSpace {
 		addNativeClass(HbKeyError.class);
 		addNativeClass(HbTypeError.class);
 		addNativeClass(HbNotAClassError.class);
+		addNativeClass(HbNotIterableError.class);
 		// set builtin classes
 		for(String className: classes.keySet())
 			builtinClasses.add(className);

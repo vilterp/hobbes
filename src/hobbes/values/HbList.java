@@ -10,7 +10,7 @@ import hobbes.interpreter.ErrorWrapper;
 import hobbes.interpreter.Interpreter;
 
 @HobbesClass(name="List")
-public class HbList extends HbObject {
+public class HbList extends HbObject implements Iterable<HbObject> {
 	
 	// TODO: []del
 	// TODO: find (== or is?)
@@ -296,6 +296,10 @@ public class HbList extends HbObject {
 		HbObject temp = elements.get(a);
 		elements.set(a,elements.get(b));
 		elements.set(b,temp);
+	}
+
+	public Iterator<HbObject> iterator() {
+		return elements.iterator();
 	}
 
 }

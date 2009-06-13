@@ -9,7 +9,7 @@ import hobbes.ast.BlockNode;
 import hobbes.interpreter.Interpreter;
 
 @HobbesClass(name="Function")
-public class HbNormalFunction extends HbFunction {
+public class HbNormalFunction extends HbNamedFunction {
 	
 	private String name;
 	private ArrayList<ArgSpecNode> args;

@@ -191,4 +191,20 @@ public class HbObject extends Throwable {
 		return getObjSpace().getTrue();
 	}
 	
+	@HobbesMethod(name="or",numArgs=1)
+	public HbObject or(HbObject other) {
+		if(toBool() == getObjSpace().getTrue())
+			return this;
+		else if(other.toBool() == getObjSpace().getTrue())
+			return this;
+		else
+			return getObjSpace().getFalse();
+	}
+	
+	@HobbesMethod(name="and",numArgs=1)
+	public HbObject and(HbObject other) {
+		return getObjSpace().getBool(toBool() == getObjSpace().getTrue()
+				&& other.toBool() == getObjSpace().getTrue());
+	}
+	
 }

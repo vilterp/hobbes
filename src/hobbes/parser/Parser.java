@@ -296,7 +296,7 @@ public class Parser {
 		if(word("return")) {
 			Token returnWord = getLastToken();
 			if(expression()) {
-				stack.push(new ReturnNode(getLastExpression()));
+				stack.push(new ReturnNode(returnWord,getLastExpression()));
 				return true;
 			} else
 				throw new SyntaxError("No expression after \"return\"",
@@ -392,7 +392,8 @@ public class Parser {
 						ExpressionNode collection = getLastExpression();
 						if(block()) {
 							BlockNode block = (BlockNode)stack.pop();
-							stack.push(new ForLoopNode(indexVar,loopVar,collection,block));
+							stack.push(new ForLoopNode(indexVar,loopVar,inWord,
+																	collection,block));
 							return true;
 						} else
 							throw new SyntaxError("No block after for loop heading",

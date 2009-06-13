@@ -8,7 +8,8 @@ public class ReturnNode implements StatementNode {
 	private Token origin;
 	private ExpressionNode expr;
 	
-	public ReturnNode(ExpressionNode e) {
+	public ReturnNode(Token o, ExpressionNode e) {
+		origin = o;
 		expr = e;
 	}
 	

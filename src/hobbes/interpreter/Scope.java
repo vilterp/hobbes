@@ -49,6 +49,12 @@ public class Scope {
 		}
 	}
 	
+	public void destroy() {
+		for(String name: names.keySet())
+			if(!globals.contains(name))
+				objSpace.get(names.get(name)).decRefs();
+	}
+	
 	public void addBasics() {
 		// classes
 		for(String className: objSpace.getClasses().keySet())
@@ -123,6 +129,14 @@ public class Scope {
 	private boolean isReadOnly(String name) {
 		return readOnlys.contains(name) ||
 				objSpace.getBuiltinClasses().contains(name);
+	}
+	
+	public HashMap<String,HbObject> getContents() {
+		HashMap<String,HbObject> contents = new HashMap<String,HbObject>();
+		for(String name: names.keySet())
+			if(!globals.contains(name))
+				contents.put(name,objSpace.get(names.get(name)));
+		return contents;
 	}
 	
 }

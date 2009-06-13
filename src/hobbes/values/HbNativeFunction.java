@@ -6,7 +6,7 @@ import java.util.Iterator;
 import hobbes.interpreter.Interpreter;
 
 @HobbesClass(name="NativeFunction")
-public class HbNativeFunction extends HbFunction {
+public class HbNativeFunction extends HbNamedFunction {
 	
 	private String name;
 	private ArrayList<String> args;
