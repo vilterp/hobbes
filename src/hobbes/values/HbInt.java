@@ -132,13 +132,23 @@ public class HbInt extends HbObject {
 		else
 			throw new HbArgumentError(getInterp(),"^",other,"Int or Float");
 	}
-
+	
 	@HobbesMethod(name="abs")
 	public HbInt abs() {
 		if(getValue() < 0)
 			return getObjSpace().getInt(-getValue());
 		else
 			return this;
+	}
+	
+	@HobbesMethod(name="even?")
+	public HbObject isEven() {
+		return getObjSpace().getBool(value % 2 == 0);
+	}
+	
+	@HobbesMethod(name="odd?")
+	public HbObject isOdd() {
+		return getObjSpace().getBool(value % 2 != 0);
 	}
 	
 	@HobbesMethod(name="times",numArgs=1)
@@ -148,6 +158,19 @@ public class HbInt extends HbObject {
 				getInterp().callAnonFunc((HbAnonymousFunction)func,new HbObject[]{},null);
 		} else
 			throw new HbArgumentError(getInterp(),"times",func,"AnonymousFunction");
+	}
+	
+	@HobbesMethod(name="to",numArgs=1)
+	public HbRange to(HbObject end) throws HbArgumentError {
+		if(end instanceof HbInt) {
+			if(((HbInt)end).getValue() < getValue())
+				throw new HbArgumentError(getInterp(),
+							"range end (" + ((HbInt)end).getValue()
+							+ ") less than or equal to range start");
+			else
+				return new HbRange(getInterp(),this,end);
+		} else
+			throw new HbArgumentError(getInterp(),"to",end,"Int");
 	}
 	
 }

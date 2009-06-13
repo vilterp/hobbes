@@ -12,7 +12,6 @@ import hobbes.interpreter.Interpreter;
 @HobbesClass(name="List")
 public class HbList extends HbObject implements Iterable<HbObject> {
 	
-	// TODO: []del
 	// TODO: find (== or is?)
 	
 	private ArrayList<HbObject> elements;
@@ -89,7 +88,7 @@ public class HbList extends HbObject implements Iterable<HbObject> {
 		return get(length()-1);
 	}
 	
-	@HobbesMethod(name="[]set",numArgs=2)
+	@HobbesMethod(name="[]=",numArgs=2)
 	public void set(HbObject index, HbObject value) throws HbError {
 		if(index instanceof HbInt) {
 			int ind = ((HbInt)index).getValue();
@@ -202,6 +201,36 @@ public class HbList extends HbObject implements Iterable<HbObject> {
 	@HobbesMethod(name="uniq")
 	public HbList uniq() throws ErrorWrapper, HbError, Continue, Break {
 		return toSet().toList();
+	}
+	
+	@HobbesMethod(name="map",numArgs=1)
+	public HbList map(HbObject func) throws ErrorWrapper, HbError, Continue, Break {
+		if(func instanceof HbAnonymousFunction) {
+			HbList newList = new HbList(getInterp());
+			for(int i=0; i < length(); i++) {
+				HbObject val = elements.get(i);
+				HbObject result = getInterp().callAnonFunc((HbAnonymousFunction)func,
+															new HbObject[]{val},null);
+				newList.add(result);
+			}
+			return newList;
+		} else
+			throw new HbArgumentError(getInterp(),"map",func,"AnonymousFunction");
+	}
+	
+	@HobbesMethod(name="filter",numArgs=1)
+	public HbList filter(HbObject func) throws ErrorWrapper, HbError, Continue, Break {
+		if(func instanceof HbAnonymousFunction) {
+			HbList newList = new HbList(getInterp());
+			for(int i=0; i < length(); i++) {
+				HbObject val = elements.get(i);
+				HbObject result = getInterp().callAnonFunc((HbAnonymousFunction)func,new HbObject[]{val},null);
+				if(result.call("toBool") == getObjSpace().getTrue())
+					newList.add(val);
+			}
+			return newList;
+		} else
+			throw new HbArgumentError(getInterp(),"filter",func,"AnonymousFunction");
 	}
 	
 	public HbObject[] toArray() {

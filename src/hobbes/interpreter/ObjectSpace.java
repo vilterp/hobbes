@@ -55,6 +55,7 @@ public class ObjectSpace {
 		addNativeClass(HbList.class);
 		addNativeClass(HbDict.class);
 		addNativeClass(HbSet.class);
+		addNativeClass(HbRange.class);
 		// errors
 		addNativeClass(HbError.class);
 		addNativeClass(HbSyntaxError.class);

@@ -19,7 +19,7 @@ public class Interpreter {
 	public static void main(String[] args) {
 		if(args.length == 0) { // interactive console
 			Scanner s = new Scanner(System.in);
-			Interpreter i = new Interpreter("<console>",true,false);
+			Interpreter i = new Interpreter("<console>",false,false);
 			while(true) {
 				if(i.needsMore())
 					System.out.print(" " + i.getLastOpener() + " ");
@@ -838,9 +838,7 @@ public class Interpreter {
 
 	private ExecutionFrame popFrame() {
 		if(canPop()) {
-			ExecutionFrame temp = stack.pop();
-			temp.getScope().destroy();
-			return temp;
+			return stack.pop();
 		} else
 			throw new IllegalStateException("Can't pop the top level frame");
 	}

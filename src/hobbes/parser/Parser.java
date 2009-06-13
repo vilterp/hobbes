@@ -97,7 +97,7 @@ public class Parser {
 	}
 	
 	public SyntaxNode parse(LinkedList<Token> tokenList) throws SyntaxError {
-		if(tokenList.isEmpty())
+		if(tokenList.isEmpty() || tokenList.size() == 1 && tokenList.getFirst().getType() == TokenType.EOL)
 			return null;
 		Token firstToken = tokenList.getFirst();
 		tokens = tokenList;
@@ -168,7 +168,7 @@ public class Parser {
 						args.add(left.getArgs().get(0));
 						args.add(rightExpr);
 						stack.push(new MethodCallNode(left.getReceiver(),
-														equals,"[]set",args));
+														equals,"[]=",args));
 						return true;
 					} else if(left.hasArgs())
 						throw new SyntaxError("Can't assign to the result of " +
@@ -1015,7 +1015,7 @@ public class Parser {
 			return true;
 		} else if(symbol("[")) {
 			if(symbol("]")) {
-				if(word("set")) {
+				if(symbol("=")) {
 					Token eq = getLastToken();
 					Token cl = getLastToken();
 					Token op = getLastToken();

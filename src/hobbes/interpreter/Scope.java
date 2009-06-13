@@ -49,12 +49,6 @@ public class Scope {
 		}
 	}
 	
-	public void destroy() {
-		for(String name: names.keySet())
-			if(!globals.contains(name))
-				objSpace.get(names.get(name)).decRefs();
-	}
-	
 	public void addBasics() {
 		// classes
 		for(String className: objSpace.getClasses().keySet())

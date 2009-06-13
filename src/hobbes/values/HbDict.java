@@ -97,7 +97,7 @@ public class HbDict extends HbObject {
 		return ans;
 	}
 	
-	@HobbesMethod(name="[]set",numArgs=2)
+	@HobbesMethod(name="[]=",numArgs=2)
 	public void put(HbObject key, HbObject value) throws ErrorWrapper, HbError, Continue, Break {
 		int bucketIndex = map(key.realHashCode());
 		Bucket bucket = buckets[bucketIndex];
