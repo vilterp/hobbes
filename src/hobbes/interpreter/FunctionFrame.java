@@ -1,21 +1,11 @@
 package hobbes.interpreter;
 
-import hobbes.parser.SourceLocation;
+public abstract class FunctionFrame extends ExecutionFrame {
 
-public class FunctionFrame extends ExecutionFrame {
-	
-	private String name;
-	private SourceLocation callLoc;
-	
-	public FunctionFrame(Scope s, String n, SourceLocation l) {
+	public FunctionFrame(Scope s) {
 		super(s);
-		name = n;
-		callLoc = l;
 	}
 	
-	public String show() {
-		return "  in " + name + "\n"
-				+ showLoc(callLoc);
-	}
+	public abstract String getName();
 
 }

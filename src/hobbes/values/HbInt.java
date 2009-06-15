@@ -68,6 +68,18 @@ public class HbInt extends HbObject {
 		else
 			throw new HbArgumentError(getInterp(),">",other,"Int or Float");
 	}
+	
+	@HobbesMethod(name=">=",numArgs=1)
+	public HbObject gtEq(HbObject other) throws HbArgumentError {
+		return getObjSpace().getBool(greaterThan(other) == getObjSpace().getTrue() ||
+				equalTo(other) == getObjSpace().getTrue());
+	}
+	
+	@HobbesMethod(name="<=",numArgs=1)
+	public HbObject ltEq(HbObject other) throws HbArgumentError {
+		return getObjSpace().getBool(lessThan(other) == getObjSpace().getTrue() ||
+				equalTo(other) == getObjSpace().getTrue());
+	}
 
 	@HobbesMethod(name="+",numArgs=1)
 	public HbObject plus(HbObject other) throws HbArgumentError {

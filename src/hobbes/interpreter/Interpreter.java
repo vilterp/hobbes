@@ -39,9 +39,7 @@ public class Interpreter {
 			}
 		} else if(args.length == 1) {
 			if(args[0].equals("-h")) {
-				System.out.println("Run with no args to "
-									+ "use the interactive console,\n"
-									+ "or with a file name to run that file");
+				System.out.println(HELP);
 			} else { // run file
 				File f = new File(args[0]);
 				Scanner s = null;
@@ -62,8 +60,23 @@ public class Interpreter {
 							+ "\"" + args[0] + "\": "
 							+ "still waiting to close " + i.getLastOpener());
 			}
+		} else if(args.length == 2 && args[1].equals("-d")) {
+			File f = new File(args[0]);
+			Scanner s = null;
+			try {
+				s = new Scanner(f);
+			} catch (FileNotFoundException e) {
+				System.err.println("File \"" + args[0] + "\" not found");
+				System.exit(1);
+			}
+			Debugger d = new Debugger(args[0]);
+			while(s.hasNext()) {
+				d.addLine(s.nextLine());
+			}
+			d.go();
 		} else {
-			System.out.print("Too many args. Run hobbes -h for help.");
+			System.out.println("Invalid args");
+			System.out.print(HELP);
 		}
 	}
 	
@@ -78,6 +91,10 @@ public class Interpreter {
 	private boolean inFile;
 	
 	private static final int MAX_STACK_SIZE = 500;
+	private static final String HELP = "Run with no args to "
+		+ "use the interactive console,\n"
+		+ "or with a file name to run that file.\n"
+		+ "Put -d after the file name to run the debugger on that file.";
 	
 	public Interpreter(String fn, boolean vgc, boolean IF) {
 		verboseGC = vgc;
@@ -298,7 +315,7 @@ public class Interpreter {
 											throws ErrorWrapper, HbError, Continue, Break {
 		// push frame
 		try {
-			pushFrame(new FunctionFrame(new Scope(this,getCurrentFrame().getScope()),
+			pushFrame(new NormalFunctionFrame(new Scope(this,getCurrentFrame().getScope()),
 								func.realToString(),parenLoc));
 		} catch (HbStackOverflow e) {
 			throw new ErrorWrapper(e,parenLoc);
@@ -340,7 +357,7 @@ public class Interpreter {
 												throws ErrorWrapper, HbError, Continue, Break {
 		// push frame
 		try {
-			pushFrame(new FunctionFrame(new Scope(this,getCurrentFrame().getScope()),
+			pushFrame(new NormalFunctionFrame(new Scope(this,getCurrentFrame().getScope()),
 								func.getName(),parenLoc));
 		} catch (HbStackOverflow e) {
 			throw new ErrorWrapper(e,parenLoc);
@@ -386,35 +403,44 @@ public class Interpreter {
 			popFrame();
 			return new HbString(this,in.nextLine());
 		} else if(func.getName().equals("eval")) {
-			try {
-				pushFrame(new FileFrame(this,"<eval>"));
-			} catch (HbStackOverflow e1) {
-				throw new ErrorWrapper(e1,parenLoc);
-			}
-			SourceFile f = new SourceFile("<eval>");
-			Scanner s = new Scanner(((HbString)args[0]).getValue());
-			HbObject lastResult = null;
-			while(s.hasNext()) {
-				try {
-					tokenizer.addLine(f.addLine(s.next()));
-					if(tokenizer.isReady()) {
-						SyntaxNode tree = parser.parse(tokenizer.getTokens());
-						lastResult = run(tree);
-					}
-				} catch (SyntaxError e) {
-					throw new ErrorWrapper(new HbSyntaxError(this,e.getMessage()),
-											e.getLocation());
-				} catch (Return r) {
-					handleUnexpectedReturn(r);
-				}
-			}
-			popFrame(); // FileFrame
-			popFrame(); // NativeFunctionFrame
-			return lastResult;
+			if(args[0] instanceof HbString) {
+				HbObject result = evalFunc(((HbString)args[0]).getValue(),parenLoc);
+				popFrame(); // NativeFunctionFrame
+				return result;
+			} else
+				throw new HbArgumentError(this,"eval",args[0],"String");
 		} else
 			throw new IllegalArgumentException("Nonexistent native function");
 	}
 	
+	protected HbObject evalFunc(String code, SourceLocation parenLoc)
+												throws ErrorWrapper, HbError, Continue, Break {
+		try {
+			pushFrame(new FileFrame(this,"<eval>"));
+		} catch (HbStackOverflow e1) {
+			throw new ErrorWrapper(e1,parenLoc);
+		}
+		SourceFile f = new SourceFile("<eval>");
+		Scanner s = new Scanner(code);
+		HbObject lastResult = null;
+		while(s.hasNext()) {
+			try {
+				tokenizer.addLine(f.addLine(s.next()));
+				if(tokenizer.isReady()) {
+					SyntaxNode tree = parser.parse(tokenizer.getTokens());
+					lastResult = run(tree);
+				}
+			} catch (SyntaxError e) {
+				throw new ErrorWrapper(new HbSyntaxError(this,e.getMessage()),
+										e.getLocation());
+			} catch (Return r) {
+				handleUnexpectedReturn(r);
+			}
+		}
+		popFrame(); // FileFrame
+		return lastResult;
+	}
+
 	private void handleUnexpectedReturn(Return r) {
 		SyntaxError e = new SyntaxError("Unexpected return statment - " +
 					"not inside a function or method",
@@ -828,7 +854,7 @@ public class Interpreter {
 	protected ExecutionFrame getCurrentFrame() {
 		return stack.peek();
 	}
-
+	
 	private void pushFrame(ExecutionFrame f) throws HbStackOverflow {
 		if(stack.size() < MAX_STACK_SIZE)
 			stack.push(f);

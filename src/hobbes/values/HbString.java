@@ -117,15 +117,23 @@ public class HbString extends HbObject implements Iterable<HbObject> {
 	}
 	
 	@HobbesMethod(name="[]",numArgs=1)
-	public HbString get(HbObject index) throws HbError {
+	public HbString hbGet(HbObject index) throws HbError {
 		if(index instanceof HbInt) {
-			int i = ((HbInt)index).getValue();
-			if(i >= 0 && i < length())
-				return new HbString(getInterp(),value.charAt(i));
-			else
-				throw new HbKeyError(getInterp(),i + " (length: " + length() + ")");
+			return get(((HbInt)index).getValue());
 		} else
 			throw new HbArgumentError(getInterp(),"[]",index,"Int");
+	}
+	
+	public HbString get(int ind) throws HbKeyError {
+		if(ind >= 0 && ind < length())
+			return new HbString(getInterp(),value.charAt(ind));
+		else if(ind < 0) {
+			if(-ind <= length())
+				return get(length() + ind);
+			else
+				throw new HbKeyError(getInterp(),ind + " (length: " + length() + ")");
+		} else
+			throw new HbKeyError(getInterp(),ind + " (length: " + length() + ")");
 	}
 	
 	@HobbesMethod(name="chars")

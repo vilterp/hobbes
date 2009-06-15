@@ -1,48 +1,71 @@
 package hobbes.interpreter;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.Stack;
 
 import hobbes.ast.SyntaxNode;
-import hobbes.parser.Parser;
-import hobbes.parser.Tokenizer;
+import hobbes.parser.SourceFile;
+import hobbes.parser.SourceLine;
 import hobbes.values.HbError;
 import hobbes.values.HbObject;
 
 public class Debugger extends Interpreter {
 	
-	public static void main(String[] args) {
-		Debugger d = new Debugger("<somefile>");
-		String code = "def add(a,b){a+b}\n" +
-				"def add3(a,b,c){add(add(a,b),c)}\n" +
-				"add3(1,2,3)\n" +
-				"";
-		Scanner s = new Scanner(code);
-		while(s.hasNext()) {
-			d.add(s.nextLine());
-			if(!d.needsMore()) {
-				String res = d.getResult();
-				if(res != null)
-					System.out.println(d.getResult());
-			}
-		}
-	}
-	
 	private Scanner in;
 	private String lastCommand;
+	private SourceFile file;
+	private static final int SURR_LINES = 5;
 	
 	public Debugger(String fn) {
 		super(fn);
+		file = new SourceFile(fn);
 		in = new Scanner(System.in);
-		lastCommand = null;
+		lastCommand = "s";
+	}
+	
+	public void addLine(String code) {
+		file.addLine(code);
+	}
+	
+	public void go() {
+		for(SourceLine l: file) {
+			add(l.getCode());
+			if(!needsMore()) {
+				String result = getResult();
+				if(result != null)
+					System.out.println(result);
+			}	
+		}
 	}
 	
 	public HbObject run(SyntaxNode tree) throws ErrorWrapper, HbError, Continue, Break, Return {
+		if(tree.getLine().getFile().getPath().equals("<eval>"))
+			return super.run(tree);
 		while(true) {
+			System.out.print("======= ");
+			// print trace
+			Iterator<ExecutionFrame> it = getStackClone().iterator();
+			while(it.hasNext()) {
+				ExecutionFrame frame = it.next();
+				if(frame instanceof FileFrame)
+					System.out.print(((FileFrame)frame).getName());
+				else if(frame instanceof NormalFunctionFrame)
+					System.out.print(((FunctionFrame)frame).getName());
+				else if(frame instanceof MethodFrame) {
+					System.out.print(((MethodFrame)frame).getName());
+				}
+				if(it.hasNext())
+					System.out.print(" > ");
+			}
+			System.out.println();
+			// print current line
 			System.out.println(tree.getLine().show());
-			System.out.print("> ");
+			// print prompt
+			System.out.print(">>> ");
+			// get next line
 			String command = null;
 			try {
 				command = in.nextLine();
@@ -72,8 +95,14 @@ public class Debugger extends Interpreter {
 						System.out.println(var + " = " + contents.get(var).show());
 				}
 				continue;
+			} if(command.equals("l")) {
+				for(SourceLine l: file.getPrecedingLines(tree.getLine().getLineNo(),SURR_LINES))
+					System.out.println("  " + l.show());
+				System.out.println("- " + tree.getLine().show());
+				for(SourceLine l: file.getFollowingLines(tree.getLine().getLineNo(),SURR_LINES))
+					System.out.println("  " + l.show());
 			} else {
-				continue;
+				System.out.println(evalFunc(command,null).realToString());
 			}
 		}
 	}

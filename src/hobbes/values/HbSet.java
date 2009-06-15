@@ -119,7 +119,7 @@ public class HbSet extends HbObject implements Iterable<HbObject> {
 			throw new HbArgumentError(getInterp(),"+",other,"Set");
 	}
 	
-	@HobbesMethod(name="intersection",numArgs=1)
+	@HobbesMethod(name="-",numArgs=1)
 	public HbSet intersection(HbObject other) throws ErrorWrapper, HbError, Continue, Break {
 		if(other instanceof HbSet) {
 			HbSet intersection = new HbSet(getInterp());

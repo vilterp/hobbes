@@ -72,6 +72,13 @@ public class HbList extends HbObject implements Iterable<HbObject> {
 	public HbObject get(int ind) throws HbKeyError {
 		if(ind >= 0 && ind < elements.size()) {
 			return elements.get(ind);
+		} else if(ind < 0) {
+			if(-ind <= length())
+				return get(length()+ind);
+			else
+				throw new HbKeyError(getInterp(),
+						new Integer(ind).toString()
+						+ " (size: " + elements.size() + ")");
 		} else
 			throw new HbKeyError(getInterp(),
 					new Integer(ind).toString()
@@ -150,7 +157,7 @@ public class HbList extends HbObject implements Iterable<HbObject> {
 			StringBuilder ans = new StringBuilder();
 			Iterator<HbObject> it = elements.iterator();
 			while(it.hasNext()) {
-				ans.append(it.next().show());
+				ans.append(it.next().hbToString());
 				if(it.hasNext())
 					ans.append(j);
 			}
@@ -161,7 +168,7 @@ public class HbList extends HbObject implements Iterable<HbObject> {
 								"String");
 	}
 	
-	@HobbesMethod(name="merge!")
+	@HobbesMethod(name="merge!",numArgs=1)
 	public void mergeInPlace(HbObject other) throws HbArgumentError {
 		if(other instanceof HbList) {
 			for(HbObject elem: ((HbList)other).getElements())
@@ -170,7 +177,7 @@ public class HbList extends HbObject implements Iterable<HbObject> {
 			throw new HbArgumentError(getInterp(),"merge",other,"List");
 	}
 	
-	@HobbesMethod(name="merge")
+	@HobbesMethod(name="merge",numArgs=1)
 	public HbList merge(HbObject other) throws HbArgumentError {
 		HbList newList = hbClone();
 		newList.mergeInPlace(other);

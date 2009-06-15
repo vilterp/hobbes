@@ -1,8 +1,9 @@
 package hobbes.parser;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 
-public class SourceFile {
+public class SourceFile implements Iterable<SourceLine> {
 	
 	private String path;
 	private ArrayList<SourceLine> lines;
@@ -16,10 +17,6 @@ public class SourceFile {
 		SourceLine newLine = new SourceLine(this,code,numLines()+1);
 		lines.add(newLine);
 		return newLine;
-	}
-	
-	private void addLine(SourceLine l) {
-		lines.add(l);
 	}
 	
 	public String getPath() {
@@ -38,18 +35,22 @@ public class SourceFile {
 		}
 	}
 	
-	public SourceLine[] getPrecedingLines(int start, int num) {
-		SourceLine[] toReturn = new SourceLine[num];
-		for(int i=start-1; i >= 0 && start-i <= num; i--)
-			toReturn[start-1-i] = getLine(i);
+	public ArrayList<SourceLine> getPrecedingLines(int start, int num) {
+		ArrayList<SourceLine> toReturn = new ArrayList<SourceLine>();
+		for(int i=start-1; i > 0 && start-i <= num; i--)
+			toReturn.add(0,getLine(i));
 		return toReturn;
 	}
 	
-	public SourceLine[] getFollowingLines(int start, int num) {
-		SourceLine[] toReturn = new SourceLine[num];
-		for(int i=start+1; i < numLines() && i-start <= num; i++)
-			toReturn[i-1-start] = getLine(i);
+	public ArrayList<SourceLine> getFollowingLines(int start, int num) {
+		ArrayList<SourceLine> toReturn = new ArrayList<SourceLine>();
+		for(int i=start+1; i <= numLines() && i-start <= num; i++)
+			toReturn.add(getLine(i));
 		return toReturn;
+	}
+	
+	public Iterator<SourceLine> iterator() {
+		return lines.iterator();
 	}
 	
 }

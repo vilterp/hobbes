@@ -2,7 +2,7 @@ package hobbes.interpreter;
 
 import hobbes.parser.SourceLocation;
 
-public class NativeMethodFrame extends ExecutionFrame {
+public class NativeMethodFrame extends MethodFrame {
 	
 	private String className;
 	private String methodName;
@@ -15,8 +15,12 @@ public class NativeMethodFrame extends ExecutionFrame {
 		callLoc = l;
 	}
 	
+	public String getName() {
+		return className + "#" + methodName;
+	}
+	
 	public String show() {
-		return "  in " + className + "#" + methodName + "\n"
+		return "  in " + getName() + "\n"
 				+ showLoc(callLoc);
 	}
 

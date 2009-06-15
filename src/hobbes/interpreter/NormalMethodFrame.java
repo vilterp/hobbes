@@ -3,7 +3,7 @@ package hobbes.interpreter;
 import hobbes.parser.SourceLocation;
 import hobbes.values.HbObject;
 
-public class NormalMethodFrame extends ExecutionFrame {
+public class NormalMethodFrame extends MethodFrame {
 	
 	private String methodName;
 	private String className;
@@ -27,8 +27,12 @@ public class NormalMethodFrame extends ExecutionFrame {
 		return callLoc;
 	}
 	
+	public String getName() {
+		return className + "#" + methodName;
+	}
+	
 	public String show() {
-		return "  in " + className + "#" + methodName + "\n"
+		return "  in " + getName() + "\n"
 				+ showLoc(callLoc);
 	}
 	

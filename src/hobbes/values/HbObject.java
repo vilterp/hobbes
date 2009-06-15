@@ -205,7 +205,7 @@ public class HbObject extends Throwable {
 		if(toBool() == getObjSpace().getTrue())
 			return this;
 		else if(other.toBool() == getObjSpace().getTrue())
-			return this;
+			return other;
 		else
 			return getObjSpace().getFalse();
 	}
