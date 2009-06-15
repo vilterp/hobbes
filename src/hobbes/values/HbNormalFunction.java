@@ -59,4 +59,8 @@ public class HbNormalFunction extends HbNamedFunction {
 		return args.size();
 	}
 	
+	public String getRepr() {
+		return name;
+	}
+	
 }

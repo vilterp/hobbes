@@ -3,6 +3,9 @@ package hobbes.values;
 import java.util.HashMap;
 
 import hobbes.ast.ExpressionNode;
+import hobbes.interpreter.Break;
+import hobbes.interpreter.Continue;
+import hobbes.interpreter.ErrorWrapper;
 import hobbes.interpreter.Interpreter;
 
 public abstract class HbFunction extends HbObject implements HbCallable {
@@ -23,5 +26,7 @@ public abstract class HbFunction extends HbObject implements HbCallable {
 	public void setDefault(int argInd, ExpressionNode expr) {
 		defaults.put(argInd, expr);
 	}
+	
+	public abstract String getRepr() throws ErrorWrapper, HbError, Continue, Break;
 	
 }

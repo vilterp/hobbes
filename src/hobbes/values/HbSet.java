@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 @HobbesClass(name="Set")
-public class HbSet extends HbObject implements Iterable<HbObject> {
+public class HbSet extends HbObject {
 
 	private HbDict elements;
 	private static final String COMMA_SPACE = ", ";
@@ -108,6 +108,16 @@ public class HbSet extends HbObject implements Iterable<HbObject> {
 		return list;
 	}
 	
+	@HobbesMethod(name="each",numArgs=1)
+	public void each(HbObject func) throws ErrorWrapper, HbError, Continue, Break {
+		if(func instanceof HbFunction) {
+			for(HbObject key: elements.getKeys())
+				getInterp().callFunc((HbFunction)func,new HbObject[]{key},null);
+		} else
+			throw new HbArgumentError(getInterp(),"each",func,
+					"AnonymousFunction, Function, or NativeFunction");
+	}
+	
 	@HobbesMethod(name="+",numArgs=1)
 	public HbSet union(HbObject other) throws ErrorWrapper, HbError, Continue, Break {
 		if(other instanceof HbSet) {
@@ -133,10 +143,6 @@ public class HbSet extends HbObject implements Iterable<HbObject> {
 	
 	public void clear() throws ErrorWrapper, HbError, Continue, Break {
 		elements.clear();
-	}
-
-	public Iterator<HbObject> iterator() {
-		return elements.getKeys().iterator();
 	}
 	
 }

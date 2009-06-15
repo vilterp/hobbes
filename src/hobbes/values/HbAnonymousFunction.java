@@ -7,6 +7,9 @@ import hobbes.values.HbArgumentError;
 import hobbes.values.HbObject;
 import hobbes.ast.BlockNode;
 import hobbes.ast.ArgSpecNode;
+import hobbes.interpreter.Break;
+import hobbes.interpreter.Continue;
+import hobbes.interpreter.ErrorWrapper;
 import hobbes.interpreter.Interpreter;
 import hobbes.interpreter.ObjectSpace;
 
@@ -34,6 +37,10 @@ public class HbAnonymousFunction extends HbFunction {
 
 	public BlockNode getBlock() {
 		return block;
+	}
+	
+	public String getRepr() throws ErrorWrapper, HbError, Continue, Break {
+		return realToString();
 	}
 	
 	@HobbesMethod(name="toString")

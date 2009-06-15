@@ -165,9 +165,9 @@ public class HbInt extends HbObject {
 	
 	@HobbesMethod(name="times",numArgs=1)
 	public void doNumTimes(HbObject func) throws ErrorWrapper, HbError, Continue, Break {
-		if(func instanceof HbAnonymousFunction) {
+		if(func instanceof HbFunction) {
 			for(int i=0; i < getValue(); i++)
-				getInterp().callAnonFunc((HbAnonymousFunction)func,new HbObject[]{},null);
+				getInterp().callFunc((HbFunction)func,new HbObject[]{},null);
 		} else
 			throw new HbArgumentError(getInterp(),"times",func,"AnonymousFunction");
 	}

@@ -302,14 +302,21 @@ public class Interpreter {
 							((HbNamedFunction)func).getName();
 		HbObject[] args = evalArgs(call.getArgs(),func,
 							funcRepr,call.getParenLoc());
-		if(func instanceof HbNativeFunction)
-			return evalNativeFuncCall((HbNativeFunction)func,args,call.getParenLoc());
-		else if(func instanceof HbNormalFunction)
-			return evalNormalFuncCall((HbNormalFunction)func,args,call.getParenLoc());
-		else
-			return evalAnonFuncCall((HbAnonymousFunction)func,args,call.getParenLoc());
+		return callFunc(func,args,call.getParenLoc());
 	}
-
+	
+	public HbObject callFunc(HbFunction func, HbObject[] args, SourceLocation parenLoc)
+												throws ErrorWrapper, HbError, Continue, Break {
+		if(args.length != func.getNumArgs())
+			throw this.getArgumentError(func.getRepr(),args.length,func.getNumArgs(),parenLoc);
+		if(func instanceof HbNativeFunction)
+			return evalNativeFuncCall((HbNativeFunction)func,args,parenLoc);
+		else if(func instanceof HbNormalFunction)
+			return evalNormalFuncCall((HbNormalFunction)func,args,parenLoc);
+		else
+			return evalAnonFuncCall((HbAnonymousFunction)func,args,parenLoc);
+	}
+	
 	private HbObject evalAnonFuncCall(HbAnonymousFunction func,
 			HbObject[] args, SourceLocation parenLoc)
 											throws ErrorWrapper, HbError, Continue, Break {
@@ -341,15 +348,6 @@ public class Interpreter {
 		}
 		popFrame();
 		return lastResult;
-	}
-	
-	public HbObject callAnonFunc(HbAnonymousFunction func,
-								HbObject[] args, SourceLocation parenLoc)
-									throws ErrorWrapper, HbError, Continue, Break {
-		if(func.getNumArgs() != args.length)
-			throw getArgumentError(func.realToString(),args.length,func.getNumArgs(),parenLoc);
-		else
-			return evalAnonFuncCall(func,args,parenLoc);
 	}
 
 	private HbObject evalNormalFuncCall(HbNormalFunction func, HbObject[] args,
@@ -584,6 +582,8 @@ public class Interpreter {
 										HbObject[] args, SourceLocation loc)
 												throws ErrorWrapper, HbError, Continue, Break {
 		HbMethod method = receiver.getHbClass().getMethod(methodName);
+		if(args.length != method.getNumArgs())
+			throw getArgumentError(methodName,args.length,method.getNumArgs(),loc);
 		if(method instanceof HbNormalMethod)
 			return evalNormalMethodCall(receiver,(HbNormalMethod)method,args,loc);
 		else
@@ -698,8 +698,6 @@ public class Interpreter {
 			execIf((IfStatementNode)stmt);
 		else if(stmt instanceof WhileLoopNode)
 			execWhile((WhileLoopNode)stmt);
-		else if(stmt instanceof ForLoopNode)
-			execFor((ForLoopNode)stmt);
 		else if(stmt instanceof TryNode)
 			execTry((TryNode)stmt);
 		else if(stmt instanceof ContinueNode)
@@ -727,20 +725,6 @@ public class Interpreter {
 		} catch(HbError e) {
 			e.printStackTrace();
 		}
-	}
-
-	private void execFor(ForLoopNode stmt)
-								throws ErrorWrapper, HbError, Continue, Break, Return {
-		HbObject collection = eval(stmt.getCollection());
-		if(collection instanceof Iterable) {
-			String loopVar = stmt.getLoopVar().getName();
-			for(HbObject obj: (Iterable<HbObject>)collection) {
-				getCurrentFrame().getScope().assign(loopVar,obj);
-				runBlock(stmt.getBlock());
-			}
-		} else
-			throw new ErrorWrapper(new HbNotIterableError(this,collection.realToString()),
-						stmt.getInWord().getEnd().next());
 	}
 
 	private void execWhile(WhileLoopNode stmt)

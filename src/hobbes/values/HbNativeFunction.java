@@ -50,4 +50,8 @@ public class HbNativeFunction extends HbNamedFunction {
 		return args.size();
 	}
 	
+	public String getRepr() {
+		return name;
+	}
+	
 }

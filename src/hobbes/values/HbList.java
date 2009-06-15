@@ -10,9 +10,7 @@ import hobbes.interpreter.ErrorWrapper;
 import hobbes.interpreter.Interpreter;
 
 @HobbesClass(name="List")
-public class HbList extends HbObject implements Iterable<HbObject> {
-	
-	// TODO: find (== or is?)
+public class HbList extends HbObject {
 	
 	private ArrayList<HbObject> elements;
 	private static Random r = new Random();
@@ -115,7 +113,17 @@ public class HbList extends HbObject implements Iterable<HbObject> {
 		elements.add(obj);
 		obj.incRefs();
 	}
-
+	
+	@HobbesMethod(name="each",numArgs=1)
+	public void each(HbObject func) throws ErrorWrapper, HbError, Continue, Break {
+		if(func instanceof HbFunction) {
+			for(HbObject elem: elements)
+				getInterp().callFunc((HbFunction)func,new HbObject[]{elem},null);
+		} else
+			throw new HbArgumentError(getInterp(),"each",func,
+						"AnonymousFunction, Function, or NativeFunction");
+	}
+	
 	@HobbesMethod(name="[]del",numArgs=1)
 	public void removeAtIndex(HbObject index) throws HbArgumentError {
 		if(index instanceof HbInt) {
@@ -212,11 +220,11 @@ public class HbList extends HbObject implements Iterable<HbObject> {
 	
 	@HobbesMethod(name="map",numArgs=1)
 	public HbList map(HbObject func) throws ErrorWrapper, HbError, Continue, Break {
-		if(func instanceof HbAnonymousFunction) {
+		if(func instanceof HbFunction) {
 			HbList newList = new HbList(getInterp());
 			for(int i=0; i < length(); i++) {
 				HbObject val = elements.get(i);
-				HbObject result = getInterp().callAnonFunc((HbAnonymousFunction)func,
+				HbObject result = getInterp().callFunc((HbFunction)func,
 															new HbObject[]{val},null);
 				newList.add(result);
 			}
@@ -227,11 +235,12 @@ public class HbList extends HbObject implements Iterable<HbObject> {
 	
 	@HobbesMethod(name="filter",numArgs=1)
 	public HbList filter(HbObject func) throws ErrorWrapper, HbError, Continue, Break {
-		if(func instanceof HbAnonymousFunction) {
+		if(func instanceof HbFunction) {
 			HbList newList = new HbList(getInterp());
 			for(int i=0; i < length(); i++) {
 				HbObject val = elements.get(i);
-				HbObject result = getInterp().callAnonFunc((HbAnonymousFunction)func,new HbObject[]{val},null);
+				HbObject result = getInterp().callFunc(
+										(HbFunction)func,new HbObject[]{val},null);
 				if(result.call("toBool") == getObjSpace().getTrue())
 					newList.add(val);
 			}
@@ -332,10 +341,6 @@ public class HbList extends HbObject implements Iterable<HbObject> {
 		HbObject temp = elements.get(a);
 		elements.set(a,elements.get(b));
 		elements.set(b,temp);
-	}
-
-	public Iterator<HbObject> iterator() {
-		return elements.iterator();
 	}
 
 }

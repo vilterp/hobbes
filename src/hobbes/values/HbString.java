@@ -1,14 +1,12 @@
 package hobbes.values;
 
-import java.util.Iterator;
-
 import hobbes.interpreter.Break;
 import hobbes.interpreter.Continue;
 import hobbes.interpreter.ErrorWrapper;
 import hobbes.interpreter.Interpreter;
 
 @HobbesClass(name="String")
-public class HbString extends HbObject implements Iterable<HbObject> {
+public class HbString extends HbObject {
 	
 	private StringBuilder value;
 	
@@ -136,6 +134,16 @@ public class HbString extends HbObject implements Iterable<HbObject> {
 			throw new HbKeyError(getInterp(),ind + " (length: " + length() + ")");
 	}
 	
+	@HobbesMethod(name="each",numArgs=1)
+	public void each(HbObject func) throws ErrorWrapper, HbError, Continue, Break {
+		if(func instanceof HbFunction) {
+			for(int i=0; i < value.length(); i++)
+				getInterp().callFunc((HbFunction)func,new HbObject[]{get(i)},null);
+		} else
+			throw new HbArgumentError(getInterp(),"each",func,
+					"AnonymousFunction, Function, or NativeFunction");
+	}
+	
 	@HobbesMethod(name="chars")
 	public HbList chars() {
 		HbList toReturn = new HbList(getInterp());
@@ -230,10 +238,6 @@ public class HbString extends HbObject implements Iterable<HbObject> {
 		HbString newString = hbClone();
 		newString.stripInPlace();
 		return newString;
-	}
-	
-	public Iterator<HbObject> iterator() {
-		return chars().iterator();
 	}
 	
 }

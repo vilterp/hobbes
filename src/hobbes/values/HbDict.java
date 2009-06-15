@@ -121,7 +121,7 @@ public class HbDict extends HbObject {
 			throw new HbKeyError(getInterp(),key.show());
 	}
 	
-	@HobbesMethod(name="contains_key?",numArgs=1)
+	@HobbesMethod(name="has_key?",numArgs=1)
 	public HbObject hbContainsKey(HbObject key) throws ErrorWrapper, HbError, Continue, Break {
 		return getObjSpace().getBool(containsKey(key));
 	}
