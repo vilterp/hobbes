@@ -4,6 +4,7 @@ import hobbes.interpreter.Break;
 import hobbes.interpreter.Continue;
 import hobbes.interpreter.ErrorWrapper;
 import hobbes.interpreter.Interpreter;
+import hobbes.values.HbRange.IterImp;
 
 @HobbesClass(name="String")
 public class HbString extends HbObject {
@@ -115,11 +116,17 @@ public class HbString extends HbObject {
 	}
 	
 	@HobbesMethod(name="[]",numArgs=1)
-	public HbString hbGet(HbObject index) throws HbError {
-		if(index instanceof HbInt) {
+	public HbString hbGet(HbObject index) throws HbError, ErrorWrapper, Continue, Break {
+		if(index instanceof HbInt)
 			return get(((HbInt)index).getValue());
+		else if(index instanceof HbRange && ((HbRange)index).getStart() instanceof HbInt) {
+			StringBuilder subString = new StringBuilder();
+			IterImp it = ((HbRange)index).iterator();
+			while(it.hasNext())
+				subString.append(get(((HbInt)it.getNext()).getValue()).getValue());
+			return new HbString(getInterp(),subString);
 		} else
-			throw new HbArgumentError(getInterp(),"[]",index,"Int");
+			throw new HbArgumentError(getInterp(),"[]",index,"Int or Range of Int");
 	}
 	
 	public HbString get(int ind) throws HbKeyError {

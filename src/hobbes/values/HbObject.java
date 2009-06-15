@@ -55,14 +55,6 @@ public class HbObject extends Throwable {
 		return new int[0];
 	}
 	
-	public HbObject succ() {
-		throw new UnsupportedOperationException();
-	}
-	
-	public HbObject pred() {
-		throw new UnsupportedOperationException();
-	}
-	
 	public String toString() {
 		return "<" + getHbClass().getName() + "@" + getId() + ">";
 	}
@@ -138,6 +130,11 @@ public class HbObject extends Throwable {
 		} else
 			throw new HbArgumentError(getInterp(),"call",methodName,"String");
 			
+	}
+	
+	@HobbesMethod(name="to",numArgs=1)
+	public HbRange to(HbObject other) throws ErrorWrapper, HbError, Continue, Break {
+		return new HbRange(getInterp(),this,other);
 	}
 
 	@HobbesMethod(name="hash_code")

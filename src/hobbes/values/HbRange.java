@@ -8,7 +8,7 @@ import hobbes.interpreter.ErrorWrapper;
 import hobbes.interpreter.Interpreter;
 
 @HobbesClass(name="Range")
-public class HbRange extends HbObject implements Iterable<HbObject> {
+public class HbRange extends HbObject {
 	
 	private HbObject start;
 	private HbObject end;
@@ -19,12 +19,25 @@ public class HbRange extends HbObject implements Iterable<HbObject> {
 				"needs start and end parameters");
 	}
 	
-	public HbRange(Interpreter i, HbObject s, HbObject e) {
+	public HbRange(Interpreter i, HbObject s, HbObject e)
+									throws ErrorWrapper, HbError, Continue, Break {
 		super(i);
+		// these should be before the errors.
+		// weird GC problems otherwise
 		start = s;
 		end = e;
 		start.incRefs();
 		end.incRefs();
+		if(s.getHbClass() != e.getHbClass())
+			throw new HbArgumentError(getInterp(),"start and end are of different classes ("
+					+ s.getHbClass().getName() + " and " + e.getHbClass().getName()
+					+ ", respectively)");
+		if(!s.getHbClass().hasMethod("succ"))
+			// woo duck typing (...?)
+			throw new HbArgumentError(getInterp(),s.getHbClass().getName()
+					+ "s don't have a \"succ\" method, which Range needs");
+		if(s.gt(end))
+			throw new HbArgumentError(getInterp(),"starting value greater than ending value");
 	}
 	
 	public int[] contentAddrs() {
@@ -52,56 +65,46 @@ public class HbRange extends HbObject implements Iterable<HbObject> {
 		return new HbString(getInterp(),repr);
 	}
 	
-	public Iterator<HbObject> iterator() {
-		return new IterImp(this);
+	@HobbesMethod(name="each",numArgs=1)
+	public void each(HbObject func) throws ErrorWrapper, HbError, Continue, Break {
+		if(func instanceof HbFunction) {
+			for(HbObject cur=start; cur.lt(end) || cur.eq(end); cur=cur.call("succ"))
+				getInterp().callFunc((HbFunction)func,new HbObject[]{cur},null);
+		} else
+			throw new HbArgumentError(getInterp(),"each",func,
+					"AnonymousFunction, Function, or NativeFunction");
 	}
 	
-	private class IterImp implements Iterator<HbObject> {
+	@HobbesMethod(name="toList")
+	public HbList toList() throws ErrorWrapper, HbError, Continue, Break {
+		HbList toReturn = new HbList(getInterp());
+		for(HbObject cur=start; cur.lt(end) || cur.eq(end); cur=cur.call("succ"))
+			toReturn.add(cur);
+		return toReturn;
+	}
+	
+	public IterImp iterator() {
+		return new IterImp(start,end);
+	}
+	
+	public class IterImp {
 		
-		private HbRange range;
-		private HbObject current;
+		private HbObject cur;
+		private HbObject end;
 		
-		public IterImp(HbRange r) {
-			range = r;
-			current = r.getStart();
+		public IterImp(HbObject c, HbObject e) {
+			cur = c;
+			end = e;
 		}
 		
-		public boolean hasNext() {
-			try {
-				return current.call("succ").eq(range.getEnd());
-			} catch (ErrorWrapper e) {
-				e.printStackTrace();
-			} catch (HbError e) {
-				e.printStackTrace();
-			} catch (Continue e) {
-				e.printStackTrace();
-			} catch (Break e) {
-				e.printStackTrace();
-			} finally {
-				System.exit(1);
-				return false;
-			}
+		public boolean hasNext() throws ErrorWrapper, HbError, Continue, Break {
+			return cur.lt(end) || cur.eq(end);
 		}
 		
-		public HbObject next() {
-			try {
-				return current.call("succ");
-			} catch (ErrorWrapper e) {
-				e.printStackTrace();
-			} catch (HbError e) {
-				e.printStackTrace();
-			} catch (Continue e) {
-				e.printStackTrace();
-			} catch (Break e) {
-				e.printStackTrace();
-			} finally {
-				System.exit(1);
-				return null;
-			}
-		}
-		
-		public void remove() {
-			throw new UnsupportedOperationException();
+		public HbObject getNext() throws ErrorWrapper, HbError, Continue, Break {
+			HbObject temp = cur;
+			cur = cur.call("succ");
+			return temp;
 		}
 		
 	}

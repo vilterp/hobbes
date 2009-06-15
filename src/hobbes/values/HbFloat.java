@@ -144,4 +144,14 @@ public class HbFloat extends HbObject {
 			throw new HbArgumentError(getInterp(),"-",other,"Int or Float");
 	}
 	
+	@HobbesMethod(name="succ")
+	public HbFloat succ() {
+		return getObjSpace().getFloat(value+1);
+	}
+	
+	@HobbesMethod(name="pred")
+	public HbFloat pred() {
+		return getObjSpace().getFloat(value-1);
+	}
+	
 }

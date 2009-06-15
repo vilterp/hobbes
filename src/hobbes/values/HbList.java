@@ -8,6 +8,7 @@ import hobbes.interpreter.Break;
 import hobbes.interpreter.Continue;
 import hobbes.interpreter.ErrorWrapper;
 import hobbes.interpreter.Interpreter;
+import hobbes.values.HbRange.IterImp;
 
 @HobbesClass(name="List")
 public class HbList extends HbObject {
@@ -60,11 +61,17 @@ public class HbList extends HbObject {
 	}
 	
 	@HobbesMethod(name="[]",numArgs=1)
-	public HbObject hbGet(HbObject index) throws HbError {
-		if(index instanceof HbInt) {
+	public HbObject hbGet(HbObject index) throws HbError, ErrorWrapper, Continue, Break {
+		if(index instanceof HbInt)
 			return get(((HbInt)index).getValue());
+		else if(index instanceof HbRange && ((HbRange)index).getStart() instanceof HbInt) {
+			HbList subList = new HbList(getInterp());
+			IterImp it = ((HbRange)index).iterator();
+			while(it.hasNext())
+				subList.add(get(((HbInt)it.getNext()).getValue()));
+			return subList;
 		} else
-			throw new HbArgumentError(getInterp(),"[]",index,"Int");
+			throw new HbArgumentError(getInterp(),"[]",index,"Int or Range of Int");
 	}
 	
 	public HbObject get(int ind) throws HbKeyError {

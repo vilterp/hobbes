@@ -163,6 +163,16 @@ public class HbInt extends HbObject {
 		return getObjSpace().getBool(value % 2 != 0);
 	}
 	
+	@HobbesMethod(name="succ")
+	public HbInt succ() {
+		return getObjSpace().getInt(value+1);
+	}
+	
+	@HobbesMethod(name="pred")
+	public HbInt pred() {
+		return getObjSpace().getInt(value-1);
+	}
+	
 	@HobbesMethod(name="times",numArgs=1)
 	public void doNumTimes(HbObject func) throws ErrorWrapper, HbError, Continue, Break {
 		if(func instanceof HbFunction) {
@@ -170,19 +180,6 @@ public class HbInt extends HbObject {
 				getInterp().callFunc((HbFunction)func,new HbObject[]{},null);
 		} else
 			throw new HbArgumentError(getInterp(),"times",func,"AnonymousFunction");
-	}
-	
-	@HobbesMethod(name="to",numArgs=1)
-	public HbRange to(HbObject end) throws HbArgumentError {
-		if(end instanceof HbInt) {
-			if(((HbInt)end).getValue() < getValue())
-				throw new HbArgumentError(getInterp(),
-							"range end (" + ((HbInt)end).getValue()
-							+ ") less than or equal to range start");
-			else
-				return new HbRange(getInterp(),this,end);
-		} else
-			throw new HbArgumentError(getInterp(),"to",end,"Int");
 	}
 	
 }
