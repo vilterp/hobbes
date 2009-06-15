@@ -13,9 +13,6 @@ def getterm(terms,term) {
   }
 }
 
-num_terms = 100
-term = 0
-until term is num_terms {
+(0 to 100).each(|term|{
   print(getterm(terms,term))
-  term = term+1
-}
+})

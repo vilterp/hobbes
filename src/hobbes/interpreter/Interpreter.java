@@ -669,7 +669,10 @@ public class Interpreter {
 		try {
 			HbObject temp = (HbObject)method.getMethod().invoke(receiver,args);
 			popFrame();
-			return temp;
+			if(temp != null)
+				return temp;
+			else
+				return objSpace.getNil();
 		} catch (IllegalArgumentException e) {
 			e.printStackTrace();
 		} catch (IllegalAccessException e) {
