@@ -150,7 +150,20 @@ public class HbClass extends HbObject {
 		return (superClass != null ? superClass : getObjSpace().getNil());
 	}
 	
-	public HbClass getSuperClass() {
+	@HobbesMethod(name="descends_from?",numArgs=1)
+	public HbObject descendsFrom(HbObject klass) throws HbArgumentError {
+		if(klass instanceof HbClass) {
+			if(klass == this)
+				return getObjSpace().getTrue();
+			else if(name.equals("Object"))
+				return getObjSpace().getFalse();
+			else
+				return getSuperclass().descendsFrom(klass);
+		} else
+			throw new HbArgumentError(getInterp(),"descends_from?",klass,"Class");
+	}
+	
+	public HbClass getSuperclass() {
 		return superClass;
 	}
 	

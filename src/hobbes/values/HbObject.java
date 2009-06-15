@@ -87,7 +87,7 @@ public class HbObject extends Throwable {
 		return newObj;
 	}
 	
-	@HobbesMethod(name="toString",numArgs=0)
+	@HobbesMethod(name="toString")
 	public HbString hbToString() throws ErrorWrapper, HbError, Continue, Break {
 		StringBuilder repr = new StringBuilder("<");
 		repr.append(getHbClass().getName());
@@ -95,6 +95,14 @@ public class HbObject extends Throwable {
 		repr.append(getId());
 		repr.append(">");
 		return new HbString(getInterp(),repr.toString());
+	}
+	
+	@HobbesMethod(name="is_a?",numArgs=1)
+	public HbObject isA(HbObject klass) throws HbArgumentError {
+		if(klass instanceof HbClass) {
+			return getHbClass().descendsFrom(klass);
+		} else
+			throw new HbArgumentError(getInterp(),"is_a?",klass,"Class");
 	}
 	
 	public String realToString() throws ErrorWrapper, HbError, Continue, Break {
