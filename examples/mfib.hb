@@ -1,7 +1,7 @@
 terms = {}
 
 def getterm(terms,term) {
-  if terms.contains_key?(term) {
+  if terms.has_key?(term) {
     return terms[term]
   } else {
     if term == 0 or term == 1 {
