@@ -16,7 +16,7 @@ public class HbNil extends HbObject {
 	
 	@HobbesMethod(name="toString")
 	public HbString hbToString() {
-		return new HbString(getInterp(),"nil");
+		return getObjSpace().getString("nil");
 	}
 
 }

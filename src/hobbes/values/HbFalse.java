@@ -16,7 +16,7 @@ public class HbFalse extends HbObject {
 	
 	@HobbesMethod(name="toString")
 	public HbString hbToString() {
-		return new HbString(getInterp(),"false");
+		return getObjSpace().getString("false");
 	}
 
 }

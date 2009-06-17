@@ -9,24 +9,21 @@ import hobbes.values.HbRange.IterImp;
 @HobbesClass(name="String")
 public class HbString extends HbObject {
 	
-	private StringBuilder value;
+	private String value;
+	private int iterPos;
 	
 	public HbString(Interpreter i) {
-		super(i);
-		value = new StringBuilder();
-	}
-	
-	public HbString(Interpreter i, String val) {
-		super(i);
-		value = new StringBuilder(val);
-	}
-	
-	public HbString(Interpreter i, StringBuilder val) {
-		this(i,val.toString());
+		this(i,"");
 	}
 	
 	public HbString(Interpreter i, Character val) {
 		this(i,val.toString());
+	}
+	
+	public HbString(Interpreter i, String val) {
+		super(i);
+		value = val;
+		iterPos = 0;
 	}
 	
 	public String sanitizedValue() {
@@ -43,7 +40,7 @@ public class HbString extends HbObject {
 	
 	@HobbesMethod(name="clone")
 	public HbString hbClone() {
-		return new HbString(getInterp(),value.toString());
+		return getObjSpace().getString(value.toString());
 	}
 	
 	public String toString() {
@@ -101,7 +98,7 @@ public class HbString extends HbObject {
 	
 	@HobbesMethod(name="+",numArgs=1)
 	public HbString plus(HbObject other) throws HbError, ErrorWrapper, Continue, Break {
-		return new HbString(getInterp(),getValue() + other.realToString());
+		return getObjSpace().getString(getValue() + other.realToString());
 	}
 	
 	@HobbesMethod(name="*",numArgs=1)
@@ -110,7 +107,7 @@ public class HbString extends HbObject {
 			StringBuilder newString = new StringBuilder();
 			for(int i=0; i < ((HbInt)other).getValue(); i++)
 				newString.append(getValue());
-			return new HbString(getInterp(),newString);
+			return getObjSpace().getString(newString);
 		} else
 			throw new HbArgumentError(getInterp(),"*",other,"Int");
 	}
@@ -124,14 +121,14 @@ public class HbString extends HbObject {
 			IterImp it = ((HbRange)index).iterator();
 			while(it.hasNext())
 				subString.append(get(((HbInt)it.getNext()).getValue()).getValue());
-			return new HbString(getInterp(),subString);
+			return getObjSpace().getString(subString);
 		} else
 			throw new HbArgumentError(getInterp(),"[]",index,"Int or Range of Int");
 	}
 	
 	public HbString get(int ind) throws HbKeyError {
 		if(ind >= 0 && ind < length())
-			return new HbString(getInterp(),value.charAt(ind));
+			return getObjSpace().getString(new String(new char[]{value.charAt(ind)}));
 		else if(ind < 0) {
 			if(-ind <= length())
 				return get(length() + ind);
@@ -151,21 +148,43 @@ public class HbString extends HbObject {
 					"AnonymousFunction, Function, or NativeFunction");
 	}
 	
+	@HobbesMethod(name="iter_has_next")
+	public HbObject iterHasNext() {
+		return getObjSpace().getBool(iterPos < length());
+	}
+	
+	@HobbesMethod(name="iter_next")
+	public HbString iterNext() throws HbKeyError {
+		HbString next = get(iterPos);
+		iterPos++;
+		return next;
+	}
+	
+	@HobbesMethod(name="iter_index")
+	public HbInt iterIndex() throws HbKeyError {
+		return getObjSpace().getInt(iterPos);
+	}
+	
+	@HobbesMethod(name="iter_rewind")
+	public void iterRewind() {
+		iterPos = 0;
+	}
+	
 	@HobbesMethod(name="chars")
-	public HbList chars() {
+	public HbList chars() throws HbKeyError {
 		HbList toReturn = new HbList(getInterp());
 		for(int i=0; i < value.length(); i++)
-			toReturn.add(new HbString(getInterp(),value.charAt(i)));
+			toReturn.add(get(i));
 		return toReturn;
 	}
 	
 	@HobbesMethod(name="words")
-	public HbList words() throws HbArgumentError {
-		return split(new HbString(getInterp()," "));
+	public HbList words() throws HbArgumentError, HbKeyError {
+		return split(getObjSpace().getString(" "));
 	}
 	
 	@HobbesMethod(name="split",numArgs=1)
-	public HbList split(HbObject delimeter) throws HbArgumentError {
+	public HbList split(HbObject delimeter) throws HbArgumentError, HbKeyError {
 		if(delimeter instanceof HbString) {
 			String d = ((HbString)delimeter).getValue();
 			if(d.equals(""))
@@ -176,7 +195,7 @@ public class HbString extends HbObject {
 			while(pos < value.length()) {
 				if(value.substring(pos).startsWith(d)) {
 					pos += d.length();
-					toReturn.add(new HbString(getInterp(),buf.toString()));
+					toReturn.add(getObjSpace().getString(buf.toString()));
 					buf = new StringBuilder();
 				} else {
 					buf.append(value.charAt(pos));
@@ -184,7 +203,7 @@ public class HbString extends HbObject {
 				}
 			}
 			if(buf.length() > 0)
-				toReturn.add(new HbString(getInterp(),buf.toString()));
+				toReturn.add(getObjSpace().getString(buf.toString()));
 			return toReturn;
 		} else
 			throw new HbArgumentError(getInterp(),"split",delimeter,"String");
@@ -204,47 +223,29 @@ public class HbString extends HbObject {
 		return getObjSpace().getBool(!isEmpty());
 	}
 	
-	@HobbesMethod(name="lstrip!")
-	public void lstripInPlace() {
-		int pos = 0;
-		while(pos < value.length() && Character.isWhitespace(value.charAt(pos)))
-			pos++;
-		value.delete(0,pos);
-	}
-	
-	@HobbesMethod(name="rstrip!")
-	public void rstripInPlace() {
-		int pos = value.length()-1;
-		while(pos >= 0 && Character.isWhitespace(value.charAt(pos)))
-			pos--;
-		value.delete(pos+1,value.length());
-	}
-	
-	@HobbesMethod(name="strip!")
-	public void stripInPlace() {
-		lstripInPlace();
-		rstripInPlace();
-	}
-	
 	@HobbesMethod(name="lstrip")
 	public HbString lstrip() {
-		HbString newString = hbClone();
-		newString.lstripInPlace();
-		return newString;
+		if(value.length() == 0)
+			return this;
+		int pos = 0;
+		while(Character.isWhitespace(value.charAt(pos)))
+			pos++;
+		return getObjSpace().getString(value.substring(pos));
 	}
 	
 	@HobbesMethod(name="rstrip")
 	public HbString rstrip() {
-		HbString newString = hbClone();
-		newString.rstripInPlace();
-		return newString;
+		if(value.length() == 0)
+			return this;
+		int pos = value.length()-1;
+		while(Character.isWhitespace(value.charAt(pos)))
+			pos--;
+		return getObjSpace().getString(value.substring(0,pos+1));
 	}
 	
 	@HobbesMethod(name="strip")
 	public HbString strip() {
-		HbString newString = hbClone();
-		newString.stripInPlace();
-		return newString;
+		return lstrip().rstrip();
 	}
 	
 }

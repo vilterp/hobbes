@@ -8,9 +8,10 @@ import hobbes.values.*;
 
 public class ObjectSpace {
 
-	private HashMap<Integer,ValueRecord> objects;
+	private HashMap<Integer,HbObject> objects;
 	private HashMap<Integer,HbInt> intConstants;
 	private HashMap<Float,HbFloat> floatConstants;
+	private HashMap<String,HbString> stringConstants;
 	private HashMap<String,HbClass> classes;
 	private HashSet<String> builtinClasses;
 	private HashMap<String,HbNativeFunction> functions;
@@ -26,7 +27,7 @@ public class ObjectSpace {
 	public ObjectSpace(Interpreter i, boolean vgc) {
 		interp = i;
 		verboseGC = vgc;
-		objects = new HashMap<Integer,ValueRecord>();
+		objects = new HashMap<Integer,HbObject>();
 		builtinClasses = new HashSet<String>();
 		classes = new HashMap<String,HbClass>();
 		functions = new HashMap<String,HbNativeFunction>();
@@ -34,6 +35,7 @@ public class ObjectSpace {
 		collected = new HashSet<Integer>();
 		intConstants = new HashMap<Integer,HbInt>();
 		floatConstants = new HashMap<Float,HbFloat>();
+		stringConstants = new HashMap<String,HbString>();
 		nextId = 0;
 	}
 	
@@ -126,7 +128,7 @@ public class ObjectSpace {
 	}
 
 	public HbObject get(int id) {
-		return objects.get(id).getValue();
+		return objects.get(id);
 	}
 
 	public int add(HbObject val) {
@@ -137,7 +139,7 @@ public class ObjectSpace {
 	}
 
 	private void set(int id, HbObject val) {
-		objects.put(id, new ValueRecord(val));
+		objects.put(id,val);
 	}
 	
 	public HbObject getBool(boolean condition) {
@@ -186,19 +188,29 @@ public class ObjectSpace {
 		}
 	}
 	
-	public void incRefs(int id) {
-		objects.get(id).incRefs();
+	public HbString getString(String val) {
+		if(stringConstants.containsKey(val))
+			return stringConstants.get(val);
+		else {
+			HbString newConstant = new HbString(interp,val);
+			stringConstants.put(val,newConstant);
+			return newConstant;
+		}
 	}
 	
-	public void decRefs(int id) {
-		objects.get(id).decRefs();
+	public HbString getString(StringBuilder val) {
+		return getString(val.toString());
 	}
 	
 	private void garbageCollect(int id){
 		HbObject victim = get(id);
-		if(!isReferenced(id)) {
+		if(!victim.isReferenced()) {
 			if(victim instanceof HbInt)
 				intConstants.remove(((HbInt)victim).getValue());
+			else if(victim instanceof HbFloat)
+				floatConstants.remove(((HbFloat)victim).getValue());
+			else if(victim instanceof HbString)
+				stringConstants.remove(((HbString)victim).getValue());
 			for(int addr: victim.contentAddrs()) {
 				if(objects.containsKey(addr)) {
 					objects.get(addr).decRefs();
@@ -219,10 +231,6 @@ public class ObjectSpace {
 		for(int id: collected)
 			alive.remove(id);
 		collected.clear();
-	}
-	
-	private boolean isReferenced(int id) {
-		return objects.get(id).isReferenced();
 	}
 
 	public void resetAlive() {

@@ -52,7 +52,7 @@ public class HbNormalFunction extends HbNamedFunction {
 				repr.append(",");
 		}
 		repr.append(")>");
-		return new HbString(getInterp(),repr);
+		return getObjSpace().getString(repr);
 	}
 	
 	public int getNumArgs() {

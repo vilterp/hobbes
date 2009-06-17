@@ -109,7 +109,7 @@ public class Scope {
 			throw new ReadOnlyNameException(name);
 		else if(isDefined(name)) {
 			int deletedId = names.get(name);
-			objSpace.decRefs(deletedId);
+			objSpace.get(deletedId).decRefs();
 			names.remove(name);
 		} else
 			throw new UndefinedNameException(name);

@@ -13,6 +13,8 @@ public class HbDict extends HbObject {
 	
 	private Bucket[] buckets;
 	private ArrayList<HbObject> keys;
+	private int iterPos;
+	
 	private static final int INIT_SIZE = 11;
 	private static final String COMMA_SPACE = ", ";
 	private static final String COLON_SPACE = ": ";
@@ -25,6 +27,7 @@ public class HbDict extends HbObject {
 		super(i);
 		keys = k;
 		buckets = b;
+		iterPos = 0;
 	}
 	
 	public int[] contentAddrs() {
@@ -43,8 +46,11 @@ public class HbDict extends HbObject {
 	}
 	
 	@HobbesMethod(name="clone")
-	public HbDict hbClone() {
-		return new HbDict(getInterp(),buckets.clone(),keys);
+	public HbDict hbClone() throws ErrorWrapper, HbError, Continue, Break {
+		HbDict newDict = new HbDict(getInterp());
+		for(HbObject key: keys)
+			newDict.put(key,get(key));
+		return newDict;
 	}
 	
 	@HobbesMethod(name="size")
@@ -83,7 +89,7 @@ public class HbDict extends HbObject {
 				repr.append(COMMA_SPACE);
 		}
 		repr.append('}');
-		return new HbString(getInterp(),repr);
+		return getObjSpace().getString(repr);
 	}
 	
 	@HobbesMethod(name="[]",numArgs=1)
@@ -162,6 +168,32 @@ public class HbDict extends HbObject {
 		return toReturn;
 	}
 	
+	@HobbesMethod(name="iter_has_next")
+	public HbObject iterHasNext() {
+		return getObjSpace().getBool(iterPos < keys.size());
+	}
+	
+	@HobbesMethod(name="iter_next")
+	public HbObject iterNext() throws ErrorWrapper, HbError, Continue, Break {
+		HbObject temp = get(keys.get(iterPos));
+		iterAdvance();
+		return temp;
+	}
+	
+	@HobbesMethod(name="iter_index")
+	public HbObject iterIndex() {
+		return keys.get(iterPos);
+	}
+	
+	public void iterAdvance() {
+		iterPos++;
+	}
+	
+	@HobbesMethod(name="iter_rewind")
+	public void iterRewind() {
+		iterPos = 0;
+	}
+	
 	private int map(int val) {
 		return Math.abs(val) % buckets.length;
 	}
@@ -171,7 +203,7 @@ public class HbDict extends HbObject {
 		private ArrayList<Entry> entries;
 		
 		public Bucket() {
-			entries = new ArrayList<Entry>();
+			entries = new ArrayList<Entry>(2);
 		}
 		
 		/*
@@ -183,7 +215,6 @@ public class HbDict extends HbObject {
 				Entry entry = entries.get(i);
 				if(entry.getKey().realHashCode()
 						== e.getKey().realHashCode()) {
-					entries.get(i).getKey().decRefs();
 					entries.get(i).getValue().decRefs();
 					entries.remove(i);
 					entries.add(e);

@@ -133,7 +133,7 @@ public class HbClass extends HbObject {
 			ans.append(')');
 		}
 		ans.append('>');
-		return new HbString(getInterp(),ans);
+		return getObjSpace().getString(ans);
 	}
 	
 	public Class<?extends HbObject> getJavaClass() {
@@ -142,7 +142,7 @@ public class HbClass extends HbObject {
 	
 	@HobbesMethod(name="name")
 	public HbString name() {
-		return new HbString(getInterp(),name);
+		return getObjSpace().getString(name);
 	}
 	
 	@HobbesMethod(name="superclass")

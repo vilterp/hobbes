@@ -56,7 +56,7 @@ public class HbAnonymousFunction extends HbFunction {
 		repr.append('@');
 		repr.append(getId());
 		repr.append('>');
-		return new HbString(getInterp(),repr);
+		return getObjSpace().getString(repr);
 	}
 	
 	public int getNumArgs() {

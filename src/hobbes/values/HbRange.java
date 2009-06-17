@@ -12,6 +12,7 @@ public class HbRange extends HbObject {
 	
 	private HbObject start;
 	private HbObject end;
+	private HbObject iterCur;
 	
 	public HbRange(Interpreter i) throws HbArgumentError {
 		super(i);
@@ -28,6 +29,7 @@ public class HbRange extends HbObject {
 		end = e;
 		start.incRefs();
 		end.incRefs();
+		iterCur = start;
 		if(s.getHbClass() != e.getHbClass())
 			throw new HbArgumentError(getInterp(),"start and end are of different classes ("
 					+ s.getHbClass().getName() + " and " + e.getHbClass().getName()
@@ -62,7 +64,7 @@ public class HbRange extends HbObject {
 		repr.append(" to ");
 		repr.append(end.realToString());
 		repr.append(">");
-		return new HbString(getInterp(),repr);
+		return getObjSpace().getString(repr);
 	}
 	
 	@HobbesMethod(name="each",numArgs=1)
@@ -73,6 +75,23 @@ public class HbRange extends HbObject {
 		} else
 			throw new HbArgumentError(getInterp(),"each",func,
 					"AnonymousFunction, Function, or NativeFunction");
+	}
+	
+	@HobbesMethod(name="iter_has_next")
+	public HbObject iterHasNext() throws ErrorWrapper, HbError, Continue, Break {
+		return getObjSpace().getBool(iterCur.lt(end) || iterCur.gt(end));
+	}
+	
+	@HobbesMethod(name="iter_next")
+	public HbObject iterNext() throws ErrorWrapper, HbError, Continue, Break {
+		HbObject temp = iterCur;
+		iterCur = iterCur.call("succ");
+		return temp;
+	}
+	
+	@HobbesMethod(name="iter_rewind")
+	public void iterRewind() {
+		iterCur = start;
 	}
 	
 	@HobbesMethod(name="toList")

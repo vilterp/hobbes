@@ -19,7 +19,7 @@ public class Interpreter {
 	public static void main(String[] args) {
 		if(args.length == 0) { // interactive console
 			Scanner s = new Scanner(System.in);
-			Interpreter i = new Interpreter("<console>",true,false);
+			Interpreter i = new Interpreter("<console>",false,false);
 			while(true) {
 				if(i.needsMore())
 					System.out.print(" " + i.getLastOpener() + " ");
@@ -226,7 +226,7 @@ public class Interpreter {
 		else if(expr instanceof AnonymousFunctionNode)
 			return evalAnonFunc((AnonymousFunctionNode)expr);
 		else if(expr instanceof StringNode)
-			return new HbString(this,((StringNode)expr).getValue());
+			return objSpace.getString(((StringNode)expr).getValue());
 		else if(expr instanceof NegativeNode)
 			return evalNegative((NegativeNode)expr);
 		else if(expr instanceof NotNode)
@@ -704,6 +704,8 @@ public class Interpreter {
 			execIf((IfStatementNode)stmt);
 		else if(stmt instanceof WhileLoopNode)
 			execWhile((WhileLoopNode)stmt);
+		else if(stmt instanceof ForLoopNode)
+			execFor((ForLoopNode)stmt);
 		else if(stmt instanceof TryNode)
 			execTry((TryNode)stmt);
 		else if(stmt instanceof ContinueNode)
@@ -712,6 +714,49 @@ public class Interpreter {
 			throw new Break(((BreakNode)stmt).getOrigin());
 		else
 			System.out.println("doesn't do that statement yet");
+	}
+
+	private void execFor(ForLoopNode stmt) throws ErrorWrapper, HbError, 
+																	Return, Continue, Break {
+		HbObject collection = eval(stmt.getCollection());
+		// check for necessary methods
+		if(!collection.getHbClass().hasMethod("iter_has_next"))
+			throwIterError("iter_has_next",collection.getHbClass().getName(),
+												stmt.getInWord().getEnd().next());
+		if(!collection.getHbClass().hasMethod("iter_next"))
+			throwIterError("iter_next",collection.getHbClass().getName(),
+												stmt.getInWord().getEnd().next());
+		if(!collection.getHbClass().hasMethod("iter_rewind"))
+			throwIterError("iter_rewind",collection.getHbClass().getName(),
+												stmt.getInWord().getEnd().next());
+		if(stmt.getIndexVar() != null &&
+			!collection.getHbClass().hasMethod("iter_index"))
+			throwIterError("iter_index",collection.getHbClass().getName(),
+												stmt.getInWord().getEnd().next());
+		// run loop
+		while(collection.call("iter_has_next") == objSpace.getTrue()) {
+			if(stmt.getIndexVar() != null) {
+				// this must be before iter_next is called
+				// cuz iter_next moves the cursor
+				HbObject index = collection.call("iter_index");
+				getCurrentFrame().getScope().assign(stmt.getIndexVar().getName(),index);
+			}
+			HbObject next = collection.call("iter_next");
+			getCurrentFrame().getScope().assign(stmt.getLoopVar().getName(),next);
+			try {
+				runBlock(stmt.getBlock());
+			} catch(Continue c) {
+				continue;
+			} catch(Break b) {
+				collection.call("iter_rewind");
+				return;
+			}
+		}
+		collection.call("iter_rewind");
+	}
+	
+	private void throwIterError(String mn, String cn, SourceLocation loc) throws ErrorWrapper {
+		throw new ErrorWrapper(new HbMissingMethodError(this,mn,cn),loc);
 	}
 
 	private void execTry(TryNode stmt) throws Continue, Break, Return, ErrorWrapper, HbError {

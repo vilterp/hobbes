@@ -36,7 +36,7 @@ public class HbError extends HbObject {
 			ans.append("\"");
 		}
 		ans.append(">");
-		return new HbString(getInterp(),ans);
+		return getObjSpace().getString(ans);
 	}
 	
 }

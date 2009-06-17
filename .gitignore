@@ -3,3 +3,7 @@
 bin/*
 *.class
 .DS_Store
+*.ppt
+*.rtf
+*.py
+*.rb

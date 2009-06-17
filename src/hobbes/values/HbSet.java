@@ -34,7 +34,7 @@ public class HbSet extends HbObject {
 	}
 	
 	@HobbesMethod(name="clone")
-	public HbSet hbClone() {
+	public HbSet hbClone() throws ErrorWrapper, HbError, Continue, Break {
 		HbDict newElements = elements.hbClone();
 		newElements.incRefs();
 		return new HbSet(getInterp(),newElements);
@@ -82,7 +82,7 @@ public class HbSet extends HbObject {
 		}
 	}
 	
-	@HobbesMethod(name="add")
+	@HobbesMethod(name="add",numArgs=1)
 	public void add(HbObject obj) throws ErrorWrapper, HbError, Continue, Break {
 		elements.put(obj,getObjSpace().getTrue());
 	}
@@ -97,7 +97,7 @@ public class HbSet extends HbObject {
 				repr.append(COMMA_SPACE);
 		}
 		repr.append('}');
-		return new HbString(getInterp(),repr);
+		return getObjSpace().getString(repr);
 	}
 	
 	@HobbesMethod(name="toList")
@@ -116,6 +116,23 @@ public class HbSet extends HbObject {
 		} else
 			throw new HbArgumentError(getInterp(),"each",func,
 					"AnonymousFunction, Function, or NativeFunction");
+	}
+	
+	@HobbesMethod(name="iter_has_next")
+	public HbObject iterHasNext() {
+		return elements.iterHasNext();
+	}
+	
+	@HobbesMethod(name="iter_next")
+	public HbObject iterNext() throws ErrorWrapper, HbError, Continue, Break {
+		HbObject next = elements.iterIndex();
+		elements.iterAdvance();
+		return next;
+	}
+	
+	@HobbesMethod(name="iter_rewind")
+	public void iterRewind() {
+		elements.iterRewind();
 	}
 	
 	@HobbesMethod(name="+",numArgs=1)

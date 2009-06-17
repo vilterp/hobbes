@@ -13,6 +13,6 @@ def getterm(terms,term) {
   }
 }
 
-(0 to 100).each(|term|{
+for term in 1 to 50 {
   print(getterm(terms,term))
-})
+}

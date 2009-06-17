@@ -37,6 +37,10 @@ public class ForLoopNode implements StatementNode {
 		return loopVar;
 	}
 	
+	public VariableNode getIndexVar() {
+		return indexVar;
+	}
+	
 	public BlockNode getBlock() {
 		return block;
 	}

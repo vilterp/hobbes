@@ -14,6 +14,7 @@ import hobbes.values.HbRange.IterImp;
 public class HbList extends HbObject {
 	
 	private ArrayList<HbObject> elements;
+	private int iterPos = 0;
 	private static Random r = new Random();
 	private static final String COMMA_SPACE = ", ";
 	
@@ -23,6 +24,7 @@ public class HbList extends HbObject {
 	
 	public HbList(Interpreter o, ArrayList<HbObject> initValues) {
 		super(o);
+		iterPos = 0;
 		elements = initValues;
 	}
 	
@@ -39,7 +41,10 @@ public class HbList extends HbObject {
 	
 	@HobbesMethod(name="clone")
 	public HbList hbClone() {
-		return new HbList(getInterp(),(ArrayList<HbObject>)elements.clone());
+		HbList newList = new HbList(getInterp());
+		for(HbObject elem: elements)
+			newList.add(elem); // this incRefs each object
+		return newList;
 	}
 	
 	@HobbesMethod(name="toString")
@@ -52,7 +57,7 @@ public class HbList extends HbObject {
 				repr.append(COMMA_SPACE);
 		}
 		repr.append(']');
-		return new HbString(getInterp(),repr);
+		return getObjSpace().getString(repr);
 	}
 	
 	@HobbesMethod(name="toBool")
@@ -121,16 +126,6 @@ public class HbList extends HbObject {
 		obj.incRefs();
 	}
 	
-	@HobbesMethod(name="each",numArgs=1)
-	public void each(HbObject func) throws ErrorWrapper, HbError, Continue, Break {
-		if(func instanceof HbFunction) {
-			for(HbObject elem: elements)
-				getInterp().callFunc((HbFunction)func,new HbObject[]{elem},null);
-		} else
-			throw new HbArgumentError(getInterp(),"each",func,
-						"AnonymousFunction, Function, or NativeFunction");
-	}
-	
 	@HobbesMethod(name="[]del",numArgs=1)
 	public void removeAtIndex(HbObject index) throws HbArgumentError {
 		if(index instanceof HbInt) {
@@ -176,27 +171,22 @@ public class HbList extends HbObject {
 				if(it.hasNext())
 					ans.append(j);
 			}
-			return new HbString(getInterp(),ans);
+			return getObjSpace().getString(ans);
 		} else
 			throw new HbArgumentError(getInterp(),"join",
 								joiner,
 								"String");
 	}
 	
-	@HobbesMethod(name="merge!",numArgs=1)
-	public void mergeInPlace(HbObject other) throws HbArgumentError {
-		if(other instanceof HbList) {
-			for(HbObject elem: ((HbList)other).getElements())
-				add(elem);
-		} else
-			throw new HbArgumentError(getInterp(),"merge",other,"List");
-	}
-	
-	@HobbesMethod(name="merge",numArgs=1)
+	@HobbesMethod(name="+",numArgs=1)
 	public HbList merge(HbObject other) throws HbArgumentError {
-		HbList newList = hbClone();
-		newList.mergeInPlace(other);
-		return newList;
+		if(other instanceof HbList) {
+			HbList newList = hbClone();
+			for(HbObject elem: ((HbList)other).getElements())
+				newList.add(elem);
+			return newList;
+		} else
+			throw new HbArgumentError(getInterp(),"+",other,"List");
 	}
 	
 	@HobbesMethod(name="find",numArgs=1)
@@ -283,6 +273,38 @@ public class HbList extends HbObject {
 		HbList newList = hbClone();
 		newList.reverseInPlace();
 		return newList;
+	}
+	
+	@HobbesMethod(name="each",numArgs=1)
+	public void each(HbObject func) throws ErrorWrapper, HbError, Continue, Break {
+		if(func instanceof HbFunction) {
+			for(HbObject elem: elements)
+				getInterp().callFunc((HbFunction)func,new HbObject[]{elem},null);
+		} else
+			throw new HbArgumentError(getInterp(),"each",func,
+						"AnonymousFunction, Function, or NativeFunction");
+	}
+	
+	@HobbesMethod(name="iter_has_next")
+	public HbObject iterHasNext() {
+		return getObjSpace().getBool(iterPos < length());
+	}
+	
+	@HobbesMethod(name="iter_next")
+	public HbObject iterNext() throws HbKeyError {
+		HbObject elem = get(iterPos);
+		iterPos++;
+		return elem;
+	}
+	
+	@HobbesMethod(name="iter_index")
+	public HbInt iterIndex() {
+		return getObjSpace().getInt(iterPos);
+	}
+	
+	@HobbesMethod(name="iter_rewind")
+	public void iterRewind() {
+		iterPos = 0;
 	}
 	
 	@HobbesMethod(name="sort")
