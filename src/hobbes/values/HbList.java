@@ -172,7 +172,7 @@ public class HbList extends HbObject {
 			StringBuilder ans = new StringBuilder();
 			Iterator<HbObject> it = elements.iterator();
 			while(it.hasNext()) {
-				ans.append(it.next().hbToString());
+				ans.append(it.next().realToString());
 				if(it.hasNext())
 					ans.append(j);
 			}
@@ -254,6 +254,15 @@ public class HbList extends HbObject {
 			return newList;
 		} else
 			throw new HbArgumentError(getInterp(),"filter",func,"AnonymousFunction");
+	}
+	
+	@HobbesMethod(name="flatten")
+	public HbList flatten() throws ErrorWrapper, HbError, Continue, Break {
+		HbList newList = new HbList(getInterp());
+		for(HbObject element: elements)
+			if(element.call("toBool") == getObjSpace().getTrue())
+				newList.add(element);
+		return newList;
 	}
 	
 	public HbObject[] toArray() {

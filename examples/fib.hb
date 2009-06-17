@@ -6,6 +6,6 @@ def fib(term) {
   }
 }
 
-(0 to 20).each(|term|{
+(0 to 19).each(|term|{
   print(fib(term))
 })

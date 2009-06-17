@@ -1,6 +1,5 @@
 package hobbes.values;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 
 import hobbes.interpreter.Break;

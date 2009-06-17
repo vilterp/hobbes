@@ -19,7 +19,7 @@ public class Interpreter {
 	public static void main(String[] args) {
 		if(args.length == 0) { // interactive console
 			Scanner s = new Scanner(System.in);
-			Interpreter i = new Interpreter("<console>",false,false);
+			Interpreter i = new Interpreter("<console>",true,false);
 			while(true) {
 				if(i.needsMore())
 					System.out.print(" " + i.getLastOpener() + " ");
@@ -163,7 +163,6 @@ public class Interpreter {
 	
 	private String interpret(SyntaxNode tree) {
 		if(tree != null) {
-			topLevelFrame.setCurrentLine(tree.getLine());
 			try {
 				HbObject result = run(tree);
 				String toReturn = null;
@@ -399,7 +398,11 @@ public class Interpreter {
 			System.out.print(args[0].realToString());
 			Scanner in = new Scanner(System.in);
 			popFrame();
-			return new HbString(this,in.nextLine());
+			try {
+				return new HbString(this,in.nextLine());
+			} catch(NoSuchElementException e) {
+				return objSpace.getNil();
+			}
 		} else if(func.getName().equals("eval")) {
 			if(args[0] instanceof HbString) {
 				HbObject result = evalFunc(((HbString)args[0]).getValue(),parenLoc);

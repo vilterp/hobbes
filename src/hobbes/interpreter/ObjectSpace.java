@@ -131,7 +131,7 @@ public class ObjectSpace {
 
 	public int add(HbObject val) {
 		int id = getId();
-		set(id, val);
+		set(id,val);
 		alive.add(id);
 		return id;
 	}

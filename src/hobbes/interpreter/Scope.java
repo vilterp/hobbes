@@ -1,11 +1,9 @@
 package hobbes.interpreter;
 
-import hobbes.values.HbClass;
 import hobbes.values.HbObject;
 import hobbes.values.HbReadOnlyError;
 import hobbes.values.HbUndefinedNameError;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -18,6 +16,7 @@ public class Scope {
 	
 	private static HashSet<String> readOnlys = new HashSet<String>();
 	static {
+		readOnlys.add("_");
 		readOnlys.add("true");
 		readOnlys.add("false");
 		readOnlys.add("nil");
