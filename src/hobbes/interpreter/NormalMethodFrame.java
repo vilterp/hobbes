@@ -1,16 +1,16 @@
 package hobbes.interpreter;
 
 import hobbes.parser.SourceLocation;
-import hobbes.values.HbObject;
+import hobbes.values.HbNormalObject;
 
 public class NormalMethodFrame extends MethodFrame {
 	
 	private String methodName;
 	private String className;
 	private SourceLocation callLoc;
-	private HbObject receiver;
+	private HbNormalObject receiver;
 	
-	public NormalMethodFrame(Interpreter i, Scope adoptGlobals, HbObject rec,
+	public NormalMethodFrame(Interpreter i, Scope adoptGlobals, HbNormalObject rec,
 						String mn, SourceLocation p) {
 		super(new Scope(i,adoptGlobals));
 		methodName = mn;
@@ -19,7 +19,7 @@ public class NormalMethodFrame extends MethodFrame {
 		className = rec.getHbClass().getName();
 	}
 	
-	public HbObject getReceiver() {
+	public HbNormalObject getReceiver() {
 		return receiver;
 	}
 	

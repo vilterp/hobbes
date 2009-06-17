@@ -12,7 +12,7 @@ class Person {
 }
 while(true) {
   input = get_input('name: ')
-  p = new Person if input.empty? else new Person(input)
+  p = new Person(input) unless input.empty? else new Person
   print(p)
   p.say_hi
 }

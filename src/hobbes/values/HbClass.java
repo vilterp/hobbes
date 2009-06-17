@@ -39,7 +39,7 @@ public class HbClass extends HbObject {
 	 */
 	public HbClass(Interpreter i, String name, String superclass) {
 		this(i,HbObject.class,name,superclass);
-		javaClass = HbObject.class;
+		javaClass = HbNormalObject.class;
 		setClass(getObjSpace().getClass("Class"));
 	}
 	

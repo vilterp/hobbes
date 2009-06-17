@@ -15,13 +15,11 @@ public class HbObject extends Throwable {
 	private int numRefs;
 	private HbClass hobbesClass;
 	private Interpreter interp;
-	private HashMap<String,Integer> instanceVars;
 	
 	public HbObject(Interpreter i) {
 		interp = i;
 		id = getObjSpace().add(this);
 		numRefs = 0;
-		instanceVars = new HashMap<String,Integer>();
 		// get HbClass instance
 		if(getClass().isAnnotationPresent(HobbesClass.class)) {
 			String className = getClass().getAnnotation(HobbesClass.class).name();
@@ -30,14 +28,6 @@ public class HbObject extends Throwable {
 		} else
 			throw new IllegalArgumentException("\"" + getClass().getName()
 					+ "\" extends HbObject but doesn't have a HbClass annotation");
-	}
-	
-	public HbObject(Interpreter i, HbClass c) {
-		// FIXME eww code duplication
-		interp = i;
-		id = getObjSpace().add(this);
-		instanceVars = new HashMap<String,Integer>();
-		hobbesClass = c;
 	}
 	
 	public void setClass(HbClass c) {
@@ -160,18 +150,6 @@ public class HbObject extends Throwable {
 	
 	public boolean isReferenced() {
 		return numRefs > 0;
-	}
-	
-	public void putInstVar(String name, HbObject val) throws ErrorWrapper, HbError {
-		HbObject prev = getObjSpace().get(instanceVars.get(name));
-		if(prev != null)	
-			prev.decRefs();
-		instanceVars.put(name,val.getId());
-		val.incRefs();
-	}
-	
-	public HbObject getInstVar(String name) {
-		return getObjSpace().get(instanceVars.get(name));
 	}
 	
 	@HobbesMethod(name="init")

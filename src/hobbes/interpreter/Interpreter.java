@@ -463,8 +463,12 @@ public class Interpreter {
 
 	private HbObject evalInstanceVar(InstanceVarNode expr) throws ErrorWrapper {
 		if(getCurrentFrame() instanceof NormalMethodFrame) {
-			return ((NormalMethodFrame)getCurrentFrame())
-											.getReceiver().getInstVar(expr.getName());
+			try {
+				return ((NormalMethodFrame)getCurrentFrame())
+												.getReceiver().getInstVar(expr.getName());
+			} catch (HbUndefinedNameError e) {
+				throw new ErrorWrapper(e,expr.getOrigin().getStart());
+			}
 		} else
 			throw new ErrorWrapper(new HbSyntaxError(this,
 					"Unexpected instance variable: not inside a method"),
@@ -588,7 +592,8 @@ public class Interpreter {
 		if(args.length != method.getNumArgs())
 			throw getArgumentError(methodName,args.length,method.getNumArgs(),loc);
 		if(method instanceof HbNormalMethod)
-			return evalNormalMethodCall(receiver,(HbNormalMethod)method,args,loc);
+			return evalNormalMethodCall((HbNormalObject)receiver,
+										(HbNormalMethod)method,args,loc);
 		else
 			return evalNativeMethodCall(receiver,(HbNativeMethod)method,args,loc);
 	}
@@ -626,7 +631,7 @@ public class Interpreter {
 		return new ErrorWrapper(new HbArgumentError(this,msg),loc);
 	}
 	
-	private HbObject evalNormalMethodCall(HbObject receiver, HbNormalMethod method,
+	private HbObject evalNormalMethodCall(HbNormalObject receiver, HbNormalMethod method,
 													HbObject[] args,
 													SourceLocation origin)
 												throws ErrorWrapper, HbError, Continue, Break {
