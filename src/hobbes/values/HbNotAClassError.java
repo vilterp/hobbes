@@ -2,7 +2,7 @@ package hobbes.values;
 
 import hobbes.interpreter.Interpreter;
 
-@HobbesClass(name="NotAClassError")
+@HobbesClass(name="NotAClassError",superclass="Error")
 public class HbNotAClassError extends HbError {
 	
 	public HbNotAClassError(Interpreter o) throws HbArgumentError {

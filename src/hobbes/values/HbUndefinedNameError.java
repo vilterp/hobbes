@@ -2,7 +2,7 @@ package hobbes.values;
 
 import hobbes.interpreter.Interpreter;
 
-@HobbesClass(name="UndefinedNameError")
+@HobbesClass(name="UndefinedNameError",superclass="Error")
 public class HbUndefinedNameError extends HbError {
 	
 	public HbUndefinedNameError(Interpreter i) throws HbArgumentError {

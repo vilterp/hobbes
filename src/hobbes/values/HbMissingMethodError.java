@@ -2,7 +2,7 @@ package hobbes.values;
 
 import hobbes.interpreter.Interpreter;
 
-@HobbesClass(name="MissingMethodError")
+@HobbesClass(name="MissingMethodError",superclass="Error")
 public class HbMissingMethodError extends HbError {
 	
 	public HbMissingMethodError(Interpreter i) throws HbArgumentError {

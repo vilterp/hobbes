@@ -4,7 +4,7 @@ import hobbes.interpreter.Interpreter;
 import hobbes.interpreter.ObjectSpace;
 import hobbes.parser.SourceLocation;
 
-@HobbesClass(name="ArgumentError")
+@HobbesClass(name="ArgumentError",superclass="Error")
 public class HbArgumentError extends HbError {
 	
 	public HbArgumentError(Interpreter i) throws HbArgumentError {

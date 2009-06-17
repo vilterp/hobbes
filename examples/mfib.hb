@@ -1,3 +1,4 @@
+# see http://github.com/bonasaurus1/hobbes/issues/#issue/79
 terms = {}
 
 def getterm(terms,term) {

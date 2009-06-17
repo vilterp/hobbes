@@ -2,7 +2,7 @@ package hobbes.values;
 
 import hobbes.interpreter.Interpreter;
 
-@HobbesClass(name="ReadOnlyError")
+@HobbesClass(name="ReadOnlyError",superclass="Error")
 public class HbReadOnlyError extends HbError {
 	
 	public HbReadOnlyError(Interpreter o) throws HbArgumentError {

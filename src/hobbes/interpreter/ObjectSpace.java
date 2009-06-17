@@ -93,7 +93,7 @@ public class ObjectSpace {
 			String name = ((HobbesClass)klass
 							.getAnnotation(HobbesClass.class)).name();
 			String superclass = ((HobbesClass)klass
-						.getAnnotation(HobbesClass.class)).superClass();
+						.getAnnotation(HobbesClass.class)).superclass();
 			classes.put(name,new HbClass(interp,klass,superclass));
 			classes.get(name).setClass(classes.get("Class"));
 		} else

@@ -2,7 +2,7 @@ package hobbes.values;
 
 import hobbes.interpreter.Interpreter;
 
-@HobbesClass(name="SyntaxError")
+@HobbesClass(name="SyntaxError",superclass="Error")
 public class HbSyntaxError extends HbError {
 	
 	public HbSyntaxError(Interpreter o) throws HbArgumentError {
