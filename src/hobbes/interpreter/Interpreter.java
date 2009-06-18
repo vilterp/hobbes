@@ -19,7 +19,7 @@ public class Interpreter {
 	public static void main(String[] args) {
 		if(args.length == 0) { // interactive console
 			Scanner s = new Scanner(System.in);
-			Interpreter i = new Interpreter("<console>",false,false);
+			Interpreter i = new Interpreter("<console>",true,false);
 			while(true) {
 				if(i.needsMore())
 					System.out.print(" " + i.getLastOpener() + " ");

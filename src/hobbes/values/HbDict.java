@@ -1,18 +1,19 @@
 package hobbes.values;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 
 import hobbes.interpreter.Break;
 import hobbes.interpreter.Continue;
 import hobbes.interpreter.ErrorWrapper;
 import hobbes.interpreter.Interpreter;
-
 @HobbesClass(name="Dict")
 public class HbDict extends HbObject {
 	
 	private Bucket[] buckets;
 	private ArrayList<HbObject> keys;
+	private ArrayList<HbObject> values;
 	private int iterPos;
 	
 	private static final int INIT_SIZE = 11;
@@ -20,20 +21,28 @@ public class HbDict extends HbObject {
 	private static final String COLON_SPACE = ": ";
 	
 	public HbDict(Interpreter i) {
-		this(i,new Bucket[INIT_SIZE],new ArrayList<HbObject>());
+		this(i,new Bucket[INIT_SIZE],new ArrayList<HbObject>(),new ArrayList<HbObject>());
 	}
 	
-	public HbDict(Interpreter i, Bucket[] b, ArrayList<HbObject> k) {
+	public HbDict(Interpreter i, Bucket[] b, ArrayList<HbObject> k, ArrayList<HbObject> v) {
 		super(i);
 		keys = k;
+		values = v;
 		buckets = b;
 		iterPos = 0;
 	}
 	
 	public int[] contentAddrs() {
-		int[] addrs = new int[size()];
-		for(int i=0; i < size(); i++)
-			addrs[i] = keys.get(i).getId();
+		int[] addrs = new int[keys.size() + values.size()];
+		int i = 0;
+		for(HbObject key: keys) {
+			addrs[i] = key.getId();
+			i++;
+		}
+		for(HbObject value: values) {
+			addrs[i] = value.getId();
+			i++;
+		}
 		return addrs;
 	}
 	
@@ -111,11 +120,7 @@ public class HbDict extends HbObject {
 			buckets[bucketIndex] = new Bucket();
 			bucket = buckets[bucketIndex];
 		}
-		if(bucket.addEntry(new Entry(key,value))) {
-			keys.add(key);
-			key.incRefs();
-			value.incRefs();
-		}
+		bucket.addEntry(key,value);
 	}
 	
 	@HobbesMethod(name="[]del",numArgs=1)
@@ -206,23 +211,36 @@ public class HbDict extends HbObject {
 			entries = new ArrayList<Entry>(2);
 		}
 		
-		/*
-		 * true: new
-		 * false: overwrite
-		 */
-		public boolean addEntry(Entry e) throws ErrorWrapper, HbError, Continue, Break {
+		public String toString() {
+			return "Bucket" + entries.toString();
+		}
+		
+		public void addEntry(HbObject key, HbObject value)
+											throws ErrorWrapper, HbError, Continue, Break {
 			for(int i=0; i < entries.size(); i++) {
-				Entry entry = entries.get(i);
-				if(entry.getKey().realHashCode()
-						== e.getKey().realHashCode()) {
-					entries.get(i).getValue().decRefs();
-					entries.remove(i);
-					entries.add(e);
-					return false;
+				Entry oldEntry = entries.get(i);
+				if(oldEntry.getKey().realHashCode()
+						== key.realHashCode()) { // same key: overwrite value
+					// dec refs on old key, value
+					oldEntry.getValue().decRefs();
+					oldEntry.getKey().decRefs();
+					// inc refs on new key, value
+					value.incRefs();
+					key.incRefs();
+					// add key, value
+					keys.set(oldEntry.getKeyInd(),key);
+					values.set(oldEntry.getValueInd(),value);
+					// overwrite entry
+					entries.set(i,new Entry(key,oldEntry.getKeyInd(),
+										value,oldEntry.getValueInd()));
+					return;
 				}
 			}
-			entries.add(e);
-			return true;
+			key.incRefs();
+			value.incRefs();
+			keys.add(key);
+			values.add(value);
+			entries.add(new Entry(key,keys.size()-1,value,values.size()-1));
 		}
 		
 		public boolean removeEntry(HbObject key) throws ErrorWrapper, HbError, Continue, Break {
@@ -231,6 +249,8 @@ public class HbDict extends HbObject {
 				if(entry.getKey().realHashCode() == key.realHashCode()) {
 					entry.getKey().decRefs();
 					entry.getValue().decRefs();
+					keys.remove(entry.getKeyInd());
+					values.remove(entry.getKeyInd());
 					return true;
 				}
 			}
@@ -250,10 +270,18 @@ public class HbDict extends HbObject {
 		
 		private HbObject key;
 		private HbObject value;
+		private int keyInd;
+		private int valueInd;
 		
-		public Entry(HbObject k, HbObject v) {
+		public Entry(HbObject k, int ki, HbObject v, int vi) {
 			key = k;
+			keyInd = ki;
 			value = v;
+			valueInd = vi;
+		}
+		
+		public String toString() {
+			return "Entry[" + key + ": " + value + "]";
 		}
 		
 		public HbObject getKey() {
@@ -262,6 +290,14 @@ public class HbDict extends HbObject {
 		
 		public HbObject getValue() {
 			return value;
+		}
+
+		public int getKeyInd() {
+			return keyInd;
+		}
+
+		public int getValueInd() {
+			return valueInd;
 		}
 		
 	}
