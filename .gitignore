@@ -3,7 +3,7 @@
 .classpath
 .project
 .pydevproject
-bin/*
+build
 *.class
 .DS_Store
 *.ppt

@@ -1,4 +1,7 @@
-package hobbes.interpreter;
+package hobbes;
+
+import hobbes.interpreter.Debugger;
+import hobbes.interpreter.Interpreter;
 
 import java.io.File;
 import java.io.FileNotFoundException;

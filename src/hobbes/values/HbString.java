@@ -170,6 +170,13 @@ public class HbString extends HbObject {
 		iterPos = 0;
 	}
 	
+	public HbString succ() {
+		int[] values = new int[length()];
+		for(int i=0; i < length(); i++)
+			values[i] = value.codePointAt(i);
+		return null;
+	}
+	
 	@HobbesMethod(name="chars")
 	public HbList chars() throws HbKeyError {
 		HbList toReturn = new HbList(getInterp());

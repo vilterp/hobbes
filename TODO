@@ -1,0 +1,9 @@
+- Interpreter
+  - fix eval
+- HbObject
+  - show v. toString
+  - +?
+- HbFloat, HbInt
+  - toString
+- HbString
+  - toNumber (toInt? toFloat?)
