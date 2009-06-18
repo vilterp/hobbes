@@ -1,3 +1,12 @@
 HOBBES
 
 Hobbes is a dynamic, interpreted language: minimalist like Python, everything is an object like Ruby.
+
+INSTALL
+
+1. get source from http://github.com/bonasaurus1/hobbes/tree/master
+2. ant
+3. move hobbes.jar somewhere
+4. edit hobbes.sh to point at where you put hobbes.jar
+5. move hobbes.sh onto your path
+6. $ hobbes
