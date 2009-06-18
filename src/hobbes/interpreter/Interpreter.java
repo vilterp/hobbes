@@ -1,7 +1,5 @@
 package hobbes.interpreter;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -16,70 +14,6 @@ import hobbes.values.*;
 
 public class Interpreter {
 	
-	public static void main(String[] args) {
-		if(args.length == 0) { // interactive console
-			Scanner s = new Scanner(System.in);
-			Interpreter i = new Interpreter("<console>",true,false);
-			while(true) {
-				if(i.needsMore())
-					System.out.print(" " + i.getLastOpener() + " ");
-				else
-					System.out.print(">> ");
-				try {
-					i.add(s.nextLine());
-					if(!i.needsMore()) {
-						String result = i.getResult();
-						if(result != null)
-							System.out.println("=> " + result);
-					}
-				} catch(NoSuchElementException e) {
-					System.out.println();
-					break;
-				}
-			}
-		} else if(args.length == 1) {
-			if(args[0].equals("-h")) {
-				System.out.println(HELP);
-			} else { // run file
-				File f = new File(args[0]);
-				Scanner s = null;
-				try {
-					s = new Scanner(f);
-				} catch (FileNotFoundException e) {
-					System.err.println("File \"" + args[0] + "\" not found.");
-					System.exit(0);
-				}
-				Interpreter i = new Interpreter(args[0],false,true);
-				while(s.hasNext()) {
-					i.add(s.nextLine());
-					if(!i.needsMore())
-						i.getResult();
-				}
-				if(i.needsMore())
-					System.err.println("Unexpected end of file in "
-							+ "\"" + args[0] + "\": "
-							+ "still waiting to close " + i.getLastOpener());
-			}
-		} else if(args.length == 2 && args[1].equals("-d")) {
-			File f = new File(args[0]);
-			Scanner s = null;
-			try {
-				s = new Scanner(f);
-			} catch (FileNotFoundException e) {
-				System.err.println("File \"" + args[0] + "\" not found");
-				System.exit(1);
-			}
-			Debugger d = new Debugger(args[0]);
-			while(s.hasNext()) {
-				d.addLine(s.nextLine());
-			}
-			d.go();
-		} else {
-			System.out.println("Invalid args");
-			System.out.print(HELP);
-		}
-	}
-	
 	private Stack<ExecutionFrame> stack;
 	private SourceFile file;
 	private FileFrame topLevelFrame;
@@ -91,10 +25,6 @@ public class Interpreter {
 	private boolean inFile;
 	
 	private static final int MAX_STACK_SIZE = 500;
-	private static final String HELP = "Run with no args to "
-		+ "use the interactive console,\n"
-		+ "or with a file name to run that file.\n"
-		+ "Put -d after the file name to run the debugger on that file.";
 	
 	public Interpreter(String fn, boolean vgc, boolean IF) {
 		verboseGC = vgc;
@@ -835,14 +765,10 @@ public class Interpreter {
 	private void delete(DeletionNode del) throws ErrorWrapper {
 		try {
 			getCurrentFrame().getScope().delete(del.getVar().getName());
-		} catch(ReadOnlyNameException e) {
-			throw new ErrorWrapper(
-					new HbReadOnlyError(this,e.getNameInQuestion()),
-					del.getOrigin().getStart());
-		} catch (UndefinedNameException e) {
-			throw new ErrorWrapper(
-					new HbUndefinedNameError(this,del.getVar().getName()),
-					del.getVar().getOrigin().getStart());
+		} catch(HbReadOnlyError e) {
+			throw new ErrorWrapper(e,del.getOrigin().getStart());
+		} catch (HbUndefinedNameError e) {
+			throw new ErrorWrapper(e,del.getVar().getOrigin().getStart());
 		}
 	}
 	

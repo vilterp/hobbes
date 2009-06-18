@@ -103,16 +103,16 @@ public class Scope {
 		globals.add(name);
 	}
 	
-	public void delete(String name) throws ReadOnlyNameException,
-												UndefinedNameException {
+	public void delete(String name) throws HbReadOnlyError,
+												HbUndefinedNameError {
 		if(readOnlys.contains(name))
-			throw new ReadOnlyNameException(name);
+			throw new HbReadOnlyError(interp,name);
 		else if(isDefined(name)) {
 			int deletedId = names.get(name);
 			objSpace.get(deletedId).decRefs();
 			names.remove(name);
 		} else
-			throw new UndefinedNameException(name);
+			throw new HbUndefinedNameError(interp,name);
 	}
 	
 	public boolean isDefined(String name) {

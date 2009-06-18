@@ -1,13 +1,13 @@
 package hobbes.values;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Iterator;
 
 import hobbes.interpreter.Break;
 import hobbes.interpreter.Continue;
 import hobbes.interpreter.ErrorWrapper;
 import hobbes.interpreter.Interpreter;
+
 @HobbesClass(name="Dict")
 public class HbDict extends HbObject {
 	

@@ -248,4 +248,20 @@ public class HbString extends HbObject {
 		return lstrip().rstrip();
 	}
 	
+	@HobbesMethod(name="starts_with?",numArgs=1)
+	public HbObject startsWith(HbObject str) throws HbArgumentError {
+		if(str instanceof HbString)
+			return getObjSpace().getBool(value.startsWith(((HbString)str).getValue()));
+		else
+			throw new HbArgumentError(getInterp(),"starts_with?",str,"String");	
+	}
+	
+	@HobbesMethod(name="ends_with?",numArgs=1)
+	public HbObject endsWith(HbObject str) throws HbArgumentError {
+		if(str instanceof HbString)
+			return getObjSpace().getBool(value.endsWith(((HbString)str).getValue()));
+		else
+			throw new HbArgumentError(getInterp(),"ends_with?",str,"String");	
+	}
+	
 }
