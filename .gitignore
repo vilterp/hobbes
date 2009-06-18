@@ -1,5 +1,8 @@
 .manager
 .settings
+.classpath
+.project
+.pydevproject
 bin/*
 *.class
 .DS_Store
@@ -7,3 +10,4 @@ bin/*
 *.rtf
 *.py
 *.rb
+hobbes.jar
