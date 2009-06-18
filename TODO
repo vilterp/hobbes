@@ -5,5 +5,8 @@
   - +?
 - HbFloat, HbInt
   - toString
+  - HbFloat#round (precision?)
 - HbString
   - toNumber (toInt? toFloat?)
+  - succ, pred
+- rand() (seems like it should be static, but that's not possible right now...)

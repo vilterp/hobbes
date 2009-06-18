@@ -1,5 +1,7 @@
 package hobbes.values;
 
+import java.util.ArrayList;
+
 import hobbes.interpreter.Break;
 import hobbes.interpreter.Continue;
 import hobbes.interpreter.ErrorWrapper;
@@ -170,11 +172,56 @@ public class HbString extends HbObject {
 		iterPos = 0;
 	}
 	
+	@HobbesMethod(name="succ")
 	public HbString succ() {
-		int[] values = new int[length()];
+		if(isEmpty())
+			return this;
+		ArrayList<Integer> codePoints = new ArrayList<Integer>(length());
+		for(int i=length()-1; i >= 0; i--)
+			codePoints.add(value.codePointAt(i));
+		succ(codePoints);
+		char[] chars = new char[length()];
 		for(int i=0; i < length(); i++)
-			values[i] = value.codePointAt(i);
-		return null;
+			chars[i] = Character.toChars(codePoints.get(i))[0];
+		return new HbString(getInterp(),new String(chars));
+	}
+	
+	@HobbesMethod(name="pred")
+	public HbString pred() {
+		if(isEmpty())
+			return this;
+		ArrayList<Integer> codePoints = new ArrayList<Integer>(length());
+		for(int i=length()-1; i >= 0; i--)
+			codePoints.add(value.codePointAt(i));
+		pred(codePoints);
+		char[] chars = new char[length()];
+		for(int i=0; i < length(); i++)
+			chars[i] = Character.toChars(codePoints.get(i))[0];
+		return new HbString(getInterp(),new String(chars));
+	}
+	
+	private void succ(ArrayList<Integer> values) {
+		succ(values,0);
+	}
+	
+	private void succ(ArrayList<Integer> values, int ind) {
+		values.set(ind,values.get(ind)+1);
+		if(values.get(ind) > Character.MAX_CODE_POINT) {
+			values.set(ind,Character.MIN_CODE_POINT);
+			succ(values,1);
+		}
+	}
+	
+	private void pred(ArrayList<Integer> values) {
+		pred(values,0);
+	}
+	
+	private void pred(ArrayList<Integer> values, int ind) {
+		values.set(ind,values.get(ind)-1);
+		if(values.get(ind) > Character.MAX_CODE_POINT) {
+			values.set(ind,Character.MIN_CODE_POINT);
+			succ(values,1);
+		}
 	}
 	
 	@HobbesMethod(name="chars")

@@ -36,7 +36,7 @@ public class Main {
 			printHelp();
 		} else if(fileName == null) { // interactive console
 			if(options.contains("d"))
-				System.out.println("Can only debug a file");
+				System.out.println("Didn't supply a file name to debug");
 			else
 				interactiveConsole(options.contains("g"));
 		} else if(!options.contains("d")) {

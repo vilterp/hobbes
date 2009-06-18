@@ -10,7 +10,7 @@
 		<jar destfile="${basedir}/hobbes.jar" filesetmanifest="mergewithoutmain">
 			<manifest>
 				<attribute name="Built-By" value="${user.name}"/>
-				<attribute name="Main-Class" value="hobbes.interpreter.Main"/>
+				<attribute name="Main-Class" value="hobbes.Main"/>
 				<attribute name="Class-Path" value="."/>
 			</manifest>
 			<fileset dir="${build}"/>
