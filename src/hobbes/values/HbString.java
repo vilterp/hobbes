@@ -55,6 +55,19 @@ public class HbString extends HbObject {
 		return this;
 	}
 	
+	@HobbesMethod(name="toNumber")
+	public HbObject toNumber() throws HbArgumentError {
+		try {
+			return getObjSpace().getInt(Integer.parseInt(value));
+		} catch(NumberFormatException e) {
+			try {
+				return getObjSpace().getFloat(Float.parseFloat(value));
+			} catch(NumberFormatException e1) {
+				throw new HbArgumentError(getInterp(),"can't parse number from \"" + value + "\"");
+			}
+		}
+	}
+	
 	@HobbesMethod(name="hash_code")
 	public HbInt defaultHashCode() {
 		return getObjSpace().getInt(value.toString().hashCode());
