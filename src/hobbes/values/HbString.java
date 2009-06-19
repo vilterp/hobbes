@@ -273,6 +273,7 @@ public class HbString extends HbObject {
 			int pos = 0;
 			StringBuilder buf = new StringBuilder();
 			while(pos < value.length()) {
+				// FIXME: this could probably be more efficient
 				if(value.substring(pos).startsWith(d)) {
 					pos += d.length();
 					toReturn.add(getObjSpace().getString(buf.toString()));
@@ -281,9 +282,9 @@ public class HbString extends HbObject {
 					buf.append(value.charAt(pos));
 					pos++;
 				}
+				if(pos == value.length())
+					toReturn.add(getObjSpace().getString(buf.toString()));
 			}
-			if(buf.length() > 0)
-				toReturn.add(getObjSpace().getString(buf.toString()));
 			return toReturn;
 		} else
 			throw new HbArgumentError(getInterp(),"split",delimeter,"String");
