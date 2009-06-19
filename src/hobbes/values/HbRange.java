@@ -56,6 +56,15 @@ public class HbRange extends HbObject {
 		return end;
 	}
 	
+	@HobbesMethod(name="==",numArgs=1)
+	public HbObject equalTo(HbObject other) throws ErrorWrapper, HbError, Continue, Break {
+		if(other instanceof HbRange)
+			return getObjSpace().getBool(end.eq(((HbRange)other).getEnd()) &&
+									start.eq(((HbRange)other).getStart()));
+		else
+			throw new HbArgumentError(getInterp(),"==",other,"Range");
+	}
+	
 	@HobbesMethod(name="show")
 	public HbString hbShow() throws ErrorWrapper, HbError, Continue, Break {
 		StringBuilder repr = new StringBuilder();

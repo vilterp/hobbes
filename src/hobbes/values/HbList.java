@@ -65,6 +65,22 @@ public class HbList extends HbObject {
 		return getObjSpace().getBool(!isEmpty());
 	}
 	
+	@HobbesMethod(name="==",numArgs=1)
+	public HbObject equalTo(HbObject other) throws ErrorWrapper, HbError, Continue, Break {
+		if(other instanceof HbList) {
+			for(int i=0; i < length(); i++) {
+				try {
+					if(((HbList)other).get(i).eq(get(i)))
+						return getObjSpace().getFalse();
+				} catch(HbKeyError e) {
+					return getObjSpace().getFalse();
+				}
+			}
+			return getObjSpace().getTrue();
+		} else
+			throw new HbArgumentError(getInterp(),"==",other,"List");
+	}
+	
 	@HobbesMethod(name="[]",numArgs=1)
 	public HbObject hbGet(HbObject index) throws HbError, ErrorWrapper, Continue, Break {
 		if(index instanceof HbInt)

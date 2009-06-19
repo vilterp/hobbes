@@ -125,8 +125,7 @@ public class HbInt extends HbObject {
 	@HobbesMethod(name="%",numArgs=1)
 	public HbObject mod(HbObject other) throws HbArgumentError {
 		if(other instanceof HbInt)
-			return getObjSpace().getFloat((float)getValue()
-								% (float)((HbInt)other).getValue());
+			return getObjSpace().getInt(getValue() % ((HbInt)other).getValue());
 		else if(other instanceof HbFloat)
 			return getObjSpace().getFloat(getValue() % ((HbFloat)other).getValue());
 		else
