@@ -56,8 +56,8 @@ public class HbRange extends HbObject {
 		return end;
 	}
 	
-	@HobbesMethod(name="toString")
-	public HbString hbToString() throws ErrorWrapper, HbError, Continue, Break {
+	@HobbesMethod(name="show")
+	public HbString hbShow() throws ErrorWrapper, HbError, Continue, Break {
 		StringBuilder repr = new StringBuilder();
 		repr.append("<Range ");
 		repr.append(start.show());
@@ -79,7 +79,7 @@ public class HbRange extends HbObject {
 	
 	@HobbesMethod(name="iter_has_next")
 	public HbObject iterHasNext() throws ErrorWrapper, HbError, Continue, Break {
-		return getObjSpace().getBool(iterCur.lt(end) || iterCur.gt(end));
+		return getObjSpace().getBool(iterCur.lt(end) || iterCur.eq(end));
 	}
 	
 	@HobbesMethod(name="iter_next")
