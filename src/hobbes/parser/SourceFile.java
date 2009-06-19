@@ -14,7 +14,7 @@ public class SourceFile implements Iterable<SourceLine> {
 	}
 	
 	public SourceLine addLine(String code) {
-		SourceLine newLine = new SourceLine(this,code,numLines()+1);
+		SourceLine newLine = new SourceLine(this,code,getNumLines()+1);
 		lines.add(newLine);
 		return newLine;
 	}
@@ -23,7 +23,7 @@ public class SourceFile implements Iterable<SourceLine> {
 		return path;
 	}
 	
-	public int numLines() {
+	public int getNumLines() {
 		return lines.size();
 	}
 	
@@ -44,7 +44,7 @@ public class SourceFile implements Iterable<SourceLine> {
 	
 	public ArrayList<SourceLine> getFollowingLines(int start, int num) {
 		ArrayList<SourceLine> toReturn = new ArrayList<SourceLine>();
-		for(int i=start+1; i <= numLines() && i-start <= num; i++)
+		for(int i=start+1; i <= getNumLines() && i-start <= num; i++)
 			toReturn.add(getLine(i));
 		return toReturn;
 	}

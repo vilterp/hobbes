@@ -4,12 +4,13 @@ import hobbes.interpreter.Break;
 import hobbes.interpreter.Continue;
 import hobbes.interpreter.ErrorWrapper;
 import hobbes.interpreter.Interpreter;
+import hobbes.values.HbDict.Entry;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 
 @HobbesClass(name="Set")
-public class HbSet extends HbObject {
+public class HbSet extends HbObject implements Iterable<HbObject> {
 
 	private HbDict elements;
 	private static final String COMMA_SPACE = ", ";
@@ -27,10 +28,6 @@ public class HbSet extends HbObject {
 	
 	public int[] contentAddrs() {
 		return new int[]{elements.getId()};
-	}
-	
-	public ArrayList<HbObject> getElements() {
-		return elements.getKeys();
 	}
 	
 	@HobbesMethod(name="clone")
@@ -72,7 +69,7 @@ public class HbSet extends HbObject {
 		return elements.containsKey(obj);
 	}
 	
-	@HobbesMethod(name="remove")
+	@HobbesMethod(name="remove",numArgs=1)
 	public HbObject remove(HbObject obj) throws ErrorWrapper, HbError, Continue, Break {
 		try {
 			elements.remove(obj);
@@ -90,9 +87,9 @@ public class HbSet extends HbObject {
 	@HobbesMethod(name="show")
 	public HbString hbShow() throws ErrorWrapper, HbError, Continue, Break {
 		StringBuilder repr = new StringBuilder("{");
-		Iterator<HbObject> it = elements.getKeys().iterator();
+		Iterator<HbObject> it = this.iterator();
 		while(it.hasNext()) {
-			repr.append(it.next().show());
+			repr.append(it.next().realShow());
 			if(it.hasNext())
 				repr.append(COMMA_SPACE);
 		}
@@ -103,16 +100,16 @@ public class HbSet extends HbObject {
 	@HobbesMethod(name="toList")
 	public HbList toList() {
 		HbList list = new HbList(getInterp());
-		for(HbObject element: elements.getKeys())
-			list.add(element);
+		for(HbObject elem: this)
+			list.add(elem);
 		return list;
 	}
 	
 	@HobbesMethod(name="each",numArgs=1)
 	public void each(HbObject func) throws ErrorWrapper, HbError, Continue, Break {
 		if(func instanceof HbFunction) {
-			for(HbObject key: elements.getKeys())
-				getInterp().callFunc((HbFunction)func,new HbObject[]{key},null);
+			for(HbObject elem: this)
+				getInterp().callFunc((HbFunction)func,new HbObject[]{elem},null);
 		} else
 			throw new HbArgumentError(getInterp(),"each",func,
 					"AnonymousFunction, Function, or NativeFunction");
@@ -135,31 +132,70 @@ public class HbSet extends HbObject {
 		elements.iterRewind();
 	}
 	
-	@HobbesMethod(name="+",numArgs=1)
+	@HobbesMethod(name="union",numArgs=1)
 	public HbSet union(HbObject other) throws ErrorWrapper, HbError, Continue, Break {
 		if(other instanceof HbSet) {
 			HbSet union = hbClone();
-			for(HbObject key: ((HbSet)other).getElements())
-				union.add(key);
+			for(HbObject elem: (HbSet)other)
+				union.add(elem);
 			return union;
 		} else
 			throw new HbArgumentError(getInterp(),"+",other,"Set");
 	}
 	
-	@HobbesMethod(name="-",numArgs=1)
+	@HobbesMethod(name="intersection",numArgs=1)
 	public HbSet intersection(HbObject other) throws ErrorWrapper, HbError, Continue, Break {
 		if(other instanceof HbSet) {
 			HbSet intersection = new HbSet(getInterp());
-			for(HbObject key: elements.getKeys())
-				if(((HbSet)other).contains(key))
-					intersection.add(key);
+			for(HbObject elem: this)
+				if(((HbSet)other).contains(elem))
+					intersection.add(elem);
 			return intersection;
 		} else
 			throw new HbArgumentError(getInterp(),"-",other,"Set");
 	}
 	
+	@HobbesMethod(name="-",numArgs=1)
+	public HbSet difference(HbObject other) throws ErrorWrapper, HbError, Continue, Break {
+		if(other instanceof HbSet) {
+			HbSet diff = hbClone();
+			for(HbObject elem: this)
+				if(((HbSet)other).contains(elem))
+					diff.remove(elem);
+			return diff;
+		} else
+			throw new HbArgumentError(getInterp(),"-",other,"Set");
+	}
+	
+	@HobbesMethod(name="clear")
 	public void clear() throws ErrorWrapper, HbError, Continue, Break {
 		elements.clear();
+	}
+	
+	public Iterator<HbObject> iterator() {
+		return new IterImp(elements.getEntries());
+	}
+	
+	public class IterImp implements Iterator<HbObject> {
+		
+		public Iterator<Entry> entries;
+		
+		public IterImp(ArrayList<Entry> e) {
+			entries = e.iterator();
+		}
+		
+		public boolean hasNext() {
+			return entries.hasNext();
+		}
+
+		public HbObject next() {
+			return entries.next().getKey();
+		}
+
+		public void remove() {
+			throw new UnsupportedOperationException();
+		}
+		
 	}
 	
 }

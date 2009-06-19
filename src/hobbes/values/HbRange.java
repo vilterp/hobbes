@@ -69,9 +69,9 @@ public class HbRange extends HbObject {
 	public HbString hbShow() throws ErrorWrapper, HbError, Continue, Break {
 		StringBuilder repr = new StringBuilder();
 		repr.append("<Range ");
-		repr.append(start.show());
+		repr.append(start.realShow());
 		repr.append(" to ");
-		repr.append(end.show());
+		repr.append(end.realShow());
 		repr.append(">");
 		return getObjSpace().getString(repr);
 	}

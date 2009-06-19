@@ -97,7 +97,7 @@ public class Parser {
 	}
 	
 	public SyntaxNode parse(LinkedList<Token> tokenList) throws SyntaxError {
-		if(tokenList.isEmpty() || tokenList.size() == 1 && tokenList.getFirst().getType() == TokenType.EOL)
+		if(tokenList == null || tokenList.isEmpty())
 			return null;
 		Token firstToken = tokenList.getFirst();
 		tokens = tokenList;

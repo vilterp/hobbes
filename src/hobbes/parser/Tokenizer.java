@@ -87,7 +87,10 @@ public class Tokenizer {
 		if(isReady()) {
 			LinkedList<Token> temp = (LinkedList<Token>)tokens.clone();
 			reset();
-			return temp;
+			if(temp.size() == 1 && temp.getFirst().getType() == TokenType.EOL)
+				return null;
+			else
+				return temp;
 		} else
 			throw new IllegalStateException("can't get tokens, still waiting to close "
 																+getLastOpener());

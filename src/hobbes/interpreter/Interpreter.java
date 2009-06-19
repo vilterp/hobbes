@@ -102,7 +102,7 @@ public class Interpreter {
 				}
 				String toReturn = null;
 				if(result != null) {
-					toReturn = result.show();
+					toReturn = result.realShow();
 					getCurrentFrame().getScope().assignForce("_",result);
 				}
 				return toReturn;
@@ -234,7 +234,7 @@ public class Interpreter {
 										throws ErrorWrapper, HbError, Continue, Break {
 		HbFunction func = (HbFunction)eval(call.getFuncExpr());
 		String funcRepr = func instanceof HbAnonymousFunction ?
-							func.show() :
+							func.realShow() :
 							((HbNamedFunction)func).getName();
 		HbObject[] args = evalArgs(call.getArgs(),func,
 							funcRepr,call.getParenLoc());
@@ -259,7 +259,7 @@ public class Interpreter {
 		// push frame
 		try {
 			pushFrame(new NormalFunctionFrame(new Scope(this,getCurrentFrame().getScope()),
-								func.show(),parenLoc));
+								func.realShow(),parenLoc));
 		} catch (HbStackOverflowError e) {
 			throw new ErrorWrapper(e,parenLoc);
 		}
@@ -323,14 +323,14 @@ public class Interpreter {
 			if(args[0].getHbClass().hasMethod("toString"))
 				System.out.println(args[0].realToString());
 			else
-				System.out.println(args[0].show());
+				System.out.println(args[0].realShow());
 			popFrame();
 			return objSpace.getNil();
 		} else if(func.getName().equals("get_input")) {
 			if(args[0].getHbClass().hasMethod("toString"))
 				System.out.print(args[0].realToString());
 			else
-				System.out.print(args[0].show());
+				System.out.print(args[0].realShow());
 			Scanner in = new Scanner(System.in);
 			popFrame();
 			try {

@@ -12,8 +12,7 @@ import hobbes.interpreter.Interpreter;
 public class HbDict extends HbObject {
 	
 	private Bucket[] buckets;
-	private ArrayList<HbObject> keys;
-	private ArrayList<HbObject> values;
+	private ArrayList<Entry> entries;
 	private int iterPos;
 	
 	private static final int INIT_SIZE = 11;
@@ -26,39 +25,32 @@ public class HbDict extends HbObject {
 	
 	public HbDict(Interpreter i, Bucket[] b, ArrayList<HbObject> k, ArrayList<HbObject> v) {
 		super(i);
-		keys = k;
-		values = v;
 		buckets = b;
+		entries = new ArrayList<Entry>();
 		iterPos = 0;
 	}
 	
 	public int[] contentAddrs() {
-		int[] addrs = new int[keys.size() + values.size()];
+		int[] addrs = new int[entries.size()*2];
 		int i = 0;
-		for(HbObject key: keys) {
-			addrs[i] = key.getId();
+		for(Entry e: entries) {
+			addrs[i] = e.getKey().getId();
 			i++;
-		}
-		for(HbObject value: values) {
-			addrs[i] = value.getId();
+			addrs[i] = e.getValue().getId();
 			i++;
 		}
 		return addrs;
 	}
 	
-	public ArrayList<HbObject> getKeys() {
-		return keys;
-	}
-	
 	public int size() {
-		return keys.size();
+		return entries.size();
 	}
 	
 	@HobbesMethod(name="clone")
 	public HbDict hbClone() throws ErrorWrapper, HbError, Continue, Break {
 		HbDict newDict = new HbDict(getInterp());
-		for(HbObject key: keys)
-			newDict.put(key,get(key));
+		for(Entry entry: entries)
+			newDict.put(entry.getKey(),entry.getValue());
 		return newDict;
 	}
 	
@@ -81,16 +73,16 @@ public class HbDict extends HbObject {
 		return getObjSpace().getBool(!isEmpty());
 	}
 	
-	@HobbesMethod(name="toString")
-	public HbString hbToString() throws ErrorWrapper, HbError, Continue, Break {
+	@HobbesMethod(name="show")
+	public HbString hbShow() throws ErrorWrapper, HbError, Continue, Break {
 		StringBuilder repr = new StringBuilder("{");
-		Iterator<HbObject> it = keys.iterator();
+		Iterator<Entry> it = entries.iterator();
 		while(it.hasNext()) {
-			HbObject key = it.next();
-			repr.append(key.show());
+			Entry entry = it.next();
+			repr.append(entry.getKey().realShow());
 			repr.append(COLON_SPACE);
 			try {
-				repr.append(get(key).show());
+				repr.append(entry.getValue().realShow());
 			} catch (HbKeyError e) {
 				e.printStackTrace();
 			}
@@ -105,11 +97,12 @@ public class HbDict extends HbObject {
 	public HbObject get(HbObject key) throws ErrorWrapper, HbError, Continue, Break {
 		Bucket bucket = buckets[map(key.realHashCode())];
 		if(bucket == null)
-			throw new HbKeyError(getInterp(),key.show());
-		HbObject ans = bucket.get(key);
-		if(ans == null)
-			throw new HbKeyError(getInterp(),key.show());
-		return ans;
+			throw new HbKeyError(getInterp(),key.realShow());
+		Entry e = bucket.getEntry(key);
+		if(e != null)
+			return e.getValue();
+		else
+			throw new HbKeyError(getInterp(),key.realShow());
 	}
 	
 	@HobbesMethod(name="[]=",numArgs=2)
@@ -117,7 +110,7 @@ public class HbDict extends HbObject {
 		int bucketIndex = map(key.realHashCode());
 		Bucket bucket = buckets[bucketIndex];
 		if(bucket == null) {
-			buckets[bucketIndex] = new Bucket();
+			buckets[bucketIndex] = new Bucket(this);
 			bucket = buckets[bucketIndex];
 		}
 		bucket.addEntry(key,value);
@@ -127,9 +120,9 @@ public class HbDict extends HbObject {
 	public void remove(HbObject key) throws ErrorWrapper, HbError, Continue, Break {
 		Bucket bucket = buckets[map(key.realHashCode())];
 		if(bucket == null)
-			throw new HbKeyError(getInterp(),key.show());
+			throw new HbKeyError(getInterp(),key.realShow());
 		if(!bucket.removeEntry(key))
-			throw new HbKeyError(getInterp(),key.show());
+			throw new HbKeyError(getInterp(),key.realShow());
 	}
 	
 	@HobbesMethod(name="has_key?",numArgs=1)
@@ -148,11 +141,11 @@ public class HbDict extends HbObject {
 	
 	@HobbesMethod(name="clear")
 	public void clear() throws ErrorWrapper, HbError, Continue, Break {
-		for(HbObject key: keys) {
+		for(HbObject key: keySet()) {
 			try {
 				remove(key);
-			} catch (HbKeyError e) {
-				e.printStackTrace();
+			} catch (HbKeyError err) {
+				err.printStackTrace();
 			}
 		}
 	}
@@ -160,34 +153,34 @@ public class HbDict extends HbObject {
 	@HobbesMethod(name="keys")
 	public HbSet keySet() throws ErrorWrapper, HbError, Continue, Break {
 		HbSet toReturn = new HbSet(getInterp());
-		for(HbObject key: keys)
-			toReturn.add(key);
+		for(Entry e: entries)
+			toReturn.add(e.getKey());
 		return toReturn;
 	}
 	
 	@HobbesMethod(name="values")
 	public HbSet valueSet() throws ErrorWrapper, HbError, Continue, Break {
 		HbSet toReturn = new HbSet(getInterp());
-		for(HbObject key: keys)
-			toReturn.add(get(key));
+		for(Entry e: entries)
+			toReturn.add(e.getValue());
 		return toReturn;
 	}
 	
 	@HobbesMethod(name="iter_has_next")
 	public HbObject iterHasNext() {
-		return getObjSpace().getBool(iterPos < keys.size());
+		return getObjSpace().getBool(iterPos < entries.size());
 	}
 	
 	@HobbesMethod(name="iter_next")
 	public HbObject iterNext() throws ErrorWrapper, HbError, Continue, Break {
-		HbObject temp = get(keys.get(iterPos));
+		HbObject temp = entries.get(iterPos).getValue();
 		iterAdvance();
 		return temp;
 	}
 	
 	@HobbesMethod(name="iter_index")
 	public HbObject iterIndex() {
-		return keys.get(iterPos);
+		return entries.get(iterPos).getKey();
 	}
 	
 	public void iterAdvance() {
@@ -199,15 +192,21 @@ public class HbDict extends HbObject {
 		iterPos = 0;
 	}
 	
+	public ArrayList<Entry> getEntries() {
+		return entries;
+	}
+	
 	private int map(int val) {
 		return Math.abs(val) % buckets.length;
 	}
 	
 	private class Bucket {
 		
+		private HbDict origin;
 		private ArrayList<Entry> entries;
 		
-		public Bucket() {
+		public Bucket(HbDict o) {
+			origin = o;
 			entries = new ArrayList<Entry>(2);
 		}
 		
@@ -227,20 +226,19 @@ public class HbDict extends HbObject {
 					// inc refs on new key, value
 					value.incRefs();
 					key.incRefs();
-					// add key, value
-					keys.set(oldEntry.getKeyInd(),key);
-					values.set(oldEntry.getValueInd(),value);
 					// overwrite entry
-					entries.set(i,new Entry(key,oldEntry.getKeyInd(),
-										value,oldEntry.getValueInd()));
+					Entry e = new Entry(key,value,oldEntry.getOriginInd());
+					entries.set(i,e);
+					origin.getEntries().add(e);
 					return;
 				}
 			}
+			// add new entries
 			key.incRefs();
 			value.incRefs();
-			keys.add(key);
-			values.add(value);
-			entries.add(new Entry(key,keys.size()-1,value,values.size()-1));
+			Entry e = new Entry(key,value,origin.getEntries().size());
+			entries.add(e);
+			origin.getEntries().add(e);
 		}
 		
 		public boolean removeEntry(HbObject key) throws ErrorWrapper, HbError, Continue, Break {
@@ -249,39 +247,38 @@ public class HbDict extends HbObject {
 				if(entry.getKey().realHashCode() == key.realHashCode()) {
 					entry.getKey().decRefs();
 					entry.getValue().decRefs();
-					keys.remove(entry.getKeyInd());
-					values.remove(entry.getKeyInd());
+					origin.getEntries().remove(entry.getOriginInd());
+					for(int j=entry.getOriginInd(); j < origin.getEntries().size(); j++)
+						origin.getEntries().get(j).decrOriginInd();
 					return true;
 				}
 			}
 			return false;
 		}
 		
-		public HbObject get(HbObject key) throws ErrorWrapper, HbError, Continue, Break {
+		public Entry getEntry(HbObject key) throws ErrorWrapper, HbError, Continue, Break {
 			for(Entry entry: entries)
 				if(key.realHashCode() == entry.getKey().realHashCode())
-					return entry.getValue();
+					return entry;
 			return null;
 		}
 		
 	}
 	
-	private class Entry {
+	public class Entry {
 		
 		private HbObject key;
 		private HbObject value;
-		private int keyInd;
-		private int valueInd;
+		private int originInd;
 		
-		public Entry(HbObject k, int ki, HbObject v, int vi) {
+		public Entry(HbObject k, HbObject v, int oi) {
 			key = k;
-			keyInd = ki;
 			value = v;
-			valueInd = vi;
+			originInd = oi;
 		}
 		
 		public String toString() {
-			return "Entry[" + key + ": " + value + "]";
+			return originInd + ":Entry[" + key + " = " + value + "]";
 		}
 		
 		public HbObject getKey() {
@@ -292,12 +289,12 @@ public class HbDict extends HbObject {
 			return value;
 		}
 
-		public int getKeyInd() {
-			return keyInd;
+		public int getOriginInd() {
+			return originInd;
 		}
-
-		public int getValueInd() {
-			return valueInd;
+		
+		public void decrOriginInd() {
+			originInd--;
 		}
 		
 	}

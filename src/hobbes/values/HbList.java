@@ -52,7 +52,7 @@ public class HbList extends HbObject {
 		StringBuilder repr = new StringBuilder("[");
 		Iterator<HbObject> it = elements.iterator();
 		while(it.hasNext()) {
-			repr.append(it.next().show());
+			repr.append(it.next().realShow());
 			if(it.hasNext())
 				repr.append(COMMA_SPACE);
 		}

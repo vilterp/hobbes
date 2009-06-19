@@ -70,7 +70,7 @@ public class HbObject extends Throwable {
 			throw new HbArgumentError(getInterp(),"is_a?",klass,"Class");
 	}
 	
-	public String show() throws ErrorWrapper, HbError, Continue, Break {
+	public String realShow() throws ErrorWrapper, HbError, Continue, Break {
 		HbObject repr = call("show");
 		if(repr instanceof HbString)
 			return ((HbString)repr).getValue();

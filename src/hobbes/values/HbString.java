@@ -110,7 +110,7 @@ public class HbString extends HbObject {
 	
 	@HobbesMethod(name="+",numArgs=1)
 	public HbString plus(HbObject other) throws HbError, ErrorWrapper, Continue, Break {
-		return getObjSpace().getString(getValue() + other.show());
+		return getObjSpace().getString(getValue() + other.realToString());
 	}
 	
 	@HobbesMethod(name="*",numArgs=1)

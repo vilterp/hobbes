@@ -89,7 +89,7 @@ public class Main {
 			unexpectedEOF(fileName,i.getLastOpener());
 	}
 	
-	private static void debugFile(String fileName, boolean contains) {
+	private static void debugFile(String fileName, boolean vgc) {
 		File f = new File(fileName);
 		Scanner s = null;
 		try {
@@ -98,7 +98,7 @@ public class Main {
 			fileNotFound(fileName);
 			return;
 		}
-		Debugger d = new Debugger(fileName);
+		Debugger d = new Debugger(fileName,vgc);
 		while(s.hasNext()) {
 			d.addLine(s.nextLine());
 		}
