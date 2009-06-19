@@ -47,8 +47,8 @@ public class HbList extends HbObject {
 		return newList;
 	}
 	
-	@HobbesMethod(name="toString")
-	public HbString hbToString() throws ErrorWrapper, HbError, Continue, Break {
+	@HobbesMethod(name="show")
+	public HbString hbShow() throws ErrorWrapper, HbError, Continue, Break {
 		StringBuilder repr = new StringBuilder("[");
 		Iterator<HbObject> it = elements.iterator();
 		while(it.hasNext()) {

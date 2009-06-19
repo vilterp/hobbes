@@ -4,8 +4,8 @@ import hobbes.interpreter.Interpreter;
 
 public class HbStackOverflow extends HbError {
 
-	public HbStackOverflow(Interpreter o) {
-		super(o, null);
+	public HbStackOverflow(Interpreter i) {
+		super(i, null);
 	}
 	
 }

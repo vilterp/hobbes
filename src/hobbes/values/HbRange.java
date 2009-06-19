@@ -60,9 +60,9 @@ public class HbRange extends HbObject {
 	public HbString hbToString() throws ErrorWrapper, HbError, Continue, Break {
 		StringBuilder repr = new StringBuilder();
 		repr.append("<Range ");
-		repr.append(start.realToString());
+		repr.append(start.show());
 		repr.append(" to ");
-		repr.append(end.realToString());
+		repr.append(end.show());
 		repr.append(">");
 		return getObjSpace().getString(repr);
 	}
@@ -97,6 +97,14 @@ public class HbRange extends HbObject {
 	@HobbesMethod(name="toList")
 	public HbList toList() throws ErrorWrapper, HbError, Continue, Break {
 		HbList toReturn = new HbList(getInterp());
+		for(HbObject cur=start; cur.lt(end) || cur.eq(end); cur=cur.call("succ"))
+			toReturn.add(cur);
+		return toReturn;
+	}
+	
+	@HobbesMethod(name="toSet")
+	public HbSet toSet() throws ErrorWrapper, HbError, Continue, Break {
+		HbSet toReturn = new HbSet(getInterp());
 		for(HbObject cur=start; cur.lt(end) || cur.eq(end); cur=cur.call("succ"))
 			toReturn.add(cur);
 		return toReturn;

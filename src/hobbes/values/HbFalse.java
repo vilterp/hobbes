@@ -14,9 +14,14 @@ public class HbFalse extends HbObject {
 		return this;
 	}
 	
+	@HobbesMethod(name="show")
+	public HbString hbShow() {
+		return getObjSpace().getString("false");
+	}
+	
 	@HobbesMethod(name="toString")
 	public HbString hbToString() {
-		return getObjSpace().getString("false");
+		return hbShow();
 	}
 
 }

@@ -22,8 +22,8 @@ public class HbFloat extends HbObject {
 		return value;
 	}
 	
-	@HobbesMethod(name="toString")
-	public HbString hbToString() {
+	@HobbesMethod(name="show")
+	public HbString hbShow() {
 		return getObjSpace().getString(String.valueOf(value));
 	}
 	

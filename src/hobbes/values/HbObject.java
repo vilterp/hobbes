@@ -62,16 +62,6 @@ public class HbObject extends Throwable {
 		return call("==",new HbObject[]{other}) == getObjSpace().getTrue();
 	}
 	
-	@HobbesMethod(name="toString")
-	public HbString hbToString() throws ErrorWrapper, HbError, Continue, Break {
-		StringBuilder repr = new StringBuilder("<");
-		repr.append(getHbClass().getName());
-		repr.append("@");
-		repr.append(getId());
-		repr.append(">");
-		return getObjSpace().getString(repr.toString());
-	}
-	
 	@HobbesMethod(name="is_a?",numArgs=1)
 	public HbObject isA(HbObject klass) throws HbArgumentError {
 		if(klass instanceof HbClass) {
@@ -80,16 +70,30 @@ public class HbObject extends Throwable {
 			throw new HbArgumentError(getInterp(),"is_a?",klass,"Class");
 	}
 	
-	public String realToString() throws ErrorWrapper, HbError, Continue, Break {
-		HbObject repr = call("toString");
+	public String show() throws ErrorWrapper, HbError, Continue, Break {
+		HbObject repr = call("show");
 		if(repr instanceof HbString)
 			return ((HbString)repr).getValue();
 		else
-			throw new HbTypeError(getInterp(),"toString must return a String");
+			throw new HbTypeError(getInterp(),"show() must return a String");
 	}
 	
-	public String show() throws ErrorWrapper, HbError, Continue, Break {
-		return realToString();
+	@HobbesMethod(name="show")
+	public HbString hbShow() throws ErrorWrapper, HbError, Continue, Break {
+		StringBuilder repr = new StringBuilder("<");
+		repr.append(getHbClass().getName());
+		repr.append("@");
+		repr.append(getId());
+		repr.append(">");
+		return getObjSpace().getString(repr.toString());
+	}
+	
+	public String realToString() throws ErrorWrapper, HbError, Continue, Break {
+		HbObject result = call("toString");
+		if(result instanceof HbString)
+			return ((HbString)result).getValue();
+		else
+			throw new HbTypeError(getInterp(),"toString() must return a String");
 	}
 	
 	public HbObject call(String methodName, HbObject[] args) throws ErrorWrapper, HbError,

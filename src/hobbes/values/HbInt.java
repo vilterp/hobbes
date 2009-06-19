@@ -29,8 +29,8 @@ public class HbInt extends HbObject {
 		return "<Int val=" + getValue() + ">";
 	}
 	
-	@HobbesMethod(name="toString")
-	public HbString hbToString() {
+	@HobbesMethod(name="show")
+	public HbString hbShow() {
 		return getObjSpace().getString(String.valueOf(value));
 	}
 	

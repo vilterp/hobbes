@@ -18,10 +18,6 @@ public class HbString extends HbObject {
 		this(i,"");
 	}
 	
-	public HbString(Interpreter i, Character val) {
-		this(i,val.toString());
-	}
-	
 	public HbString(Interpreter i, String val) {
 		super(i);
 		value = val;
@@ -49,8 +45,9 @@ public class HbString extends HbObject {
 		return "<String@" + getId() + " val=" + getValue() + ">";
 	}
 	
-	public String show() {
-		return "'" + sanitizedValue() + "'";
+	@HobbesMethod(name="show")
+	public HbString hbShow() {
+		return getObjSpace().getString("'" + sanitizedValue() + "'");
 	}
 	
 	@HobbesMethod(name="toString")
@@ -100,7 +97,7 @@ public class HbString extends HbObject {
 	
 	@HobbesMethod(name="+",numArgs=1)
 	public HbString plus(HbObject other) throws HbError, ErrorWrapper, Continue, Break {
-		return getObjSpace().getString(getValue() + other.realToString());
+		return getObjSpace().getString(getValue() + other.show());
 	}
 	
 	@HobbesMethod(name="*",numArgs=1)

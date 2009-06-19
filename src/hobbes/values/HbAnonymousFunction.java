@@ -40,7 +40,7 @@ public class HbAnonymousFunction extends HbFunction {
 	}
 	
 	public String getRepr() throws ErrorWrapper, HbError, Continue, Break {
-		return realToString();
+		return show();
 	}
 	
 	@HobbesMethod(name="toString")

@@ -102,7 +102,7 @@ public class Debugger extends Interpreter {
 				for(SourceLine l: file.getFollowingLines(tree.getLine().getLineNo(),SURR_LINES))
 					System.out.println("  " + l.show());
 			} else {
-				System.out.println(evalFunc(command,null).realToString());
+				System.out.println(evalFunc(command,null).show());
 			}
 		}
 	}

@@ -96,8 +96,10 @@ public class Interpreter {
 			try {
 				HbObject result = run(tree);
 				String toReturn = null;
-				if(result != null)
+				if(result != null) {
 					toReturn = result.show();
+					getCurrentFrame().getScope().assignForce("_",result);
+				}
 				return toReturn;
 			} catch(ErrorWrapper e) {
 				handleError(e);
@@ -227,7 +229,7 @@ public class Interpreter {
 										throws ErrorWrapper, HbError, Continue, Break {
 		HbFunction func = (HbFunction)eval(call.getFuncExpr());
 		String funcRepr = func instanceof HbAnonymousFunction ?
-							func.hbToString().getValue() :
+							func.show() :
 							((HbNamedFunction)func).getName();
 		HbObject[] args = evalArgs(call.getArgs(),func,
 							funcRepr,call.getParenLoc());
@@ -252,7 +254,7 @@ public class Interpreter {
 		// push frame
 		try {
 			pushFrame(new NormalFunctionFrame(new Scope(this,getCurrentFrame().getScope()),
-								func.realToString(),parenLoc));
+								func.show(),parenLoc));
 		} catch (HbStackOverflow e) {
 			throw new ErrorWrapper(e,parenLoc);
 		}
@@ -321,11 +323,17 @@ public class Interpreter {
 			throw new ErrorWrapper(e,parenLoc);
 		}
 		if(func.getName().equals("print")) {
-			System.out.println(args[0].realToString());
+			if(args[0].getHbClass().hasMethod("toString"))
+				System.out.println(args[0].realToString());
+			else
+				System.out.println(args[0].show());
 			popFrame();
 			return objSpace.getNil();
 		} else if(func.getName().equals("get_input")) {
-			System.out.print(args[0].realToString());
+			if(args[0].getHbClass().hasMethod("toString"))
+				System.out.print(args[0].realToString());
+			else
+				System.out.print(args[0].show());
 			Scanner in = new Scanner(System.in);
 			popFrame();
 			try {
@@ -356,7 +364,7 @@ public class Interpreter {
 		HbObject lastResult = null;
 		while(s.hasNext()) {
 			try {
-				tokenizer.addLine(f.addLine(s.next()));
+				tokenizer.addLine(f.addLine(s.nextLine()));
 				if(tokenizer.isReady()) {
 					SyntaxNode tree = parser.parse(tokenizer.getTokens());
 					lastResult = run(tree);
@@ -440,7 +448,7 @@ public class Interpreter {
 		try {
 			hobbesClass = (HbClass)eval(expr.getClassVar());
 		} catch(ClassCastException e) {
-			throw new ErrorWrapper(new HbNotAClassError(this,className),
+			throw new ErrorWrapper(new HbTypeError(this,className + " is not a class"),
 									expr.getClassVar().getOrigin().getStart());
 		}
 		// get Java class
@@ -782,7 +790,8 @@ public class Interpreter {
 			if(sc instanceof HbClass)
 				superclass = ((HbClass)sc).getName();
 			else
-				throw new ErrorWrapper(new HbNotAClassError(this,def.getSuperclass().getName()),
+				throw new ErrorWrapper(new HbTypeError(this,def.getSuperclass().getName()
+									+ " is not a class"),
 									def.getSuperclass().getOrigin().getStart());
 		}
 		if(!superclass.equals("Object") && objSpace.getBuiltinClasses().contains(superclass))

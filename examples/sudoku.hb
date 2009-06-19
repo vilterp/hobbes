@@ -1,11 +1,3 @@
-# TODO: 
-# - Range#toSet
-# - Int % Int => Int
-# - String#toNumber
-# - String#split(',') => ['','']
-# - catch NoSuchElementException => throw KeyboardInterrupt
-# - real option parser
-
 class Board {
   def init(values) {
     @values = values
