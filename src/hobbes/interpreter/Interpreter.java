@@ -94,7 +94,12 @@ public class Interpreter {
 	private String interpret(SyntaxNode tree) {
 		if(tree != null) {
 			try {
-				HbObject result = run(tree);
+				HbObject result = null;
+				try {
+					result = run(tree);
+				} catch(StackOverflowError e) {
+					throw new HbStackOverflowError(this);
+				}
 				String toReturn = null;
 				if(result != null) {
 					toReturn = result.show();
@@ -255,7 +260,7 @@ public class Interpreter {
 		try {
 			pushFrame(new NormalFunctionFrame(new Scope(this,getCurrentFrame().getScope()),
 								func.show(),parenLoc));
-		} catch (HbStackOverflow e) {
+		} catch (HbStackOverflowError e) {
 			throw new ErrorWrapper(e,parenLoc);
 		}
 		// set args in scope
@@ -285,12 +290,8 @@ public class Interpreter {
 												SourceLocation parenLoc)
 												throws ErrorWrapper, HbError, Continue, Break {
 		// push frame
-		try {
-			pushFrame(new NormalFunctionFrame(new Scope(this,getCurrentFrame().getScope()),
-								func.getName(),parenLoc));
-		} catch (HbStackOverflow e) {
-			throw new ErrorWrapper(e,parenLoc);
-		}
+		pushFrame(new NormalFunctionFrame(new Scope(this,getCurrentFrame().getScope()),
+							func.getName(),parenLoc));
 		// set args in scope
 		for(int i=0; i < args.length; i++) {
 			try {
@@ -316,12 +317,8 @@ public class Interpreter {
 
 	private HbObject evalNativeFuncCall(HbNativeFunction func, HbObject[] args,
 			SourceLocation parenLoc) throws ErrorWrapper, HbError, Continue, Break {
-		try {
-			pushFrame(new NativeFunctionFrame(getCurrentFrame().getScope(),
-													func.getName(),parenLoc));
-		} catch (HbStackOverflow e) {
-			throw new ErrorWrapper(e,parenLoc);
-		}
+		pushFrame(new NativeFunctionFrame(getCurrentFrame().getScope(),
+												func.getName(),parenLoc));
 		if(func.getName().equals("print")) {
 			if(args[0].getHbClass().hasMethod("toString"))
 				System.out.println(args[0].realToString());
@@ -354,11 +351,7 @@ public class Interpreter {
 	
 	protected HbObject evalFunc(String code, SourceLocation parenLoc)
 												throws ErrorWrapper, HbError, Continue, Break {
-		try {
-			pushFrame(new FileFrame(this,"<eval>"));
-		} catch (HbStackOverflow e1) {
-			throw new ErrorWrapper(e1,parenLoc);
-		}
+		pushFrame(new FileFrame(this,"<eval>"));
 		SourceFile f = new SourceFile("<eval>");
 		Scanner s = new Scanner(code);
 		HbObject lastResult = null;
@@ -574,12 +567,8 @@ public class Interpreter {
 													SourceLocation origin)
 												throws ErrorWrapper, HbError, Continue, Break {
 		// add frame
-		try {
-			pushFrame(new NormalMethodFrame(this,getCurrentFrame().getScope(),
-										receiver,method.getName(),origin));
-		} catch (HbStackOverflow e) {
-			throw new ErrorWrapper(e,origin);
-		}
+		pushFrame(new NormalMethodFrame(this,getCurrentFrame().getScope(),
+									receiver,method.getName(),origin));
 		// set variables in scope
 		for(int i=0; i < args.length; i++) {
 			try {
@@ -606,12 +595,8 @@ public class Interpreter {
 
 	private HbObject evalNativeMethodCall(HbObject receiver, HbNativeMethod method,
 						HbObject[] args, SourceLocation loc) throws ErrorWrapper {
-		try {
-			pushFrame(new NativeMethodFrame(getCurrentFrame().getScope(),
-					receiver.getHbClass().getName(),method.getName(),loc));
-		} catch (HbStackOverflow e) {
-			throw new ErrorWrapper(e,loc);
-		}
+		pushFrame(new NativeMethodFrame(getCurrentFrame().getScope(),
+				receiver.getHbClass().getName(),method.getName(),loc));
 		try {
 			HbObject temp = (HbObject)method.getMethod().invoke(receiver,args);
 			popFrame();
@@ -830,11 +815,8 @@ public class Interpreter {
 		return stack.peek();
 	}
 	
-	private void pushFrame(ExecutionFrame f) throws HbStackOverflow {
-		if(stack.size() < MAX_STACK_SIZE)
-			stack.push(f);
-		else
-			throw new HbStackOverflow(this);
+	private void pushFrame(ExecutionFrame f) {
+		stack.push(f);
 	}
 
 	private ExecutionFrame popFrame() {
