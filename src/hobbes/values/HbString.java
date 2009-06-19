@@ -137,6 +137,26 @@ public class HbString extends HbObject {
 			throw new HbKeyError(getInterp(),ind + " (length: " + length() + ")");
 	}
 	
+	@HobbesMethod(name="code_point_at",numArgs=1)
+	public HbInt codePointAt(HbObject index) throws HbArgumentError, HbKeyError {
+		if(index instanceof HbInt)
+			return getObjSpace().getInt(codePointAt(((HbInt)index).getValue()));
+		else
+			throw new HbArgumentError(getInterp(),"code_point_at",index,"Int");
+	}
+	
+	private int codePointAt(int ind) throws HbKeyError {
+		if(ind >= 0 && ind < length())
+			return value.codePointAt(ind);
+		else if(ind < 0) {
+			if(-ind <= length())
+				return codePointAt(length() + ind);
+			else
+				throw new HbKeyError(getInterp(),ind + " (length: " + length() + ")");
+		} else
+			throw new HbKeyError(getInterp(),ind + " (length: " + length() + ")");
+	}
+	
 	@HobbesMethod(name="each",numArgs=1)
 	public void each(HbObject func) throws ErrorWrapper, HbError, Continue, Break {
 		if(func instanceof HbFunction) {
@@ -176,11 +196,22 @@ public class HbString extends HbObject {
 		ArrayList<Integer> codePoints = new ArrayList<Integer>(length());
 		for(int i=length()-1; i >= 0; i--)
 			codePoints.add(value.codePointAt(i));
-		succ(codePoints);
+		succ(codePoints,0);
 		char[] chars = new char[length()];
 		for(int i=0; i < length(); i++)
-			chars[i] = Character.toChars(codePoints.get(i))[0];
+			chars[i] = Character.toChars(codePoints.get(codePoints.size() - 1 - i))[0];
 		return new HbString(getInterp(),new String(chars));
+	}
+	
+	private void succ(ArrayList<Integer> values, int ind) {
+		if(ind < values.size())
+			values.set(ind,values.get(ind)+1);
+		else
+			values.add(Character.MIN_CODE_POINT);
+		if(values.get(ind) > Character.MAX_CODE_POINT) {
+			values.set(ind,Character.MIN_CODE_POINT);
+			succ(values,ind+1);
+		}
 	}
 	
 	@HobbesMethod(name="pred")
@@ -190,34 +221,19 @@ public class HbString extends HbObject {
 		ArrayList<Integer> codePoints = new ArrayList<Integer>(length());
 		for(int i=length()-1; i >= 0; i--)
 			codePoints.add(value.codePointAt(i));
-		pred(codePoints);
+		pred(codePoints,0);
 		char[] chars = new char[length()];
 		for(int i=0; i < length(); i++)
-			chars[i] = Character.toChars(codePoints.get(i))[0];
+			chars[i] = Character.toChars(codePoints.get(codePoints.size() - 1 - i))[0];
 		return new HbString(getInterp(),new String(chars));
 	}
 	
-	private void succ(ArrayList<Integer> values) {
-		succ(values,0);
-	}
-	
-	private void succ(ArrayList<Integer> values, int ind) {
-		values.set(ind,values.get(ind)+1);
-		if(values.get(ind) > Character.MAX_CODE_POINT) {
-			values.set(ind,Character.MIN_CODE_POINT);
-			succ(values,1);
-		}
-	}
-	
-	private void pred(ArrayList<Integer> values) {
-		pred(values,0);
-	}
-	
 	private void pred(ArrayList<Integer> values, int ind) {
+		// FIXME: don't think this will carry right
 		values.set(ind,values.get(ind)-1);
-		if(values.get(ind) > Character.MAX_CODE_POINT) {
-			values.set(ind,Character.MIN_CODE_POINT);
-			succ(values,1);
+		if(values.get(ind) < Character.MIN_CODE_POINT) {
+			values.set(ind,Character.MAX_CODE_POINT);
+			pred(values,ind+1);
 		}
 	}
 	
