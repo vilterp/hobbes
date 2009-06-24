@@ -123,8 +123,8 @@ public class HbClass extends HbObject {
 		methods.put(name, method);
 	}
 	
-	@HobbesMethod(name="toString")
-	public HbString hbToString() {
+	@HobbesMethod(name="show")
+	public HbString hbShow() {
 		StringBuilder ans = new StringBuilder("<Class ");
 		ans.append(name);
 		if(superClass != null && !superClass.getName().equals("Object")) {

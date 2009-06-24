@@ -66,11 +66,16 @@ class Board {
     self.solve_cell(e[0],e[1]) # me want splat args
   }
   def show {
-    ans = ''
-    for line in @values {
-      ans = ans + line.show + '\n'
+    ans = []
+    for r in 0 to 8 {
+      for c in 0 to 8 {
+        ans.add(@values[r][c].toString)
+        ans.add('|') if c == 2 or c == 5
+      }  
+      ans.add('\n')
+      ans.add(('-' * 9) + '\n') if r == 2 or r == 5
     }
-    ans
+    ans.join
   }
 }
 

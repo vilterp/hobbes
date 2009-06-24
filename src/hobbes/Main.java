@@ -11,10 +11,11 @@ import java.util.Scanner;
 
 public class Main {
 
-	private static final String HELP = "usage: hobbes <file> <args>\n" + 
+	private static final String HELP = "usage: hobbes <file> <args>\n" +
 							"-d    debug\n" +
 							"-g    verbose garbage collection\n" +
-							"-h    help";
+							"-h    this help message\n" +
+	            "run with no file argument for interactive prompt";
 	
 	public static void main(String[] args) {
 		// parse args

@@ -34,6 +34,11 @@ public class HbInt extends HbObject {
 		return getObjSpace().getString(String.valueOf(value));
 	}
 	
+	@HobbesMethod(name="toString")
+	public HbString hbToString() {
+		return hbShow();
+	}
+	
 	@HobbesMethod(name="toBool")
 	public HbObject toBool() {
 		return getObjSpace().getBool(getValue() != 0);
