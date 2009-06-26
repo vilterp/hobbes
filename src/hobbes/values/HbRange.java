@@ -56,6 +56,38 @@ public class HbRange extends HbObject {
 		return end;
 	}
 	
+	@HobbesMethod(name="overlaps?",numArgs=1)
+	public HbObject hbOverlaps(HbObject other) throws ErrorWrapper, HbError, Continue, Break {
+		if(other instanceof HbRange) {
+			return getObjSpace().getBool(overlaps((HbRange)other));
+		} else {
+			throw new HbArgumentError(getInterp(),"overlaps?",other,"Range");
+		}
+	}
+	
+	public boolean overlaps(HbRange other) throws ErrorWrapper, HbError, Continue, Break {
+		return this.getEnd().gte(((HbRange)other).getStart());
+	}
+	
+	@HobbesMethod(name="overlap",numArgs=1)
+	public HbObject overlap(HbObject other) throws ErrorWrapper, HbError, Continue, Break {
+		if(other instanceof HbRange) {
+			if(overlaps((HbRange)other)) {
+				return new HbRange(getInterp(),((HbRange)other).getStart(),this.getEnd());
+			} else
+				return getObjSpace().getNil();
+		} else
+			throw new HbArgumentError(getInterp(),"overlap",other,"Range");
+	}
+	
+	@HobbesMethod(name="contains?",numArgs=1)
+	public HbObject contains(HbObject obj) throws ErrorWrapper, HbError, Continue, Break {
+		if(obj.getHbClass().getName().equals(getStart().getHbClass().getName())) {
+			return getObjSpace().getBool(obj.gte(getStart()) && obj.lte(getEnd()));
+		} else
+			throw new HbArgumentError(getInterp(),"contains?",obj,getStart().getHbClass().getName());
+	}
+	
 	@HobbesMethod(name="==",numArgs=1)
 	public HbObject equalTo(HbObject other) throws ErrorWrapper, HbError, Continue, Break {
 		if(other instanceof HbRange)
@@ -117,6 +149,16 @@ public class HbRange extends HbObject {
 		for(HbObject cur=start; cur.lt(end) || cur.eq(end); cur=cur.call("succ"))
 			toReturn.add(cur);
 		return toReturn;
+	}
+	
+	@HobbesMethod(name="map",numArgs=1)
+	public HbSet map(HbObject func) throws ErrorWrapper, HbError, Continue, Break {
+		return toSet().map(func);
+	}
+	
+	@HobbesMethod(name="filter",numArgs=1)
+	public HbSet filter(HbObject func) throws ErrorWrapper, HbError, Continue, Break {
+		return toSet().filter(func);
 	}
 	
 	public IterImp iterator() {

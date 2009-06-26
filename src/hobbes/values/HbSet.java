@@ -105,6 +105,35 @@ public class HbSet extends HbObject implements Iterable<HbObject> {
 		return list;
 	}
 	
+	@HobbesMethod(name="map",numArgs=1)
+	public HbSet map(HbObject func) throws ErrorWrapper, HbError, Continue, Break {
+		if(func instanceof HbFunction) {
+			HbSet newSet = new HbSet(getInterp());
+			for(HbObject elem: this) {
+				HbObject result = getInterp().callFunc((HbFunction)func,
+															new HbObject[]{elem},null);
+				newSet.add(result);
+			}
+			return newSet;
+		} else
+			throw new HbArgumentError(getInterp(),"map",func,"AnonymousFunction");
+	}
+	
+	@HobbesMethod(name="filter",numArgs=1)
+	public HbSet filter(HbObject func) throws ErrorWrapper, HbError, Continue, Break {
+		if(func instanceof HbFunction) {
+			HbSet newSet = new HbSet(getInterp());
+			for(HbObject elem: this) {
+				HbObject result = getInterp().callFunc((HbFunction)func,
+															new HbObject[]{elem},null);
+				if(result == getObjSpace().getTrue())
+					newSet.add(result);
+			}
+			return newSet;
+		} else
+			throw new HbArgumentError(getInterp(),"filter",func,"AnonymousFunction");
+	}
+	
 	@HobbesMethod(name="each",numArgs=1)
 	public void each(HbObject func) throws ErrorWrapper, HbError, Continue, Break {
 		if(func instanceof HbFunction) {

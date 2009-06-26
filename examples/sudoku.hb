@@ -1,3 +1,4 @@
+#!/usr/bin/hobbes
 class Board {
   def init(values) {
     @values = values

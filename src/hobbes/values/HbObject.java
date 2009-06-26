@@ -54,8 +54,16 @@ public class HbObject extends Throwable {
 		return call(">",new HbObject[]{other}) == getObjSpace().getTrue();
 	}
 	
+	public boolean gte(HbObject other) throws ErrorWrapper, HbError, Continue, Break {
+		return gt(other) || eq(other);
+	}
+	
 	public boolean lt(HbObject other) throws ErrorWrapper, HbError, Continue, Break {
 		return call("<",new HbObject[]{other}) == getObjSpace().getTrue();
+	}
+	
+	public boolean lte(HbObject other) throws ErrorWrapper, HbError, Continue, Break {
+		return lt(other) || eq(other);
 	}
 	
 	public boolean eq(HbObject other) throws ErrorWrapper, HbError, Continue, Break {
